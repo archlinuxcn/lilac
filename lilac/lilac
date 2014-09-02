@@ -1,0 +1,38 @@
+#!/usr/bin/env python3
+
+import sys
+import importlib.util
+
+from lilaclib import *
+
+def lilac_build():
+  spec = importlib.util.spec_from_file_location('lilac.py', 'lilac.py')
+  mod = spec.loader.load_module()
+  try:
+    if hasattr(mod, 'pre_build'):
+      mod.pre_build()
+    call_build_cmd(mod.build_prefix)
+    if hasattr(mod, 'post_build'):
+      mod.post_build()
+  finally:
+    del sys.modules['lilac.py']
+
+def call_build_cmd(tag):
+  if tag == 'makepkg':
+    cmd = ['makepkg']
+  else:
+    cmd = ['sudo', '%s-build' % tag]
+  run_cmd(cmd)
+
+def build_it(path):
+  try:
+    os.chdir(path)
+    lilac_build()
+  except Exception as e:
+    send_error_report(e)
+
+def send_error_report(exception):
+  if isinstance(exception, CalledProcessError):
+    raise NotImplementedError
+  else:
+    raise NotImplementedError
