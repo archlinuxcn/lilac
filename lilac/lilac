@@ -1,13 +1,22 @@
 #!/usr/bin/env python3
 
+import os
 import sys
 import importlib.util
+import traceback
 
 from lilaclib import *
+
+REPODIR = os.path.expanduser('~/archgitrepo')
+DESTDIR = '~/repo'
+MYNAME = 'lilac'
+MYADDRESS = '<lilac@build.archlinuxcn.org>'
+MYMASTER = 'lilydjwg <lilydjwg@gmail.com>'
 
 def lilac_build():
   spec = importlib.util.spec_from_file_location('lilac.py', 'lilac.py')
   mod = spec.loader.load_module()
+  run_cmd(["sh", "-c", "rm -f -- *.pkg.tar.xz *.pkg.tar.xz.sig"])
   try:
     if hasattr(mod, 'pre_build'):
       mod.pre_build()
@@ -18,21 +27,52 @@ def lilac_build():
     del sys.modules['lilac.py']
 
 def call_build_cmd(tag):
+  # TODO: local dependencies
   if tag == 'makepkg':
     cmd = ['makepkg']
   else:
     cmd = ['sudo', '%s-build' % tag]
-  run_cmd(cmd)
+  # NOTE that Ctrl-C here may not succeed
+  run_cmd(cmd, use_pty=True)
 
-def build_it(path):
+def build_package(package):
+  path = os.path.join(REPODIR, package)
   try:
     os.chdir(path)
     lilac_build()
+    sign_and_copy()
   except Exception as e:
-    send_error_report(e)
+    tb = traceback.format_exc()
+    send_error_report(package, e, tb)
 
-def send_error_report(exception):
+def send_error_report(name, exception, tb):
+  try:
+    who = find_maintainer(MYADDRESS)
+    more = ''
+  except:
+    who = MYMASTER
+    more = traceback.format_exc()
+
   if isinstance(exception, CalledProcessError):
-    raise NotImplementedError
+    subject = '[lilac] 在编译软件包 %s 时发生错误' % name
+    msg = '命令执行失败！\n\n命令 %r 返回了错误号 %d。' \
+        '命令的输出如下：\n\n%s' % (
+      exception.cmd, exception.returncode, exception.output)
+    msg += '\n调用栈如下：\n\n' + tb
   else:
-    raise NotImplementedError
+    subject = '[lilac] 在编译软件包 %s 时发生未知错误' % name
+    msg = '发生未知错误！调用栈如下：\n\n' + tb
+  if more:
+    msg += '\n获取维护者信息也失败了！调用栈如下：\n\n' + more
+
+  sendmail(who, MYNAME + ' ' + MYADDRESS, subject, msg)
+
+def sign_and_copy():
+  pkgs = [x for x in os.listdir() if x.endswith('.pkg.tar.xz')]
+  for pkg in pkgs:
+    run_cmd(['gpg', '--detach-sign', '--', pkg])
+  run_cmd(["sh", "-c", 'cp *.pkg.tar.xz *.pkg.tar.xz.sig ' + DESTDIR])
+
+if __name__ == '__main__':
+  for pkg in sys.argv[1:]:
+    build_package(pkg)
