@@ -5,12 +5,14 @@ import logging
 import sys
 import smtplib
 import signal
+from types import SimpleNamespace
 
 import requests
 
 from htmlutils import parse_document_from_requests
 from myutils import msg, msg2
 from mailutils import assemble_mail
+from serializer import PickledData
 
 UserAgent = 'lilac/0.1 (package auto-build bot, by lilydjwg)'
 
@@ -18,6 +20,8 @@ s = requests.Session()
 s.headers['User-Agent'] = UserAgent
 logger = logging.getLogger(__name__)
 SPECIAL_FILES = ('package.list', 'lilac.py')
+EMPTY_COMMIT = '4b825dc642cb6eb9a060e54bf8d69288fbee4904'
+_g = SimpleNamespace()
 
 def download_official_pkgbuild(name):
   url = 'https://www.archlinux.org/packages/search/json/?name=' + name
@@ -40,6 +44,20 @@ def download_official_pkgbuild(name):
       logger.debug('download file %s.', filename)
       data = s.get(blob_url).content
       f.write(data)
+  return files
+
+def download_aur_pkgbuild(name):
+  url = 'https://aur.archlinux.org/packages/{first_two}/{name}/{name}.tar.gz'
+  url = url.format(first_two=name[:2], name=name)
+  run_cmd(['sh', '-c', "curl '%s' | tar xzv" % url])
+  try:
+    os.unlink(os.path.join(name, '.AURINFO'))
+  except FileNotFoundError:
+    pass
+  files = os.listdir(name)
+  for f in files:
+    os.rename(os.path.join(name, f), f)
+  os.rmdir(name)
   return files
 
 def clean_directory():
@@ -123,9 +141,43 @@ def get_commit_and_email(head):
   commit, author = run_cmd(cmd).rstrip().split(None, 1)
   return commit, author
 
+def get_changed_packages(revisions):
+  cmd = ["git", "diff", "--name-only", revisions]
+  r = run_cmd(cmd).splitlines()
+  return {x.split('/', 1)[0] for x in r}
+
 def sendmail(to, from_, subject, msg):
   s = smtplib.SMTP()
   s.connect()
   msg = assemble_mail(subject, to, from_, text=msg)
   s.send_message(msg)
   s.quit()
+
+def git_pull():
+  output = run_cmd(['git', 'pull', '--no-edit'])
+  return 'up-to-date' not in output
+
+def git_push():
+  while True:
+    try:
+      run_cmd(['git', 'push'])
+      break
+    except CalledProcessError as e:
+      if 'non-fast-forward' in e.output:
+        continue
+      else:
+        raise
+
+def git_last_commit():
+  return run_cmd(['git', 'log', '-1', '--format=%H']).strip()
+
+def aur_pre_build():
+  _g.aur_pre_files = clean_directory()
+  name = os.path.basename(os.getcwd())
+  _g.aur_building_files = download_aur_pkgbuild(name)
+
+def aur_post_build():
+  git_rm_files(_g.aur_pre_files)
+  git_add_files(_g.aur_building_files)
+  git_commit()
+  del _g.aur_pre_files, _g.aur_building_files

@@ -4,6 +4,9 @@ import os
 import sys
 import importlib.util
 import traceback
+import glob
+import logging
+import configparser
 
 from lilaclib import *
 
@@ -13,6 +16,23 @@ MYNAME = 'lilac'
 MYADDRESS = '<lilac@build.archlinuxcn.org>'
 MYMASTER = 'lilydjwg <lilydjwg@gmail.com>'
 
+from nicelogger import enable_pretty_logging
+enable_pretty_logging('DEBUG')
+
+logger = logging.getLogger(__name__)
+MYEMAIL = MYNAME + ' ' + MYADDRESS
+nvchecker_full = os.path.expanduser(os.path.join(REPODIR, 'nvchecker.ini'))
+mydir = os.path.expanduser('~/.lilac')
+try:
+  os.mkdir(mydir)
+except FileExistsError:
+  pass
+store = os.path.join(mydir, 'store')
+oldver_file = os.path.join(mydir, 'oldver')
+open(oldver_file, 'a').close()
+newver_file = os.path.join(mydir, 'newver')
+nvchecker_file = os.path.join(mydir, 'nvchecker.ini')
+
 def lilac_build():
   spec = importlib.util.spec_from_file_location('lilac.py', 'lilac.py')
   mod = spec.loader.load_module()
@@ -21,6 +41,7 @@ def lilac_build():
     if hasattr(mod, 'pre_build'):
       mod.pre_build()
     call_build_cmd(mod.build_prefix)
+    sign_and_copy()
     if hasattr(mod, 'post_build'):
       mod.post_build()
   finally:
@@ -36,13 +57,15 @@ def call_build_cmd(tag):
   run_cmd(cmd, use_pty=True)
 
 def build_package(package):
+  logger.info('building %s', package)
   path = os.path.join(REPODIR, package)
   try:
     os.chdir(path)
     lilac_build()
-    sign_and_copy()
+    return True
   except Exception as e:
     tb = traceback.format_exc()
+    logger.exception('packaging error')
     send_error_report(package, e, tb)
 
 def send_error_report(name, exception, tb):
@@ -65,7 +88,7 @@ def send_error_report(name, exception, tb):
   if more:
     msg += '\n获取维护者信息也失败了！调用栈如下：\n\n' + more
 
-  sendmail(who, MYNAME + ' ' + MYADDRESS, subject, msg)
+  sendmail(who, MYEMAIL, subject, msg)
 
 def sign_and_copy():
   pkgs = [x for x in os.listdir() if x.endswith('.pkg.tar.xz')]
@@ -73,6 +96,73 @@ def sign_and_copy():
     run_cmd(['gpg', '--detach-sign', '--', pkg])
   run_cmd(["sh", "-c", 'cp *.pkg.tar.xz *.pkg.tar.xz.sig ' + DESTDIR])
 
+def packages_need_update():
+  full = configparser.ConfigParser(dict_type=dict, allow_no_value=True)
+  full.read([nvchecker_full])
+  pkgs = all_packages_I_manage()
+  all_known = set(full.sections())
+  unknown = pkgs - all_known
+  if unknown:
+    subject = '[lilac] nvchecker 配置需要更新'
+    msg = '以下软件包没有相应的更新配置信息：\n\n' + ''.join(
+      x + '\n' for x in sorted(unknown))
+    sendmail(MYMASTER, MYEMAIL, subject, msg)
+
+  newconfig = {k: full[k] for k in pkgs & all_known}
+  newconfig['__config__'] = {
+    'oldver': oldver_file,
+    'newver': newver_file,
+  }
+  new = configparser.ConfigParser(dict_type=dict, allow_no_value=True)
+  new.read_dict(newconfig)
+  with open(nvchecker_file, 'w') as f:
+    new.write(f)
+  run_cmd(['nvchecker', nvchecker_file])
+  updated = {x.split(None, 1)[0] for x in
+             run_cmd(['nvcmp', nvchecker_file]).splitlines()}
+  return updated
+
+def all_packages_I_manage():
+  r = glob.glob('*/lilac.py')
+  return {x.split('/', 1)[0] for x in r}
+
+def main():
+  with PickledData(store, default={}) as D:
+    try:
+      git_pull()
+
+      last_commit = D.get('last_commit', EMPTY_COMMIT)
+      changed = get_changed_packages(last_commit + '..HEAD')
+      failed_prev = D.get('failed', set())
+
+      need_rebuild = failed_prev - changed
+      need_update = packages_need_update() - failed_prev
+
+      failed = set()
+      for pkg in need_update | need_rebuild:
+        if not build_package(pkg):
+          failed.add(pkg)
+
+      D['last_commit'] = git_last_commit()
+      D['failed'] = failed
+      succeeded = need_update - failed
+      if succeeded:
+        run_cmd(['nvtake', nvchecker_file] + list(succeeded))
+      git_push()
+    except Exception as e:
+      tb = traceback.format_exc()
+      logger.exception('unexpected error')
+      subject = '[lilac] 运行时错误'
+      msg = '调用栈如下：\n\n' + tb
+      sendmail(MYMASTER, MYEMAIL, subject, msg)
+
 if __name__ == '__main__':
-  for pkg in sys.argv[1:]:
-    build_package(pkg)
+  os.chdir(REPODIR)
+  # TODO: cron job or something
+  # TODO: logging
+
+  if len(sys.argv) == 1:
+    main()
+  else:
+    for pkg in sys.argv[1:]:
+      build_package(pkg)
