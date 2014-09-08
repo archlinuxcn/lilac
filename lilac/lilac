@@ -32,6 +32,7 @@ oldver_file = os.path.join(mydir, 'oldver')
 open(oldver_file, 'a').close()
 newver_file = os.path.join(mydir, 'newver')
 nvchecker_file = os.path.join(mydir, 'nvchecker.ini')
+build_output = None
 
 def lilac_build():
   spec = importlib.util.spec_from_file_location('lilac.py', 'lilac.py')
@@ -48,20 +49,23 @@ def lilac_build():
     del sys.modules['lilac.py']
 
 def call_build_cmd(tag):
+  global build_output
   # TODO: local dependencies
   if tag == 'makepkg':
     cmd = ['makepkg']
   else:
     cmd = ['sudo', '%s-build' % tag]
   # NOTE that Ctrl-C here may not succeed
-  run_cmd(cmd, use_pty=True)
+  build_output = run_cmd(cmd, use_pty=True)
 
 def build_package(package):
+  global build_output
   logger.info('building %s', package)
   path = os.path.join(REPODIR, package)
   try:
     os.chdir(path)
     lilac_build()
+    build_output = None
     return True
   except Exception as e:
     tb = traceback.format_exc()
@@ -87,6 +91,8 @@ def send_error_report(name, exception, tb):
     msg = '发生未知错误！调用栈如下：\n\n' + tb
   if more:
     msg += '\n获取维护者信息也失败了！调用栈如下：\n\n' + more
+  if build_output:
+    msg += '\n编译命令输出如下：\n\n' + build_output
 
   sendmail(who, MYEMAIL, subject, msg)
 

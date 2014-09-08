@@ -135,8 +135,7 @@ def find_maintainer(me):
 
 def get_commit_and_email(head):
   cmd = [
-    "git", "log", "-1", "--format=%H %an <%ae>", head,
-    "--", "PKGBUILD", "lilac.py",
+    "git", "log", "-1", "--format=%H %an <%ae>", head, "--", '*',
   ]
   commit, author = run_cmd(cmd).rstrip().split(None, 1)
   return commit, author
