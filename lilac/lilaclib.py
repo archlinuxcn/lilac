@@ -10,9 +10,10 @@ from types import SimpleNamespace
 import requests
 
 from htmlutils import parse_document_from_requests
-from myutils import msg, msg2
+from myutils import msg, msg2, at_dir
 from mailutils import assemble_mail
 from serializer import PickledData
+import archpkg
 
 UserAgent = 'lilac/0.1 (package auto-build bot, by lilydjwg)'
 
@@ -84,7 +85,14 @@ def git_add_files(files):
     files = [files]
   run_cmd(['git', 'add', '--'] + files)
 
-def git_commit():
+def git_commit(*, check_status=True):
+  if check_status:
+    ret = [x for x in
+           run_cmd(["git", "status", "-s"]).splitlines()
+           if x.split(None, 1)[0] != '??']
+    if not ret:
+      return
+
   run_cmd(['git', 'commit', '-m', 'auto update for package %s' % (
     os.path.split(os.getcwd())[1])])
 
@@ -180,3 +188,28 @@ def aur_post_build():
   git_add_files(_g.aur_building_files)
   git_commit()
   del _g.aur_pre_files, _g.aur_building_files
+
+def find_local_package(repodir, pkgname):
+  by = os.path.basename(os.getcwd())
+  if isinstance(pkgname, tuple):
+    d, name = pkgname
+  else:
+    d = name = pkgname
+
+  with at_dir(repodir):
+    if not os.path.isdir(d):
+      raise FileNotFoundError(
+        'no idea to satisfy denpendency %s for %s' % (pkgname, by))
+
+    with at_dir(d):
+      names = [x for x in os.listdir() if x.endswith('.pkg.tar.xz')]
+      pkgs = [x for x in names
+              if archpkg.PkgNameInfo.parseFilename(x).name == name]
+      if len(pkgs) == 1:
+        return os.path.abspath(pkgs[0])
+      elif not pkgs:
+        return
+      else:
+        ret = sorted(
+          pkgs, reverse=True, key=lambda n: os.stat(n).st_mtime)[0]
+        return os.path.abspath(ret)

@@ -7,6 +7,7 @@ import traceback
 import glob
 import logging
 import configparser
+from collections import defaultdict
 
 from lilaclib import *
 
@@ -33,6 +34,11 @@ open(oldver_file, 'a').close()
 newver_file = os.path.join(mydir, 'newver')
 nvchecker_file = os.path.join(mydir, 'nvchecker.ini')
 build_output = None
+building_packages = set()
+
+class TryNextRound(Exception):
+  def __init__(self, pkgs):
+    self.deps = pkgs
 
 def lilac_build():
   spec = importlib.util.spec_from_file_location('lilac.py', 'lilac.py')
@@ -41,20 +47,36 @@ def lilac_build():
   try:
     if hasattr(mod, 'pre_build'):
       mod.pre_build()
-    call_build_cmd(mod.build_prefix)
+
+    depends = getattr(mod, 'depends', ())
+    depend_packages = []
+    need_build_first = set()
+    for x in depends:
+      p = find_local_package(REPODIR, x)
+      if not p:
+        need_build_first.add(x)
+      else:
+        depend_packages.append(p)
+    if need_build_first:
+      raise TryNextRound(need_build_first)
+
+    call_build_cmd(mod.build_prefix, depend_packages)
     sign_and_copy()
     if hasattr(mod, 'post_build'):
       mod.post_build()
   finally:
     del sys.modules['lilac.py']
 
-def call_build_cmd(tag):
+def call_build_cmd(tag, depends):
   global build_output
-  # TODO: local dependencies
   if tag == 'makepkg':
     cmd = ['makepkg']
   else:
     cmd = ['sudo', '%s-build' % tag]
+    if depends:
+      cmd += ['--']
+      for x in depends:
+        cmd += ['-I', x]
   # NOTE that Ctrl-C here may not succeed
   build_output = run_cmd(cmd, use_pty=True)
 
@@ -62,15 +84,17 @@ def build_package(package):
   global build_output
   logger.info('building %s', package)
   path = os.path.join(REPODIR, package)
-  try:
-    os.chdir(path)
-    lilac_build()
-    build_output = None
-    return True
-  except Exception as e:
-    tb = traceback.format_exc()
-    logger.exception('packaging error')
-    send_error_report(package, e, tb)
+  with at_dir(path):
+    try:
+      lilac_build()
+      build_output = None
+      return True
+    except TryNextRound:
+      raise
+    except Exception as e:
+      tb = traceback.format_exc()
+      logger.exception('packaging error')
+      send_error_report(package, e, tb)
 
 def send_error_report(name, exception, tb):
   try:
@@ -126,11 +150,53 @@ def packages_need_update():
   run_cmd(['nvchecker', nvchecker_file])
   updated = {x.split(None, 1)[0] for x in
              run_cmd(['nvcmp', nvchecker_file]).splitlines()}
+  logger.info('these packages are updated as detected by nvchecker: %r',
+              updated)
   return updated
 
 def all_packages_I_manage():
   r = glob.glob('*/lilac.py')
   return {x.split('/', 1)[0] for x in r}
+
+def start_build():
+  failed = set()
+  dep_map = defaultdict(set)
+
+  while True:
+    next_round = set()
+    oldset = building_packages.copy()
+    logger.info('building these packages: %r', building_packages)
+    while True:
+      try:
+        pkg = building_packages.pop()
+      except KeyError:
+        break
+      try:
+        if not build_package(pkg):
+          failed.add(pkg)
+          if pkg in dep_map:
+            # all pkgs depend on this fails and don't build them
+            deps = dep_map[pkg]
+            failed.update(deps)
+            building_packages.difference_update(deps)
+      except TryNextRound as e:
+        oldset.update(e.deps)
+        building_packages.update(e.deps)
+        for p in e.deps:
+          dep_map[p].add(pkg)
+        next_round.add(pkg)
+        logger.debug('current dep map: %r, next_round: %r',
+                     dep_map, next_round)
+
+    if not next_round:
+      break
+    if oldset == next_round:
+      raise Exception('cyclic dependency? %r' % next_round)
+    building_packages.update(next_round - failed)
+    logger.debug('new round, to be built: %r, failed: %r',
+                 building_packages, failed)
+
+  return failed
 
 def main():
   with PickledData(store, default={}) as D:
@@ -144,10 +210,9 @@ def main():
       need_rebuild = failed_prev - changed
       need_update = packages_need_update() - failed_prev
 
-      failed = set()
-      for pkg in need_update | need_rebuild:
-        if not build_package(pkg):
-          failed.add(pkg)
+      building_packages.update(need_update)
+      building_packages.update(need_rebuild)
+      failed = start_build()
 
       D['last_commit'] = git_last_commit()
       D['failed'] = failed
@@ -170,5 +235,5 @@ if __name__ == '__main__':
   if len(sys.argv) == 1:
     main()
   else:
-    for pkg in sys.argv[1:]:
-      build_package(pkg)
+    building_packages.update(sys.argv[1:])
+    start_build()
