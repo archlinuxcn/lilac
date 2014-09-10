@@ -137,6 +137,7 @@ def packages_need_update():
     msg = '以下软件包没有相应的更新配置信息：\n\n' + ''.join(
       x + '\n' for x in sorted(unknown))
     sendmail(MYMASTER, MYEMAIL, subject, msg)
+    logger.warn('unknown packages: %r', unknown)
 
   newconfig = {k: full[k] for k in pkgs & all_known}
   newconfig['__config__'] = {
