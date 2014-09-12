@@ -2,7 +2,6 @@
 
 import os
 import sys
-import importlib.util
 import traceback
 import glob
 import logging
@@ -33,52 +32,11 @@ oldver_file = os.path.join(mydir, 'oldver')
 open(oldver_file, 'a').close()
 newver_file = os.path.join(mydir, 'newver')
 nvchecker_file = os.path.join(mydir, 'nvchecker.ini')
-build_output = None
 building_packages = set()
 
 class TryNextRound(Exception):
   def __init__(self, pkgs):
     self.deps = pkgs
-
-def lilac_build():
-  spec = importlib.util.spec_from_file_location('lilac.py', 'lilac.py')
-  mod = spec.loader.load_module()
-  run_cmd(["sh", "-c", "rm -f -- *.pkg.tar.xz *.pkg.tar.xz.sig"])
-  try:
-    if hasattr(mod, 'pre_build'):
-      mod.pre_build()
-
-    depends = getattr(mod, 'depends', ())
-    depend_packages = []
-    need_build_first = set()
-    for x in depends:
-      p = find_local_package(REPODIR, x)
-      if not p:
-        need_build_first.add(x)
-      else:
-        depend_packages.append(p)
-    if need_build_first:
-      raise TryNextRound(need_build_first)
-
-    call_build_cmd(mod.build_prefix, depend_packages)
-    sign_and_copy()
-    if hasattr(mod, 'post_build'):
-      mod.post_build()
-  finally:
-    del sys.modules['lilac.py']
-
-def call_build_cmd(tag, depends):
-  global build_output
-  if tag == 'makepkg':
-    cmd = ['makepkg']
-  else:
-    cmd = ['sudo', '%s-build' % tag]
-    if depends:
-      cmd += ['--']
-      for x in depends:
-        cmd += ['-I', x]
-  # NOTE that Ctrl-C here may not succeed
-  build_output = run_cmd(cmd, use_pty=True)
 
 def build_package(package):
   global build_output
@@ -86,7 +44,7 @@ def build_package(package):
   path = os.path.join(REPODIR, package)
   with at_dir(path):
     try:
-      lilac_build()
+      lilac_build(REPODIR)
       build_output = None
       return True
     except TryNextRound:

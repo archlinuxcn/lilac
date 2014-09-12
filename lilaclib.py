@@ -6,6 +6,7 @@ import sys
 import smtplib
 import signal
 from types import SimpleNamespace
+import importlib.util
 
 import requests
 
@@ -23,6 +24,7 @@ logger = logging.getLogger(__name__)
 SPECIAL_FILES = ('package.list', 'lilac.py')
 EMPTY_COMMIT = '4b825dc642cb6eb9a060e54bf8d69288fbee4904'
 _g = SimpleNamespace()
+build_output = None
 
 def download_official_pkgbuild(name):
   url = 'https://www.archlinux.org/packages/search/json/?name=' + name
@@ -213,3 +215,43 @@ def find_local_package(repodir, pkgname):
         ret = sorted(
           pkgs, reverse=True, key=lambda n: os.stat(n).st_mtime)[0]
         return os.path.abspath(ret)
+def lilac_build(repodir, build_prefix=None):
+  spec = importlib.util.spec_from_file_location('lilac.py', 'lilac.py')
+  mod = spec.loader.load_module()
+  run_cmd(["sh", "-c", "rm -f -- *.pkg.tar.xz *.pkg.tar.xz.sig"])
+  try:
+    if hasattr(mod, 'pre_build'):
+      mod.pre_build()
+
+    depends = getattr(mod, 'depends', ())
+    depend_packages = []
+    need_build_first = set()
+    for x in depends:
+      p = find_local_package(repodir, x)
+      if not p:
+        need_build_first.add(x)
+      else:
+        depend_packages.append(p)
+    if need_build_first:
+      raise TryNextRound(need_build_first)
+
+    call_build_cmd(build_prefix or mod.build_prefix, depend_packages)
+    sign_and_copy()
+    if hasattr(mod, 'post_build'):
+      mod.post_build()
+  finally:
+    del sys.modules['lilac.py']
+
+def call_build_cmd(tag, depends):
+  global build_output
+  if tag == 'makepkg':
+    cmd = ['makepkg']
+  else:
+    cmd = ['sudo', '%s-build' % tag]
+    if depends:
+      cmd += ['--']
+      for x in depends:
+        cmd += ['-I', x]
+  # NOTE that Ctrl-C here may not succeed
+  build_output = run_cmd(cmd, use_pty=True)
+
