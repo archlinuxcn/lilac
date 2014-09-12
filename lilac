@@ -110,8 +110,6 @@ def packages_need_update():
   run_cmd(['nvchecker', nvchecker_file])
   updated = {x.split(None, 1)[0] for x in
              run_cmd(['nvcmp', nvchecker_file]).splitlines()}
-  logger.info('these packages are updated as detected by nvchecker: %r',
-              updated)
   return updated
 
 def all_packages_I_manage():
@@ -164,22 +162,27 @@ def main():
       git_pull()
 
       last_commit = D.get('last_commit', EMPTY_COMMIT)
-      changed = get_changed_packages(last_commit + '..HEAD')
+      revisions = last_commit + '..HEAD'
+      changed = get_changed_packages(revisions)
       failed_prev = D.get('failed', set())
 
-      need_rebuild = failed_prev - changed
+      need_rebuild_failed = failed_prev - changed
+      need_rebuild_pkgrel = {x for x in changed
+                             if pkgrel_changed(revisions, x)}
       need_update = packages_need_update() - failed_prev
+      all_building = need_update | need_rebuild_failed | need_rebuild_pkgrel
 
-      building_packages.update(need_update)
-      building_packages.update(need_rebuild)
       logger.info('these previously-failed packages should be rebuilt: %r',
-                  need_rebuild)
-      building = building_packages.copy()
+                  need_rebuild_failed)
+      logger.info('these packages are updated as detected by nvchecker: %r',
+                  need_update)
+
+      building_packages.update(all_building)
       failed = start_build()
 
       D['last_commit'] = git_last_commit()
-      D['failed'] = failed | (failed_prev - building)
-      update_succeeded = need_update - failed
+      D['failed'] = failed | (failed_prev - all_building)
+      update_succeeded = all_building - failed
       if update_succeeded:
         run_cmd(['nvtake', nvchecker_file] + list(update_succeeded))
       git_push()

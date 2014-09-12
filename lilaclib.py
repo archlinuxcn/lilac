@@ -157,6 +157,11 @@ def get_changed_packages(revisions):
   r = run_cmd(cmd).splitlines()
   return {x.split('/', 1)[0] for x in r}
 
+def pkgrel_changed(revisions, pkgname):
+  cmd = ["git", "diff", "-p", revisions, '--', pkgname + '/PKGBUILD']
+  r = run_cmd(cmd).splitlines()
+  return any(x.startswith('+pkgrel=') for x in r)
+
 def sendmail(to, from_, subject, msg):
   s = smtplib.SMTP()
   s.connect()
