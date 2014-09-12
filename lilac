@@ -45,6 +45,7 @@ def build_package(package):
   with at_dir(path):
     try:
       lilac_build(REPODIR)
+      sign_and_copy()
       build_output = None
       return True
     except TryNextRound:

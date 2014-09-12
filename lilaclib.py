@@ -236,7 +236,6 @@ def lilac_build(repodir, build_prefix=None):
       raise TryNextRound(need_build_first)
 
     call_build_cmd(build_prefix or mod.build_prefix, depend_packages)
-    sign_and_copy()
     if hasattr(mod, 'post_build'):
       mod.post_build()
   finally:
