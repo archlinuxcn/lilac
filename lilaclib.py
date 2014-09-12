@@ -7,6 +7,7 @@ import smtplib
 import signal
 from types import SimpleNamespace
 import importlib.util
+from nicelogger import enable_pretty_logging
 
 import requests
 
@@ -80,7 +81,8 @@ def clean_directory():
   return ret
 
 def git_rm_files(files):
-  run_cmd(['git', 'rm', '--cached', '--'] + files)
+  if files:
+    run_cmd(['git', 'rm', '--cached', '--'] + files)
 
 def git_add_files(files):
   if isinstance(files, str):
@@ -254,3 +256,9 @@ def call_build_cmd(tag, depends):
   # NOTE that Ctrl-C here may not succeed
   build_output = run_cmd(cmd, use_pty=True)
 
+def single_main():
+  enable_pretty_logging('DEBUG')
+  lilac_build(
+    build_prefix = 'makepkg',
+    repodir = os.path.dirname(os.path.dirname(sys.modules['__main__'].__file__))
+  )
