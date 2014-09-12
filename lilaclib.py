@@ -64,6 +64,38 @@ def download_aur_pkgbuild(name):
   os.rmdir(name)
   return files
 
+def find_maintainer(me):
+  head = 'HEAD'
+  while True:
+    commit, author = get_commit_and_email(head)
+    if not author.endswith(me):
+      return author
+    head = commit + '^'
+
+def get_commit_and_email(head):
+  cmd = [
+    "git", "log", "-1", "--format=%H %an <%ae>", head, "--", '*',
+  ]
+  commit, author = run_cmd(cmd).rstrip().split(None, 1)
+  return commit, author
+
+def sendmail(to, from_, subject, msg):
+  s = smtplib.SMTP()
+  s.connect()
+  msg = assemble_mail(subject, to, from_, text=msg)
+  s.send_message(msg)
+  s.quit()
+
+def get_changed_packages(revisions):
+  cmd = ["git", "diff", "--name-only", revisions]
+  r = run_cmd(cmd).splitlines()
+  return {x.split('/', 1)[0] for x in r}
+
+def pkgrel_changed(revisions, pkgname):
+  cmd = ["git", "diff", "-p", revisions, '--', pkgname + '/PKGBUILD']
+  r = run_cmd(cmd, silent=True).splitlines()
+  return any(x.startswith('+pkgrel=') for x in r)
+
 def clean_directory():
   '''clean all PKGBUILD, built packages and related files'''
   files = run_cmd(['git', 'ls-files']).splitlines()
@@ -100,78 +132,6 @@ def git_commit(*, check_status=True):
   run_cmd(['git', 'commit', '-m', 'auto update for package %s' % (
     os.path.split(os.getcwd())[1])])
 
-def run_cmd(cmd, *, use_pty=False, silent=False):
-  logger.debug('running %r, %susing pty,%sshowing output', cmd,
-               ' ' if use_pty else 'not ',
-               ' not' if silent else ' ')
-  if use_pty:
-    rfd, stdout = os.openpty()
-  else:
-    stdout = subprocess.PIPE
-
-  exited = False
-  def child_exited(signum, sigframe):
-    nonlocal exited
-    exited = True
-  old_hdl = signal.signal(signal.SIGCHLD, child_exited)
-
-  p = subprocess.Popen(cmd, stdout = stdout, stderr = subprocess.STDOUT)
-  if not use_pty:
-    rfd = p.stdout.fileno()
-  out = []
-  while not exited:
-    try:
-      r = os.read(rfd, 4096)
-    except InterruptedError:
-      continue
-    if not r:
-      break
-    if not silent:
-      sys.stderr.buffer.write(r)
-    out.append(r)
-
-  code = p.wait()
-  if old_hdl is not None:
-    signal.signal(signal.SIGCHLD, old_hdl)
-
-  out = b''.join(out)
-  out = out.decode('utf-8', errors='replace')
-  if code != 0:
-      raise CalledProcessError(code, cmd, out)
-  return out
-
-def find_maintainer(me):
-  head = 'HEAD'
-  while True:
-    commit, author = get_commit_and_email(head)
-    if not author.endswith(me):
-      return author
-    head = commit + '^'
-
-def get_commit_and_email(head):
-  cmd = [
-    "git", "log", "-1", "--format=%H %an <%ae>", head, "--", '*',
-  ]
-  commit, author = run_cmd(cmd).rstrip().split(None, 1)
-  return commit, author
-
-def get_changed_packages(revisions):
-  cmd = ["git", "diff", "--name-only", revisions]
-  r = run_cmd(cmd).splitlines()
-  return {x.split('/', 1)[0] for x in r}
-
-def pkgrel_changed(revisions, pkgname):
-  cmd = ["git", "diff", "-p", revisions, '--', pkgname + '/PKGBUILD']
-  r = run_cmd(cmd, silent=True).splitlines()
-  return any(x.startswith('+pkgrel=') for x in r)
-
-def sendmail(to, from_, subject, msg):
-  s = smtplib.SMTP()
-  s.connect()
-  msg = assemble_mail(subject, to, from_, text=msg)
-  s.send_message(msg)
-  s.quit()
-
 def git_pull():
   output = run_cmd(['git', 'pull', '--no-edit'])
   return 'up-to-date' not in output
@@ -201,30 +161,6 @@ def aur_post_build():
   git_commit()
   del _g.aur_pre_files, _g.aur_building_files
 
-def find_local_package(repodir, pkgname):
-  by = os.path.basename(os.getcwd())
-  if isinstance(pkgname, tuple):
-    d, name = pkgname
-  else:
-    d = name = pkgname
-
-  with at_dir(repodir):
-    if not os.path.isdir(d):
-      raise FileNotFoundError(
-        'no idea to satisfy denpendency %s for %s' % (pkgname, by))
-
-    with at_dir(d):
-      names = [x for x in os.listdir() if x.endswith('.pkg.tar.xz')]
-      pkgs = [x for x in names
-              if archpkg.PkgNameInfo.parseFilename(x).name == name]
-      if len(pkgs) == 1:
-        return os.path.abspath(pkgs[0])
-      elif not pkgs:
-        return
-      else:
-        ret = sorted(
-          pkgs, reverse=True, key=lambda n: os.stat(n).st_mtime)[0]
-        return os.path.abspath(ret)
 def lilac_build(repodir, build_prefix=None):
   spec = importlib.util.spec_from_file_location('lilac.py', 'lilac.py')
   mod = spec.loader.load_module()
@@ -268,9 +204,73 @@ def call_build_cmd(tag, depends):
   # NOTE that Ctrl-C here may not succeed
   build_output = run_cmd(cmd, use_pty=True)
 
+def find_local_package(repodir, pkgname):
+  by = os.path.basename(os.getcwd())
+  if isinstance(pkgname, tuple):
+    d, name = pkgname
+  else:
+    d = name = pkgname
+
+  with at_dir(repodir):
+    if not os.path.isdir(d):
+      raise FileNotFoundError(
+        'no idea to satisfy denpendency %s for %s' % (pkgname, by))
+
+    with at_dir(d):
+      names = [x for x in os.listdir() if x.endswith('.pkg.tar.xz')]
+      pkgs = [x for x in names
+              if archpkg.PkgNameInfo.parseFilename(x).name == name]
+      if len(pkgs) == 1:
+        return os.path.abspath(pkgs[0])
+      elif not pkgs:
+        return
+      else:
+        ret = sorted(
+          pkgs, reverse=True, key=lambda n: os.stat(n).st_mtime)[0]
+        return os.path.abspath(ret)
 def single_main():
   enable_pretty_logging('DEBUG')
   lilac_build(
     build_prefix = 'makepkg',
     repodir = os.path.dirname(os.path.dirname(sys.modules['__main__'].__file__))
   )
+def run_cmd(cmd, *, use_pty=False, silent=False):
+  logger.debug('running %r, %susing pty,%sshowing output', cmd,
+               ' ' if use_pty else 'not ',
+               ' not' if silent else ' ')
+  if use_pty:
+    rfd, stdout = os.openpty()
+  else:
+    stdout = subprocess.PIPE
+
+  exited = False
+  def child_exited(signum, sigframe):
+    nonlocal exited
+    exited = True
+  old_hdl = signal.signal(signal.SIGCHLD, child_exited)
+
+  p = subprocess.Popen(cmd, stdout = stdout, stderr = subprocess.STDOUT)
+  if not use_pty:
+    rfd = p.stdout.fileno()
+  out = []
+  while not exited:
+    try:
+      r = os.read(rfd, 4096)
+    except InterruptedError:
+      continue
+    if not r:
+      break
+    if not silent:
+      sys.stderr.buffer.write(r)
+    out.append(r)
+
+  code = p.wait()
+  if old_hdl is not None:
+    signal.signal(signal.SIGCHLD, old_hdl)
+
+  out = b''.join(out)
+  out = out.decode('utf-8', errors='replace')
+  if code != 0:
+      raise CalledProcessError(code, cmd, out)
+  return out
+
