@@ -100,8 +100,10 @@ def git_commit(*, check_status=True):
   run_cmd(['git', 'commit', '-m', 'auto update for package %s' % (
     os.path.split(os.getcwd())[1])])
 
-def run_cmd(cmd, *, use_pty=False):
-  logger.debug('running %r', cmd)
+def run_cmd(cmd, *, use_pty=False, silent=False):
+  logger.debug('running %r, %susing pty, %sshowing output', cmd,
+               ' ' if use_pty else 'not ',
+               'not ' if silent else ' ')
   if use_pty:
     rfd, stdout = os.openpty()
   else:
@@ -124,7 +126,8 @@ def run_cmd(cmd, *, use_pty=False):
       continue
     if not r:
       break
-    sys.stderr.buffer.write(r)
+    if not silent:
+      sys.stderr.buffer.write(r)
     out.append(r)
 
   code = p.wait()
@@ -159,7 +162,7 @@ def get_changed_packages(revisions):
 
 def pkgrel_changed(revisions, pkgname):
   cmd = ["git", "diff", "-p", revisions, '--', pkgname + '/PKGBUILD']
-  r = run_cmd(cmd).splitlines()
+  r = run_cmd(cmd, silent=True).splitlines()
   return any(x.startswith('+pkgrel=') for x in r)
 
 def sendmail(to, from_, subject, msg):
