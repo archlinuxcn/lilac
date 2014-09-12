@@ -221,6 +221,7 @@ def lilac_build(repodir, build_prefix=None):
   spec = importlib.util.spec_from_file_location('lilac.py', 'lilac.py')
   mod = spec.loader.load_module()
   run_cmd(["sh", "-c", "rm -f -- *.pkg.tar.xz *.pkg.tar.xz.sig"])
+  success = False
   try:
     if hasattr(mod, 'pre_build'):
       mod.pre_build()
@@ -240,8 +241,11 @@ def lilac_build(repodir, build_prefix=None):
     call_build_cmd(build_prefix or mod.build_prefix, depend_packages)
     if hasattr(mod, 'post_build'):
       mod.post_build()
+    success = True
   finally:
     del sys.modules['lilac.py']
+    if hasattr(mod, 'post_build_always'):
+      mod.post_build_always(success=success)
 
 def call_build_cmd(tag, depends):
   global build_output
