@@ -101,9 +101,9 @@ def git_commit(*, check_status=True):
     os.path.split(os.getcwd())[1])])
 
 def run_cmd(cmd, *, use_pty=False, silent=False):
-  logger.debug('running %r, %susing pty, %sshowing output', cmd,
+  logger.debug('running %r, %susing pty,%sshowing output', cmd,
                ' ' if use_pty else 'not ',
-               'not ' if silent else ' ')
+               ' not' if silent else ' ')
   if use_pty:
     rfd, stdout = os.openpty()
   else:

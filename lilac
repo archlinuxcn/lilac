@@ -172,10 +172,12 @@ def main():
       need_update = packages_need_update() - failed_prev
       all_building = need_update | need_rebuild_failed | need_rebuild_pkgrel
 
+      logger.info('these updated (pkgrel) packages should be rebuilt: %r',
+                  need_rebuild_pkgrel or 'None')
       logger.info('these previously-failed packages should be rebuilt: %r',
-                  need_rebuild_failed)
+                  need_rebuild_failed or 'None')
       logger.info('these packages are updated as detected by nvchecker: %r',
-                  need_update)
+                  need_update) or 'None'
 
       building_packages.update(all_building)
       failed = start_build()
