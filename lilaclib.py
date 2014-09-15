@@ -26,6 +26,7 @@ SPECIAL_FILES = ('package.list', 'lilac.py')
 EMPTY_COMMIT = '4b825dc642cb6eb9a060e54bf8d69288fbee4904'
 _g = SimpleNamespace()
 build_output = None
+PYPI_URL = 'https://pypi.python.org/pypi/%s/json'
 
 def download_official_pkgbuild(name):
   url = 'https://www.archlinux.org/packages/search/json/?name=' + name
@@ -63,6 +64,9 @@ def download_aur_pkgbuild(name):
     os.rename(os.path.join(name, f), f)
   os.rmdir(name)
   return files
+
+def get_pypi_info(name):
+  return s.get(PYPI_URL % name).json()
 
 def find_maintainer(me):
   head = 'HEAD'
