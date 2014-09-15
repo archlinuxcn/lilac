@@ -159,6 +159,7 @@ def start_build():
 def main():
   with PickledData(store, default={}) as D:
     try:
+      git_reset_hard()
       git_pull()
 
       last_commit = D.get('last_commit', EMPTY_COMMIT)

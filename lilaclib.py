@@ -140,6 +140,9 @@ def git_pull():
   output = run_cmd(['git', 'pull', '--no-edit'])
   return 'up-to-date' not in output
 
+def git_reset_hard():
+  run_cmd(['git', 'reset', '--hard'])
+
 def git_push():
   while True:
     try:
