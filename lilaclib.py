@@ -187,6 +187,9 @@ def lilac_build(repodir, build_prefix=None):
       raise TryNextRound(need_build_first)
 
     call_build_cmd(build_prefix or mod.build_prefix, depend_packages)
+    pkgs = [x for x in os.listdir() if x.endswith('.pkg.tar.xz')]
+    if not pkgs:
+      raise Exception('no package built')
     if hasattr(mod, 'post_build'):
       mod.post_build()
     success = True
@@ -238,6 +241,7 @@ def single_main():
     build_prefix = 'makepkg',
     repodir = os.path.dirname(os.path.dirname(sys.modules['__main__'].__file__))
   )
+
 def run_cmd(cmd, *, use_pty=False, silent=False):
   logger.debug('running %r, %susing pty,%s showing output', cmd,
                ' ' if use_pty else 'not ',
