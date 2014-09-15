@@ -241,7 +241,7 @@ def single_main():
 def run_cmd(cmd, *, use_pty=False, silent=False):
   logger.debug('running %r, %susing pty,%s showing output', cmd,
                ' ' if use_pty else 'not ',
-               ' not' if silent else ' ')
+               ' not' if silent else '')
   if use_pty:
     rfd, stdout = os.openpty()
   else:
