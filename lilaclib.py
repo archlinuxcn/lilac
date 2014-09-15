@@ -235,7 +235,7 @@ def single_main():
     repodir = os.path.dirname(os.path.dirname(sys.modules['__main__'].__file__))
   )
 def run_cmd(cmd, *, use_pty=False, silent=False):
-  logger.debug('running %r, %susing pty,%sshowing output', cmd,
+  logger.debug('running %r, %susing pty,%s showing output', cmd,
                ' ' if use_pty else 'not ',
                ' not' if silent else ' ')
   if use_pty:
