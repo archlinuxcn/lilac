@@ -167,7 +167,7 @@ def main():
       changed = get_changed_packages(revisions)
       failed_prev = D.get('failed', set())
 
-      need_rebuild_failed = failed_prev - changed
+      need_rebuild_failed = failed_prev & changed
       need_rebuild_pkgrel = {x for x in changed
                              if pkgrel_changed(revisions, x)}
       need_update = packages_need_update() - failed_prev
