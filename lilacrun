@@ -1,0 +1,4 @@
+#!/bin/bash -e
+
+mkdir -p ~/.lilac/log
+script -efc lilac ~/.lilac/log/$(date +'%Y-%m-%dT%H:%M:%S')
