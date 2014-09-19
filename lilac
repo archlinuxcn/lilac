@@ -85,12 +85,11 @@ def sign_and_copy():
     run_cmd(['gpg', '--detach-sign', '--', pkg])
   run_cmd(["sh", "-c", 'cp *.pkg.tar.xz *.pkg.tar.xz.sig ' + DESTDIR])
 
-def packages_need_update():
+def packages_need_update(U):
   full = configparser.ConfigParser(dict_type=dict, allow_no_value=True)
   full.read([nvchecker_full])
-  pkgs = all_packages_I_manage()
   all_known = set(full.sections())
-  unknown = pkgs - all_known
+  unknown = U - all_known
   if unknown:
     subject = '[lilac] nvchecker 配置需要更新'
     msg = '以下软件包没有相应的更新配置信息：\n\n' + ''.join(
@@ -98,7 +97,7 @@ def packages_need_update():
     sendmail(MYMASTER, MYEMAIL, subject, msg)
     logger.warn('unknown packages: %r', unknown)
 
-  newconfig = {k: full[k] for k in pkgs & all_known}
+  newconfig = {k: full[k] for k in U & all_known}
   newconfig['__config__'] = {
     'oldver': oldver_file,
     'newver': newver_file,
@@ -162,15 +161,16 @@ def main():
       git_reset_hard()
       git_pull()
 
+      U = all_packages_I_manage()
       last_commit = D.get('last_commit', EMPTY_COMMIT)
       revisions = last_commit + '..HEAD'
-      changed = get_changed_packages(revisions)
+      changed = get_changed_packages(revisions, U)
       failed_prev = D.get('failed', set())
 
       need_rebuild_failed = failed_prev & changed
       need_rebuild_pkgrel = {x for x in changed
                              if pkgrel_changed(revisions, x)}
-      need_update = packages_need_update() - failed_prev
+      need_update = packages_need_update(U) - failed_prev
       all_building = need_update | need_rebuild_failed | need_rebuild_pkgrel
 
       logger.info('these updated (pkgrel) packages should be rebuilt: %r',

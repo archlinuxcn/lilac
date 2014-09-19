@@ -90,10 +90,13 @@ def sendmail(to, from_, subject, msg):
   s.send_message(msg)
   s.quit()
 
-def get_changed_packages(revisions):
+def get_changed_packages(revisions, U=None):
   cmd = ["git", "diff", "--name-only", revisions]
   r = run_cmd(cmd).splitlines()
-  return {x.split('/', 1)[0] for x in r}
+  ret = {x.split('/', 1)[0] for x in r}
+  if U is not None:
+    ret &= U
+  return ret
 
 def pkgrel_changed(revisions, pkgname):
   cmd = ["git", "diff", "-p", revisions, '--', pkgname + '/PKGBUILD']
