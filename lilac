@@ -109,7 +109,7 @@ def packages_need_update(U):
   run_cmd(['nvchecker', nvchecker_file])
   updated = {x.split(None, 1)[0] for x in
              run_cmd(['nvcmp', nvchecker_file]).splitlines()}
-  return updated
+  return updated, unknown
 
 def all_packages_I_manage():
   r = glob.glob('*/lilac.py')
@@ -167,10 +167,11 @@ def main():
       changed = get_changed_packages(revisions, U)
       failed_prev = D.get('failed', set())
 
+      updated, unknown = packages_need_update(U)
+      need_update = updated - failed_prev
       need_rebuild_failed = failed_prev & changed
       need_rebuild_pkgrel = {x for x in changed
-                             if pkgrel_changed(revisions, x)}
-      need_update = packages_need_update(U) - failed_prev
+                             if pkgrel_changed(revisions, x)} - unknown
       all_building = need_update | need_rebuild_failed | need_rebuild_pkgrel
 
       logger.info('these updated (pkgrel) packages should be rebuilt: %r',
