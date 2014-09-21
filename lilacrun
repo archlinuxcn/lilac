@@ -1,4 +1,13 @@
 #!/bin/bash -e
 
+lockit () {
+  exec {lockfd}<>~/.lilac/.lock
+  flock -n $lockfd || {
+    echo "Waiting for lock to release..."
+    flock $lockfd
+  }
+}
+
+lockit
 mkdir -p ~/.lilac/log
 script -efc lilac ~/.lilac/log/$(date +'%Y-%m-%dT%H:%M:%S')
