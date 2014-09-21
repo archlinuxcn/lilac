@@ -86,6 +86,7 @@ def get_commit_and_email(head):
 def sendmail(to, from_, subject, msg):
   s = smtplib.SMTP()
   s.connect()
+  msg = msg.replace('\x0f', '') # ^O
   msg = assemble_mail(subject, to, from_, text=msg)
   s.send_message(msg)
   s.quit()
