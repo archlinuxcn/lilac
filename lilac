@@ -35,10 +35,6 @@ newver_file = os.path.join(mydir, 'newver')
 nvchecker_file = os.path.join(mydir, 'nvchecker.ini')
 building_packages = set()
 
-class TryNextRound(Exception):
-  def __init__(self, pkgs):
-    self.deps = pkgs
-
 def build_package(package):
   logger.info('building %s', package)
   path = os.path.join(REPODIR, package)

@@ -28,6 +28,10 @@ _g = SimpleNamespace()
 build_output = None
 PYPI_URL = 'https://pypi.python.org/pypi/%s/json'
 
+class TryNextRound(Exception):
+  def __init__(self, pkgs):
+    self.deps = pkgs
+
 def download_official_pkgbuild(name):
   url = 'https://www.archlinux.org/packages/search/json/?name=' + name
   logger.info('download PKGBUILD for %s.', name)
