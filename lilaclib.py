@@ -169,6 +169,14 @@ def aur_pre_build():
   _g.aur_pre_files = clean_directory()
   name = os.path.basename(os.getcwd())
   _g.aur_building_files = download_aur_pkgbuild(name)
+  if name.endswith(('-git', '-hg', '-svn', '-bzr')):
+    vcs_update()
+
+def vcs_update():
+  run_cmd(['makepkg', '-o'])
+  output = run_cmd(["git", "status", "-s", "PKGBUILD"]).strip()
+  if not output:
+    raise RuntimeError('no update available. something goes wrong?')
 
 def aur_post_build():
   git_rm_files(_g.aur_pre_files)
