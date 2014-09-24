@@ -188,10 +188,13 @@ def pypi_pre_build(depends=None, python2=False):
   name = os.path.basename(os.getcwd())
   pypi_name = name.split('-', 1)[-1]
   pkgbuild = run_cmd(['pypi2pkgbuild', pypi_name], silent=True)
-  if depends:
-    pkgbuild = pkgbuild.replace(
-      "depends=('python')",
-      "depends=('python' %s)" % ' '.join("'%s'" % x for x in depends))
+  if depends is None:
+    depends = ['python-setuptools']
+  else:
+    depends.append('python-setuptools')
+  pkgbuild = pkgbuild.replace(
+    "depends=('python')",
+    "depends=('python' %s)" % ' '.join("'%s'" % x for x in depends))
   if python2:
     pkgbuild = re.sub(r'\bpython3?(?!.)', 'python2', pkgbuild)
   with open('PKGBUILD', 'w') as f:
