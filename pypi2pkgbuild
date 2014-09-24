@@ -1,0 +1,61 @@
+#!/usr/bin/env python3
+
+import json
+import urllib.request
+import sys
+
+# Gist: https://gist.github.com/lilydjwg/3aac529836e89b87a0ec
+
+template = '''\
+_pkgname={name}
+pkgname=python-$_pkgname
+pkgver={version}
+pkgrel=1
+pkgdesc="{summary}"
+arch=('any')
+url="{home_page}"
+license=('{license}')
+depends=('python')
+source=('{url}')
+md5sums=('{md5_digest}')
+
+build() {{
+  cd "$srcdir/$_pkgname-$pkgver"
+  python3 setup.py build
+}}
+
+package() {{
+  cd "$srcdir/$_pkgname-$pkgver"
+
+  python3 setup.py install --root=$pkgdir --optimize=1 --skip-build
+}}
+
+# vim:set sw=2 et:
+'''
+
+def get_pkgbuild(j):
+  info = j['info']
+  info['license'] = info['license'].split()[0]
+  release = [x for x in j['releases'][info['version']]
+             if x['python_version'] == 'source'][-1]
+  info.update(release)
+  s = template.format_map(info)
+  return s
+
+def get_json(name):
+  url = 'https://pypi.python.org/pypi/%s/json' % name
+  res = urllib.request.urlopen(url)
+  data = res.read().decode('utf-8')
+  j = json.loads(data)
+  return j
+
+def main():
+  if len(sys.argv) != 2:
+    sys.exit('PyPI package name?')
+  name = sys.argv[1]
+  j = get_json(name)
+  pkg = get_pkgbuild(j)
+  sys.stdout.write(pkg)
+
+if __name__ == '__main__':
+  main()

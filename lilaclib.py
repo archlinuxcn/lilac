@@ -184,6 +184,23 @@ def aur_post_build():
   git_commit()
   del _g.aur_pre_files, _g.aur_building_files
 
+def pypi_pre_build(depends=None, python2=False):
+  name = os.path.basename(os.getcwd())
+  pypi_name = name.split('-', 1)[-1]
+  pkgbuild = run_cmd(['pypi2pkgbuild', pypi_name], silent=True)
+  if depends:
+    pkgbuild = pkgbuild.replace(
+      "depends=('python')",
+      "depends=('python' %s)" % ' '.join("'%s'" % x for x in depends))
+  if python2:
+    pkgbuild = re.sub(r'\bpython3?(?!.)', 'python2', pkgbuild)
+  with open('PKGBUILD', 'w') as f:
+    f.write(pkgbuild)
+
+def pypi_post_build():
+  git_add_files('PKGBUILD')
+  git_commit()
+
 def lilac_build(repodir, build_prefix=None):
   spec = importlib.util.spec_from_file_location('lilac.py', 'lilac.py')
   mod = spec.loader.load_module()
