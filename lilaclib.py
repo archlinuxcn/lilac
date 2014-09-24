@@ -7,10 +7,11 @@ import smtplib
 import signal
 from types import SimpleNamespace
 import importlib.util
-from nicelogger import enable_pretty_logging
+import re
 
 import requests
 
+from nicelogger import enable_pretty_logging
 from htmlutils import parse_document_from_requests
 from myutils import msg, msg2, at_dir
 from mailutils import assemble_mail
@@ -71,6 +72,32 @@ def download_aur_pkgbuild(name):
 
 def get_pypi_info(name):
   return s.get(PYPI_URL % name).json()
+
+def get_pkgver_and_pkgrel():
+  pkgrel = None
+  pkgver = None
+  with open('PKGBUILD') as f:
+    for l in f:
+      if l.startswith('pkgrel='):
+        pkgrel = int(l.rstrip().split('=', 1)[-1])
+      elif l.startswith('pkgvel='):
+        pkgver = l.rstrip().split('=', 1)[-1]
+  return pkgver, pkgrel
+
+def update_pkgrel(rel=None):
+  with open('PKGBUILD') as f:
+    pkgbuild = f.read()
+
+  def replacer(m):
+    nonlocal rel
+    if rel is None:
+      rel = int(m.group()) + 1
+    return str(rel)
+
+  pkgbuild = re.sub(r'(?<=^pkgrel=)\d+', replacer, pkgbuild, count=1, flags=re.MULTILINE)
+  with open('PKGBUILD', 'w') as f:
+    f.write(pkgbuild)
+  logger.info('pkgrel updated to %s', rel)
 
 def find_maintainer(me):
   head = 'HEAD'
@@ -185,6 +212,11 @@ def aur_post_build():
   del _g.aur_pre_files, _g.aur_building_files
 
 def pypi_pre_build(depends=None, python2=False):
+  if os.path.exists('PKGBUILD'):
+    pkgver, pkgrel = get_pkgver_and_pkgrel()
+  else:
+    pkgver = None
+
   name = os.path.basename(os.getcwd())
   pypi_name = name.split('-', 1)[-1]
   pkgbuild = run_cmd(['pypi2pkgbuild', pypi_name], silent=True)
@@ -199,6 +231,11 @@ def pypi_pre_build(depends=None, python2=False):
     pkgbuild = re.sub(r'\bpython3?(?!.)', 'python2', pkgbuild)
   with open('PKGBUILD', 'w') as f:
     f.write(pkgbuild)
+
+  new_pkgver = get_pkgver_and_pkgrel()[0]
+  if pkgver == new_pkgver:
+    # change pkgrel to what specified in PKGBUILD
+    update_pkgrel(pkgrel)
 
 def pypi_post_build():
   git_add_files('PKGBUILD')
