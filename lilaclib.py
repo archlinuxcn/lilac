@@ -8,6 +8,7 @@ import signal
 from types import SimpleNamespace
 import importlib.util
 import re
+import fileinput
 
 import requests
 
