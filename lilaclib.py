@@ -203,7 +203,7 @@ def aur_pre_build(*, do_vcs_update=True):
     vcs_update()
 
 def vcs_update():
-  run_cmd(['makepkg', '-o'])
+  run_cmd(['makepkg', '-o'], use_pty=True)
   output = run_cmd(["git", "status", "-s", "PKGBUILD"]).strip()
   if not output:
     raise RuntimeError('no update available. something goes wrong?')
@@ -377,3 +377,6 @@ def edit_file(filename):
   with fileinput.input(files=(filename,), inplace=True) as f:
     for line in f:
       yield line.rstrip('\n')
+
+def mkaurball():
+  run_cmd(['mkaurball'], use_pty=True)
