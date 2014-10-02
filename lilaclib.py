@@ -189,8 +189,11 @@ def git_push():
       else:
         raise
 
-def git_last_commit():
-  return run_cmd(['git', 'log', '-1', '--format=%H']).strip()
+def git_last_commit(ref=None):
+  cmd = ['git', 'log', '-1', '--format=%H']
+  if ref:
+    cmd.append(ref)
+  return run_cmd(cmd).strip()
 
 def aur_pre_build(*, do_vcs_update=True):
   _g.aur_pre_files = clean_directory()
@@ -251,6 +254,7 @@ def lilac_build(repodir, build_prefix=None):
       mod.pre_build()
 
     depends = getattr(mod, 'depends', ())
+    pkgs_to_build = getattr(mod, 'packages', None)
     depend_packages = []
     need_build_first = set()
     for x in depends:
@@ -262,7 +266,8 @@ def lilac_build(repodir, build_prefix=None):
     if need_build_first:
       raise TryNextRound(need_build_first)
 
-    call_build_cmd(build_prefix or mod.build_prefix, depend_packages)
+    call_build_cmd(build_prefix or mod.build_prefix,
+                   depend_packages, pkgs_to_build)
     pkgs = [x for x in os.listdir() if x.endswith('.pkg.tar.xz')]
     if not pkgs:
       raise Exception('no package built')
@@ -274,16 +279,25 @@ def lilac_build(repodir, build_prefix=None):
     if hasattr(mod, 'post_build_always'):
       mod.post_build_always(success=success)
 
-def call_build_cmd(tag, depends):
+def call_build_cmd(tag, depends, pkgs_to_build=None):
   global build_output
   if tag == 'makepkg':
     cmd = ['makepkg']
+    if pkgs_to_build:
+      cmd.extend(['--pkg', ','.join(pkgs_to_build)])
   else:
     cmd = ['sudo', '%s-build' % tag]
+
+    if depends or pkgs_to_build:
+      cmd.append('--')
+
     if depends:
-      cmd += ['--']
       for x in depends:
         cmd += ['-I', x]
+
+    if pkgs_to_build:
+      cmd.extend(['--', '--pkg', ','.join(pkgs_to_build)])
+
   # NOTE that Ctrl-C here may not succeed
   build_output = run_cmd(cmd, use_pty=True)
 
