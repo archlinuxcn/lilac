@@ -118,7 +118,6 @@ def get_commit_and_email(head):
 def sendmail(to, from_, subject, msg):
   s = smtplib.SMTP()
   s.connect()
-  msg = msg.replace('\x0f', '') # ^O
   msg = assemble_mail(subject, to, from_, text=msg)
   s.send_message(msg)
   s.quit()
@@ -353,7 +352,7 @@ def run_cmd(cmd, *, use_pty=False, silent=False):
   if old_hdl is not None:
     signal.signal(signal.SIGCHLD, old_hdl)
 
-  out = b''.join(out)
+  out = b''.join(out).replace(b'\x0f', b'') # ^O
   out = out.decode('utf-8', errors='replace')
   if code != 0:
       raise CalledProcessError(code, cmd, out)
