@@ -358,6 +358,7 @@ def run_cmd(cmd, *, use_pty=False, silent=False):
       continue
     if not r:
       break
+    r = r.replace(b'\x0f', b'') # ^O
     if not silent:
       sys.stderr.buffer.write(r)
     out.append(r)
@@ -366,7 +367,7 @@ def run_cmd(cmd, *, use_pty=False, silent=False):
   if old_hdl is not None:
     signal.signal(signal.SIGCHLD, old_hdl)
 
-  out = b''.join(out).replace(b'\x0f', b'') # ^O
+  out = b''.join(out)
   out = out.decode('utf-8', errors='replace')
   if code != 0:
       raise CalledProcessError(code, cmd, out)
