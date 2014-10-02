@@ -358,3 +358,7 @@ def run_cmd(cmd, *, use_pty=False, silent=False):
       raise CalledProcessError(code, cmd, out)
   return out
 
+def edit_file(filename):
+  with fileinput.input(files=(filename,), inplace=True) as f:
+    for line in f:
+      yield line.rstrip('\n')
