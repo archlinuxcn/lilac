@@ -80,7 +80,7 @@ def get_pkgver_and_pkgrel():
   with open('PKGBUILD') as f:
     for l in f:
       if l.startswith('pkgrel='):
-        pkgrel = int(l.rstrip().split('=', 1)[-1])
+        pkgrel = float(l.rstrip().split('=', 1)[-1])
       elif l.startswith('pkgvel='):
         pkgver = l.rstrip().split('=', 1)[-1]
   return pkgver, pkgrel
@@ -92,10 +92,10 @@ def update_pkgrel(rel=None):
   def replacer(m):
     nonlocal rel
     if rel is None:
-      rel = int(m.group()) + 1
+      rel = int(float(m.group())) + 1
     return str(rel)
 
-  pkgbuild = re.sub(r'(?<=^pkgrel=)\d+', replacer, pkgbuild, count=1, flags=re.MULTILINE)
+  pkgbuild = re.sub(r'(?<=^pkgrel=)[\d.]+', replacer, pkgbuild, count=1, flags=re.MULTILINE)
   with open('PKGBUILD', 'w') as f:
     f.write(pkgbuild)
   logger.info('pkgrel updated to %s', rel)
