@@ -10,4 +10,4 @@ lockit () {
 
 lockit
 mkdir -p ~/.lilac/log
-script -efc lilac ~/.lilac/log/$(date +'%Y-%m-%dT%H:%M:%S')
+lilac > ~/.lilac/log/$(date +'%Y-%m-%dT%H:%M:%S') 2>&1
