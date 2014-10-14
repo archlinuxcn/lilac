@@ -197,9 +197,10 @@ def git_last_commit(ref=None):
     cmd.append(ref)
   return run_cmd(cmd).strip()
 
-def aur_pre_build(*, do_vcs_update=True):
+def aur_pre_build(name=None, *, do_vcs_update=True):
   _g.aur_pre_files = clean_directory()
-  name = os.path.basename(os.getcwd())
+  if name is None:
+    name = os.path.basename(os.getcwd())
   _g.aur_building_files = download_aur_pkgbuild(name)
   if do_vcs_update and name.endswith(('-git', '-hg', '-svn', '-bzr')):
     vcs_update()
