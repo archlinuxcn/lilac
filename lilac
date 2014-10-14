@@ -18,7 +18,7 @@ MYADDRESS = '<lilac@build.archlinuxcn.org>'
 MYMASTER = 'lilydjwg <lilydjwg@gmail.com>'
 
 from nicelogger import enable_pretty_logging
-enable_pretty_logging('DEBUG')
+enable_pretty_logging('DEBUG', color=True)
 
 logger = logging.getLogger(__name__)
 MYEMAIL = MYNAME + ' ' + MYADDRESS
