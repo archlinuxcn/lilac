@@ -81,6 +81,8 @@ def get_pkgver_and_pkgrel():
     for l in f:
       if l.startswith('pkgrel='):
         pkgrel = float(l.rstrip().split('=', 1)[-1])
+        if int(pkgrel) == pkgrel:
+            pkgrel = int(pkgrel)
       elif l.startswith('pkgvel='):
         pkgver = l.rstrip().split('=', 1)[-1]
   return pkgver, pkgrel
