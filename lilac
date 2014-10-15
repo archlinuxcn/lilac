@@ -35,6 +35,12 @@ newver_file = os.path.join(mydir, 'newver')
 nvchecker_file = os.path.join(mydir, 'nvchecker.ini')
 building_packages = set()
 
+build_logger = logging.getLogger('build')
+def setup_build_logger():
+  handler = logging.FileHandler(os.path.join(mydir, 'build.log'))
+  handler.setFormatter(logging.Formatter('[%(asctime)s] %(message)s', '%Y-%m-%d %H:%M:%S'))
+  build_logger.addHandler(handler)
+
 def build_package(package):
   logger.info('building %s', package)
   path = os.path.join(REPODIR, package)
@@ -43,6 +49,7 @@ def build_package(package):
       lilac_build(REPODIR)
       sign_and_copy()
       lilaclib.build_output = None
+      build_logger.info('%s successful', package)
       return True
     except TryNextRound:
       raise
@@ -50,6 +57,7 @@ def build_package(package):
       tb = traceback.format_exc()
       logger.exception('packaging error')
       send_error_report(package, e, tb)
+      build_logger.error('%s failed', package)
 
 def send_error_report(name, exception, tb):
   try:
@@ -195,6 +203,7 @@ def main():
       sendmail(MYMASTER, MYEMAIL, subject, msg)
 
 if __name__ == '__main__':
+  setup_build_logger()
   os.chdir(REPODIR)
 
   if len(sys.argv) == 1:

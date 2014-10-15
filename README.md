@@ -29,6 +29,4 @@ Python 库
 TODO
 ====
 
-* cron job or something
-* building log: succeeded, failed
 * AUR batch uploader
