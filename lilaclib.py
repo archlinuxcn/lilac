@@ -38,8 +38,7 @@ def download_official_pkgbuild(name):
   url = 'https://www.archlinux.org/packages/search/json/?name=' + name
   logger.info('download PKGBUILD for %s.', name)
   info = s.get(url).json()
-  result = info['results'][0]
-  repo = result['repo']
+  repo = [r['repo'] for r in info['results'] if r['repo'] != 'testing'][0]
   if repo in ('core', 'extra'):
     repo = 'packages'
   else:
