@@ -103,7 +103,6 @@ def packages_need_update(U):
       who = MYMASTER
       more = traceback.format_exc()
 
-    logger.exception('nvchecker config error')
     subject = '[lilac] nvchecker 配置文件错误'
     msg = '调用栈如下：\n\n' + tb
     if more:
