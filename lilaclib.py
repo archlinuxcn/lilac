@@ -101,17 +101,17 @@ def update_pkgrel(rel=None):
     f.write(pkgbuild)
   logger.info('pkgrel updated to %s', rel)
 
-def find_maintainer(me):
+def find_maintainer(me, file='*'):
   head = 'HEAD'
   while True:
-    commit, author = get_commit_and_email(head)
+    commit, author = get_commit_and_email(head, file)
     if not author.endswith(me):
       return author
     head = commit + '^'
 
-def get_commit_and_email(head):
+def get_commit_and_email(head, file='*'):
   cmd = [
-    "git", "log", "-1", "--format=%H %an <%ae>", head, "--", '*',
+    "git", "log", "-1", "--format=%H %an <%ae>", head, "--", file,
   ]
   commit, author = run_cmd(cmd).rstrip().split(None, 1)
   return commit, author

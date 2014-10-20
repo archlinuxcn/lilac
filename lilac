@@ -92,7 +92,25 @@ def sign_and_copy():
 
 def packages_need_update(U):
   full = configparser.ConfigParser(dict_type=dict, allow_no_value=True)
-  full.read([nvchecker_full])
+  try:
+    full.read([nvchecker_full])
+  except:
+    tb = traceback.format_exc()
+    try:
+      who = find_maintainer(MYADDRESS, file='nvchecker.ini')
+      more = ''
+    except:
+      who = MYMASTER
+      more = traceback.format_exc()
+
+    logger.exception('nvchecker config error')
+    subject = '[lilac] nvchecker 配置文件错误'
+    msg = '调用栈如下：\n\n' + tb
+    if more:
+      msg += '\n获取维护者信息也失败了！调用栈如下：\n\n' + more
+    sendmail(who, MYEMAIL, subject, msg)
+    raise
+
   all_known = set(full.sections())
   unknown = U - all_known
   if unknown:
