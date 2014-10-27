@@ -18,34 +18,26 @@
 #
 
 from lilaclib import *
-import fileinput
 
-depends = [
-# uncomment the following line if depend(s) is in archlinuxcn repo
-#        'archlinuxcn-keyring',
-        ]
-
-build_prefix = 'archlinuxcn-x86_64'
+build_prefix = 'extra-x86_64'
+# depends = []
 
 def pre_build():
-  aur_pre_build('<pkgname>(optinal)')
-  # do something before makepkg starts
+  # obtain base PKGBUILD, e.g.
+  # aur_pre_build(pkgname)
 
-  with fileinput.input(files=('PKGBUILD'), inplace=1) as f:
-    # do something to handle PKGBUILD here.
+  for line in edit_file('PKGBUILD'):
+    # edit PKGBUILD
+    print(line)
 
 
 def post_build():
   # do something after the package has successfully been built
   aur_post_build()
 
-
-def post_build_always(success):
-  # do something after building the package
-  if(success == True):
-    # build succeeded
-  if(success == False):
-    # build failed
+# do some cleanup here after building the package, regardless of result
+# def post_build_always(success):
+#   pass
 
 if __name__ == '__main__':
   single_main()

@@ -24,7 +24,7 @@ lilac.py-aur_complex
 
 lilac.py-pypi
 -------------
-从 pypi 直接构建软件包时使用，除了依赖，几乎不需要进行修改。
+从 PyPI 直接构建软件包时使用，除了依赖，几乎不需要进行修改。
 
 lilac.py-custom
 ---------------

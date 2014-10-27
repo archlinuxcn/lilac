@@ -10,28 +10,24 @@
 
 from lilaclib import *
 
-build_prefix = 'archlinuxcn-x86_64'
+build_prefix = 'extra-x86_64'
 
-depends = [
-# uncomment the following line if depend(s) is in archlinuxcn repo
-#        'archlinuxcn-keyring',
-        ]
+# depends = []
+# Tell Lilac what should be built in a split-package
+# packages = None
 
-packages = []
+def pre_build():
+  # prepare PKGBUILD etc.
+  pass
 
-#def pre_build():
-  # uncomment me if you need
-  # do someting before makepkg starts
-
-
-def post_build(success=None):
-  # do someting after the package has successfully been built
+def post_build():
+  # do something after successful build
   git_add_files('PKGBUILD')
   git_commit()
 
 
-#def post_build_always():
-  # uncomment me if you need
+# def post_build_always():
+#   clean up, regardless of build result
 
 if __name__ == '__main__':
   single_main()
