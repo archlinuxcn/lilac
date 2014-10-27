@@ -1,6 +1,6 @@
 写在前面
 ========
-lilac 是由百合仙子（依云/lilydjwg）为社区编译机写的编译机器人。该机器人通过与 ``nvchecker`` 配合检查软件包新的版本，并通过社区源软件包目录下的 ``lilac.py`` 脚本对有新版本释出的软件自动进行打包构建，减去了手工打包的麻烦。
+lilac 是由百合仙子（依云/lilydjwg）为社区编译机写的编译机器人。该机器人通过与 ``nvchecker`` 配合检查软件包新的版本，并通过社区源软件包目录下的 ``lilac.py`` 脚本对有新版本释出的软件自动进行打包构建，减去了手工打包的麻烦。在此特别感谢仙子~
 
 lilac 每日定时在社区编译机上执行，以检查软件的新版本及自动打包。
 
@@ -88,13 +88,19 @@ packages
 
 使用模板
 --------
-模板尚未通过百合仙子的审核，暂不公布。
+一些预定的模板已经为大家准备好，克隆 lilac 仓库后，模板位于 ``lilac/templates`` 中。详细的模板使用信息请参考 ``lilac/templates/README.rst`` 。
+
+在线阅读 `README <https://github.com/archlinuxcn/lilac/tree/master/templates>`_ 。
 
 Tips & Tricks
 -------------
-通过使用 ``lilaclib.py`` 中的函数可以使 ``lilac.py`` 的编写变得简单。以下讲述一些技巧：
+通过使用 ``lilaclib.py`` 中的函数、变量可以使 ``lilac.py`` 的编写变得简单。以下讲述一些技巧：
 
-吃饭，睡觉，以后来补充
+1. 在 ``lilac.py`` 中如果需要抓取网页内容（例如抓取版本号），可是使用 ``s`` 对象，这是一个在 ``lilaclib.py`` 中定义的一个 ``requests.Session`` 对象。具体实例可参考 `octave-general/lilac.py <https://github.com/archlinuxcn/repo/blob/master/octave-general/lilac.py>`_ 。
+
+#. 在 ``lilac.py`` 中执行外部 shell 命令，可以使用 ``run_cmd`` 函数，该函数接受一个 list 类型参数，list 中每个元素为命令参数。例如，更新 ``PKGBUILD`` 中的 hash 值时，简单地使用 ``run_cmd(['sh', '-c', 'makepkg -g >> PKGBUILD'])`` 即可（注意删除原有的 hash 值）。
+
+嗯，欢迎各位补充。
 
 See also
 ========
