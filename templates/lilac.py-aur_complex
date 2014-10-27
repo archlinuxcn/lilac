@@ -1,0 +1,51 @@
+#!/usr/bin/env python3
+#
+# This is a complex version of lilac.py for building
+# a package from AUR.
+#
+# You can do something before/after building a package,
+# including modify the 'pkgver' and 'md5sum' in PKBUILD.
+#
+# This is especially useful when a AUR package is
+# out-of-date and you want to build a new one, or you
+# want to build a package directly from sourceforge but
+# using PKGBUILD from AUR.
+#
+# See also:
+# [1] ruby-sass/lilac.py
+# [2] aufs3-util-lily-git/lilac.py
+# [3] octave-general/lilac.py
+#
+
+from lilaclib import *
+import fileinput
+
+depends = [
+# uncomment the following line if depend(s) is in archlinuxcn repo
+#        'archlinuxcn-keyring',
+        ]
+
+build_prefix = 'archlinuxcn-x86_64'
+
+def pre_build():
+  aur_pre_build('<pkgname>(optinal)')
+  # do something before makepkg starts
+
+  with fileinput.input(files=('PKGBUILD'), inplace=1) as f:
+    # do something to handle PKGBUILD here.
+
+
+def post_build():
+  # do something after the package has successfully been built
+  aur_post_build()
+
+
+def post_build_always(success):
+  # do something after building the package
+  if(success == True):
+    # build succeeded
+  if(success == False):
+    # build failed
+
+if __name__ == '__main__':
+  single_main()

@@ -1,0 +1,37 @@
+#!/usr/bin/env python3
+#
+# This is the most 'free' version of lilac.py.
+# Just one thing to remind:
+# * add git_add_files('PKGBUILD') and git_commit() in post_build().
+#
+# See also:
+# vim-lily/lilac.py
+#
+
+from lilaclib import *
+
+build_prefix = 'archlinuxcn-x86_64'
+
+depends = [
+# uncomment the following line if depend(s) is in archlinuxcn repo
+#        'archlinuxcn-keyring',
+        ]
+
+packages = []
+
+#def pre_build():
+  # uncomment me if you need
+  # do someting before makepkg starts
+
+
+def post_build(success=None):
+  # do someting after the package has successfully been built
+  git_add_files('PKGBUILD')
+  git_commit()
+
+
+#def post_build_always():
+  # uncomment me if you need
+
+if __name__ == '__main__':
+  single_main()
