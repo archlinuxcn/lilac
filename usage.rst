@@ -48,7 +48,7 @@ lilac 每日定时在社区编译机上执行，以检查软件的新版本及�
 ``lilac.py`` 中定义了几个函数及变量， lilac 运行时会检查相关变量，并调用此文件中的相关函数。以下做详细说明：
 
 函数
-~~~
+~~~~
 pre_build()
   该函数在构建过程开始之前执行。通常用于修改直接从 AUR 获取到的 ``PKGBUILD`` ，以使构建过程能够正常进行。
 
@@ -59,7 +59,7 @@ post_build_always(success)
   该函数在构建软件包后执行（无论是否构建成功）。 ``success`` 参数传入构建状态： ``True`` 表示构建成功， ``False`` 表示构建失败。
 
 变量
-~~~
+~~~~
 build_prefix
   str 类型，指定要使用的 devtools 中的构建工具的前缀，通常使用 ``'archlinuxcn-x86_64'`` ，构建 32 位包时通常使用 ``'multilib-archlinuxcn'`` 。详细信息请参考 `打包 <https://github.com/archlinuxcn/repo/wiki/%E6%89%93%E5%8C%85>`_ 。
 
