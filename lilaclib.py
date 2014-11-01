@@ -246,7 +246,7 @@ def pypi_post_build():
   git_add_files('PKGBUILD')
   git_commit()
 
-def lilac_build(repodir, build_prefix=None):
+def lilac_build(repodir, build_prefix=None, skip_depends=False):
   spec = importlib.util.spec_from_file_location('lilac.py', 'lilac.py')
   mod = spec.loader.load_module()
   run_cmd(["sh", "-c", "rm -f -- *.pkg.tar.xz *.pkg.tar.xz.sig *.src.tar.gz"])
@@ -255,7 +255,11 @@ def lilac_build(repodir, build_prefix=None):
     if hasattr(mod, 'pre_build'):
       mod.pre_build()
 
-    depends = getattr(mod, 'depends', ())
+    # we don't install any dependencies when testing
+    if skip_depends:
+      depends = ()
+    else:
+      depends = getattr(mod, 'depends', ())
     pkgs_to_build = getattr(mod, 'packages', None)
     depend_packages = []
     need_build_first = set()
@@ -331,7 +335,9 @@ def single_main():
   enable_pretty_logging('DEBUG')
   lilac_build(
     build_prefix = 'makepkg',
-    repodir = os.path.dirname(os.path.dirname(sys.modules['__main__'].__file__))
+    repodir = os.path.dirname(
+      os.path.dirname(sys.modules['__main__'].__file__)),
+    skip_depends = True,
   )
 
 def run_cmd(cmd, *, use_pty=False, silent=False):
