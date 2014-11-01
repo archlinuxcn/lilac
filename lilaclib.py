@@ -249,7 +249,7 @@ def pypi_post_build():
 def lilac_build(repodir, build_prefix=None):
   spec = importlib.util.spec_from_file_location('lilac.py', 'lilac.py')
   mod = spec.loader.load_module()
-  run_cmd(["sh", "-c", "rm -f -- *.pkg.tar.xz *.pkg.tar.xz.sig"])
+  run_cmd(["sh", "-c", "rm -f -- *.pkg.tar.xz *.pkg.tar.xz.sig *.src.tar.gz"])
   success = False
   try:
     if hasattr(mod, 'pre_build'):
