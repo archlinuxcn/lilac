@@ -30,7 +30,7 @@ lilac 是由百合仙子（a.k.a. `依云 <https://github.com/lilydjwg>`_\ ）�
   cd ~
   git clone https://github.com/archlinuxcn/lilac.git
   cd lilac
-  wget "https://raw.githubusercontent.com/lilydjwg/winterpy/master/pylib/{archpkg,htmlutils,mailutils,myutils,nicelogger,serializer}.py"
+  wget "https://raw.githubusercontent.com/lilydjwg/winterpy/master/pylib/"{archpkg,htmlutils,mailutils,myutils,nicelogger,serializer}.py
 
 **再次强调**\ ：除非你很清楚 lilac 的运作，否则请勿直接运行 ``lilac`` 或 ``lilacrun``\ ！
 
