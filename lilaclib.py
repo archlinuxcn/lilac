@@ -185,8 +185,8 @@ def git_push():
       run_cmd(['git', 'push'])
       break
     except CalledProcessError as e:
-      if 'non-fast-forward' in e.output:
-        continue
+      if 'non-fast-forward' in e.output or 'fetch first' in e.output:
+        run_cmd(["git", "pull", "--rebase"])
       else:
         raise
 
