@@ -331,10 +331,10 @@ def find_local_package(repodir, pkgname):
         ret = sorted(
           pkgs, reverse=True, key=lambda n: os.stat(n).st_mtime)[0]
         return os.path.abspath(ret)
-def single_main():
+def single_main(build_prefix='makepkg'):
   enable_pretty_logging('DEBUG')
   lilac_build(
-    build_prefix = 'makepkg',
+    build_prefix = build_prefix,
     repodir = os.path.dirname(
       os.path.dirname(sys.modules['__main__'].__file__)),
     skip_depends = True,
