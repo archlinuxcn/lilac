@@ -246,12 +246,15 @@ def pypi_post_build():
   git_add_files('PKGBUILD')
   git_commit()
 
-def lilac_build(repodir, build_prefix=None, skip_depends=False):
+def lilac_build(repodir, build_prefix=None, skip_depends=False, oldver=None, newver=None):
   spec = importlib.util.spec_from_file_location('lilac.py', 'lilac.py')
   mod = spec.loader.load_module()
   run_cmd(["sh", "-c", "rm -f -- *.pkg.tar.xz *.pkg.tar.xz.sig *.src.tar.gz"])
   success = False
   try:
+    if not hasattr(mod, '_G'):
+      # fill nvchecker result unless already filled (e.g. by hand)
+      mod._G = SimpleNamespace(oldver = oldver, newver = newver)
     if hasattr(mod, 'pre_build'):
       mod.pre_build()
 

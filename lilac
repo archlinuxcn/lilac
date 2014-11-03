@@ -34,6 +34,7 @@ open(oldver_file, 'a').close()
 newver_file = os.path.join(mydir, 'newver')
 nvchecker_file = os.path.join(mydir, 'nvchecker.ini')
 building_packages = set()
+nvdata = {}
 
 build_logger = logging.getLogger('build')
 def setup_build_logger():
@@ -46,7 +47,11 @@ def build_package(package):
   path = os.path.join(REPODIR, package)
   with at_dir(path):
     try:
-      lilac_build(REPODIR)
+      n = nvdata.get(package, (None, None))
+      lilac_build(
+        REPODIR,
+        oldver = n[0], newver = n[1],
+      )
       sign_and_copy()
       lilaclib.build_output = None
       build_logger.info('%s successful', package)
@@ -129,8 +134,12 @@ def packages_need_update(U):
   with open(nvchecker_file, 'w') as f:
     new.write(f)
   run_cmd(['nvchecker', nvchecker_file])
-  updated = {x.split(None, 1)[0] for x in
-             run_cmd(['nvcmp', nvchecker_file]).splitlines()}
+
+  for x in run_cmd(['nvcmp', nvchecker_file]).splitlines():
+    pkg, oldver, _, newver = x.split()
+    nvdata[pkg] = oldver, newver
+
+  updated = set(nvdata.keys())
   return updated, unknown
 
 def all_packages_I_manage():
