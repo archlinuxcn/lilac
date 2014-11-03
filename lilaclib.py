@@ -137,7 +137,7 @@ def pkgrel_changed(revisions, pkgname):
   return any(x.startswith('+pkgrel=') for x in r)
 
 def clean_directory():
-  '''clean all PKGBUILD, built packages and related files'''
+  '''clean all PKGBUILD and related files'''
   files = run_cmd(['git', 'ls-files']).splitlines()
   logger.info('clean directory')
   ret = []
