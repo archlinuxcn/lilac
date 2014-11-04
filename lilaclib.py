@@ -275,8 +275,12 @@ def lilac_build(repodir, build_prefix=None, skip_depends=False, oldver=None, new
     if need_build_first:
       raise TryNextRound(need_build_first)
 
-    call_build_cmd(build_prefix or mod.build_prefix,
-                   depend_packages, pkgs_to_build)
+    build_prefix = build_prefix or mod.build_prefix
+    if isinstance(build_prefix, str):
+      build_prefix = [build_prefix]
+
+    for bp in build_prefix:
+      call_build_cmd(bp, depend_packages, pkgs_to_build)
     pkgs = [x for x in os.listdir() if x.endswith('.pkg.tar.xz')]
     if not pkgs:
       raise Exception('no package built')
