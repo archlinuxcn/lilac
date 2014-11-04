@@ -251,6 +251,11 @@ def lilac_build(repodir, build_prefix=None, skip_depends=False, oldver=None, new
   mod = spec.loader.load_module()
   run_cmd(["sh", "-c", "rm -f -- *.pkg.tar.xz *.pkg.tar.xz.sig *.src.tar.gz"])
   success = False
+
+  global build_output
+  # reset in case no one cleans it up
+  build_output = None
+
   try:
     if not hasattr(mod, '_G'):
       # fill nvchecker result unless already filled (e.g. by hand)
