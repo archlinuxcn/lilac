@@ -213,7 +213,9 @@ def vcs_update():
 def aur_post_build():
   git_rm_files(_g.aur_pre_files)
   git_add_files(_g.aur_building_files)
-  git_commit()
+  output = run_cmd(["git", "status", "-s", "."]).strip()
+  if output:
+    git_commit()
   del _g.aur_pre_files, _g.aur_building_files
 
 def pypi_pre_build(depends=None, python2=False):
