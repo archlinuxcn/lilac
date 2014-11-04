@@ -269,6 +269,8 @@ def lilac_build(repodir, build_prefix=None, skip_depends=False, oldver=None, new
     for x in depends:
       p = find_local_package(repodir, x)
       if not p:
+        if isinstance(x, tuple):
+          x = x[0]
         need_build_first.add(x)
       else:
         depend_packages.append(p)
