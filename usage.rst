@@ -66,7 +66,7 @@ lilac 是由百合仙子（a.k.a. `依云 <https://github.com/lilydjwg>`_\ ）�
   ``str`` 类型，指定要使用的 devtools 中的构建工具的前缀，通常使用 ``'archlinuxcn-x86_64'`` ，构建 32 位包时通常使用 ``'multilib-archlinuxcn'`` 。详细信息请参考 `打包 <https://github.com/archlinuxcn/repo/wiki/%E6%89%93%E5%8C%85>`_ 。
 
 ``depends``
-  ``list`` 类型，用于定义该软件包位于 archlinuxcn 的依赖。构建软件包时首先检查此变量，若依赖没有被满足，则跳过该软件包构建其依赖，在其依赖构建成功后才会构建此软件包。
+  ``list`` 类型，用于定义该软件包位于 archlinuxcn 的依赖。构建软件包时首先检查此变量，若依赖没有被满足，则跳过该软件包构建其依赖，在其依赖构建成功后才会构建此软件包。其中的元素，如果软件包名和 PKGBUILD 所在目录名相同，写该目录；如果不同，写 ``(目录名, 包名)``\ 。比如依赖 libdbusmenu-glib 的，写成 ``depends = [('libdbusmenu', 'libdbusmenu-glib')]``\ 。
 
 ``packages``
   ``list`` 类型，用于构建 split-package 时指定只构建部分包（因为另外部分没有更新）。如果为 ``None`` 或者未定义，构建 PKGBUILD 中包含的所有包。
