@@ -305,21 +305,20 @@ def lilac_build(repodir, build_prefix=None, skip_depends=False, oldver=None, new
 def call_build_cmd(tag, depends, pkgs_to_build=None):
   global build_output
   if tag == 'makepkg':
-    cmd = ['makepkg']
+    cmd = ['makepkg', '--holdver']
     if pkgs_to_build:
       cmd.extend(['--pkg', ','.join(pkgs_to_build)])
   else:
-    cmd = ['sudo', '%s-build' % tag]
-
-    if depends or pkgs_to_build:
-      cmd.append('--')
+    cmd = ['sudo', '%s-build' % tag, '--']
 
     if depends:
       for x in depends:
         cmd += ['-I', x]
 
+    cmd.extend(['--', '--holdver'])
+
     if pkgs_to_build:
-      cmd.extend(['--', '--pkg', ','.join(pkgs_to_build)])
+      cmd.extend(['--pkg', ','.join(pkgs_to_build)])
 
   # NOTE that Ctrl-C here may not succeed
   build_output = run_cmd(cmd, use_pty=True)
