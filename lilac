@@ -237,6 +237,7 @@ def main():
       update_succeeded = all_building - failed
       if update_succeeded:
         run_cmd(['nvtake', nvchecker_file] + list(update_succeeded & need_update))
+      git_reset_hard()
       git_push()
     except Exception as e:
       tb = traceback.format_exc()
