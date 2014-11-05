@@ -118,10 +118,6 @@ def packages_need_update(U):
   all_known = set(full.sections())
   unknown = U - all_known
   if unknown:
-    subject = '[lilac] nvchecker 配置需要更新'
-    msg = '以下软件包没有相应的更新配置信息：\n\n' + ''.join(
-      x + '\n' for x in sorted(unknown))
-    sendmail(MYMASTER, MYEMAIL, subject, msg)
     logger.warn('unknown packages: %r', unknown)
 
   newconfig = {k: full[k] for k in U & all_known}
@@ -133,7 +129,28 @@ def packages_need_update(U):
   new.read_dict(newconfig)
   with open(nvchecker_file, 'w') as f:
     new.write(f)
-  run_cmd(['nvchecker', nvchecker_file])
+  output = run_cmd(['nvchecker', nvchecker_file])
+
+  error = False
+  errorlines = []
+  for l in output.splitlines():
+    if l.startswith('[E'):
+      error = True
+    elif l.startswith('['):
+      error = False
+    if error:
+      errorlines.append(l)
+
+  if unknown or errorlines:
+    subject = '[lilac] nvchecker 配置需要更新'
+    msg = ''
+    if unknown:
+      msg += '以下软件包没有相应的更新配置信息：\n\n' + ''.join(
+        x + '\n' for x in sorted(unknown)) + '\n'
+    if errorlines:
+      msg += '以下软件包在更新检查时出错了：\n\n' + ''.join(
+        errorlines) + '\n'
+    sendmail(MYMASTER, MYEMAIL, subject, msg)
 
   for x in run_cmd(['nvcmp', nvchecker_file]).splitlines():
     pkg, oldver, _, newver = x.split()
