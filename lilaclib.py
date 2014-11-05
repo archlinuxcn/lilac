@@ -59,15 +59,16 @@ def download_official_pkgbuild(name):
 def download_aur_pkgbuild(name):
   url = 'https://aur.archlinux.org/packages/{first_two}/{name}/{name}.tar.gz'
   url = url.format(first_two=name[:2], name=name)
-  run_cmd(['sh', '-c', "curl '%s' | tar xzv" % url])
+  lilac_aur = "lilac_aur"
+  run_cmd(['sh', '-c', "curl '%s' | tar xzv --one-top-level='%s' --strip-components=1" % (url, lilac_aur)])
   try:
-    os.unlink(os.path.join(name, '.AURINFO'))
+    os.unlink(os.path.join(lilac_aur, '.AURINFO'))
   except FileNotFoundError:
     pass
-  files = os.listdir(name)
+  files = os.listdir(lilac_aur)
   for f in files:
-    os.rename(os.path.join(name, f), f)
-  os.rmdir(name)
+    os.rename(os.path.join(lilac_aur, f), f)
+  os.rmdir(lilac_aur)
   return files
 
 def get_pypi_info(name):
