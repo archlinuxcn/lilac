@@ -280,7 +280,7 @@ def lilac_build(repodir, build_prefix=None, skip_depends=False, oldver=None, new
       build_prefix = [build_prefix]
 
     for bp in build_prefix:
-      arch = lbild_prefix_to_arch(bp)
+      arch = build_prefix_to_arch(bp)
       for x in depends:
         p = find_local_package(repodir, x, arch)
         if not p:
