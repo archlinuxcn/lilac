@@ -190,8 +190,8 @@ def start_build():
         for p in e.deps:
           dep_map[p].add(pkg)
         next_round.add(pkg)
-        logger.debug('current dep map: %r, next_round: %r',
-                     dep_map, next_round)
+        logger.debug('current dep map: %r, next_round: %r, oldset: %r',
+                     dep_map, next_round, oldset)
 
     if not next_round:
       break
