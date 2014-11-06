@@ -274,23 +274,26 @@ def lilac_build(repodir, build_prefix=None, skip_depends=False, oldver=None, new
     pkgs_to_build = getattr(mod, 'packages', None)
     depend_packages = []
     need_build_first = set()
-    for x in depends:
-      p = find_local_package(repodir, x)
-      if not p:
-        if isinstance(x, tuple):
-          x = x[0]
-        need_build_first.add(x)
-      else:
-        depend_packages.append(p)
-    if need_build_first:
-      raise TryNextRound(need_build_first)
 
     build_prefix = build_prefix or mod.build_prefix
     if isinstance(build_prefix, str):
       build_prefix = [build_prefix]
 
     for bp in build_prefix:
+      arch = lbild_prefix_to_arch(bp)
+      for x in depends:
+        p = find_local_package(repodir, x, arch)
+        if not p:
+          if isinstance(x, tuple):
+            x = x[0]
+          need_build_first.add(x)
+        else:
+          depend_packages.append(p)
+      if need_build_first:
+        raise TryNextRound(need_build_first)
+
       call_build_cmd(bp, depend_packages, pkgs_to_build)
+
     pkgs = [x for x in os.listdir() if x.endswith('.pkg.tar.xz')]
     if not pkgs:
       raise Exception('no package built')
@@ -323,7 +326,7 @@ def call_build_cmd(tag, depends, pkgs_to_build=None):
   # NOTE that Ctrl-C here may not succeed
   build_output = run_cmd(cmd, use_pty=True)
 
-def find_local_package(repodir, pkgname):
+def find_local_package(repodir, pkgname, arch):
   by = os.path.basename(os.getcwd())
   if isinstance(pkgname, tuple):
     d, name = pkgname
@@ -337,8 +340,12 @@ def find_local_package(repodir, pkgname):
 
     with at_dir(d):
       names = [x for x in os.listdir() if x.endswith('.pkg.tar.xz')]
-      pkgs = [x for x in names
-              if archpkg.PkgNameInfo.parseFilename(x).name == name]
+      pkgs = []
+      for x in names:
+        info = archpkg.PkgNameInfo.parseFilename(x)
+        if info.name == name and info.arch in ('any', arch):
+          pkgs.append(x)
+
       if len(pkgs) == 1:
         return os.path.abspath(pkgs[0])
       elif not pkgs:
@@ -405,3 +412,11 @@ def edit_file(filename):
 
 def mkaurball():
   run_cmd(['mkaurball'], use_pty=True)
+
+def build_prefix_to_arch(cmd):
+  if cmd == 'makepkg':
+    return os.uname().machine
+  elif cmd.endswith('-i686'):
+    return 'i686'
+  else:
+    return 'x86_64'
