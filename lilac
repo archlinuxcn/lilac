@@ -234,9 +234,10 @@ def main():
 
       D['last_commit'] = git_last_commit()
       D['failed'] = failed | (failed_prev - all_building)
-      update_succeeded = all_building - failed
-      if update_succeeded:
-        run_cmd(['nvtake', nvchecker_file] + list(update_succeeded & need_update))
+      if need_update:
+        # we tried to update, record the effort so we don't rebuild failed
+        # packages when nothing has changed (except lilac itself)
+        run_cmd(['nvtake', nvchecker_file] + list(need_update))
       git_reset_hard()
       git_push()
     except Exception as e:
