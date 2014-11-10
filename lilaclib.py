@@ -165,7 +165,7 @@ def git_add_files(files):
 def git_commit(*, check_status=True):
   if check_status:
     ret = [x for x in
-           run_cmd(["git", "status", "-s"]).splitlines()
+           run_cmd(["git", "status", "-s", "."]).splitlines()
            if x.split(None, 1)[0] != '??']
     if not ret:
       return
