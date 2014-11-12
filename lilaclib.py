@@ -370,6 +370,8 @@ def run_cmd(cmd, *, use_pty=False, silent=False):
                ' not' if silent else '')
   if use_pty:
     rfd, stdout = os.openpty()
+    # for fd leakage
+    logger.debug('pty master fd=%d, slave fd=%d.', rfd, stdout)
   else:
     stdout = subprocess.PIPE
 
@@ -380,7 +382,9 @@ def run_cmd(cmd, *, use_pty=False, silent=False):
   old_hdl = signal.signal(signal.SIGCHLD, child_exited)
 
   p = subprocess.Popen(cmd, stdout = stdout, stderr = subprocess.STDOUT)
-  if not use_pty:
+  if use_pty:
+    os.close(stdout)
+  else:
     rfd = p.stdout.fileno()
   out = []
   while not exited:
@@ -396,6 +400,8 @@ def run_cmd(cmd, *, use_pty=False, silent=False):
     out.append(r)
 
   code = p.wait()
+  if use_pty:
+    os.close(rfd)
   if old_hdl is not None:
     signal.signal(signal.SIGCHLD, old_hdl)
 
