@@ -31,8 +31,9 @@ build_output = None
 PYPI_URL = 'https://pypi.python.org/pypi/%s/json'
 
 class TryNextRound(Exception):
-  def __init__(self, pkgs):
+  def __init__(self, pkgs, arch):
     self.deps = pkgs
+    self.arch = arch
 
 def download_official_pkgbuild(name):
   url = 'https://www.archlinux.org/packages/search/json/?name=' + name
@@ -290,7 +291,7 @@ def lilac_build(repodir, build_prefix=None, skip_depends=False, oldver=None, new
         else:
           depend_packages.append(p)
       if need_build_first:
-        raise TryNextRound(need_build_first)
+        raise TryNextRound(need_build_first, arch)
 
       call_build_cmd(bp, depend_packages, pkgs_to_build)
 

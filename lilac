@@ -61,31 +61,56 @@ def build_package(package):
     except Exception as e:
       tb = traceback.format_exc()
       logger.exception('packaging error')
-      send_error_report(package, e, tb)
+      send_error_report(package, exc=(e, tb))
       build_logger.error('%s failed', package)
 
-def send_error_report(name, exception, tb):
-  try:
-    who = find_maintainer(MYADDRESS)
-    more = ''
-  except:
-    who = MYMASTER
-    more = traceback.format_exc()
-
-  if isinstance(exception, CalledProcessError):
-    subject = '[lilac] 在编译软件包 %s 时发生错误' % name
-    msg = '命令执行失败！\n\n命令 %r 返回了错误号 %d。' \
-        '命令的输出如下：\n\n%s' % (
-      exception.cmd, exception.returncode, exception.output)
-    msg += '\n调用栈如下：\n\n' + tb
+def find_maintainer_or_admin(package=None):
+  if package is not None:
+    path = os.path.join(REPODIR, package)
   else:
-    subject = '[lilac] 在编译软件包 %s 时发生未知错误' % name
-    msg = '发生未知错误！调用栈如下：\n\n' + tb
-  if more:
-    msg += '\n获取维护者信息也失败了！调用栈如下：\n\n' + more
-  if lilaclib.build_output:
-    msg += '\n编译命令输出如下：\n\n' + lilaclib.build_output
+    path = '.'
 
+  with at_dir(path):
+    try:
+      who = find_maintainer(MYADDRESS)
+      more = ''
+    except:
+      who = MYMASTER
+      more = traceback.format_exc()
+
+  return who, more
+
+def send_error_report(name, *, msg=None, exc=None, subject=None):
+  if msg is None and exc is None:
+    raise TypeError('send_error_report received inefficient args')
+
+  who, tb_find = find_maintainer_or_admin()
+
+  msgs = []
+  if msg is not None:
+    msgs.append(msg)
+
+  if exc is not None:
+    exception, tb = exc
+    if isinstance(exception, CalledProcessError):
+      subject = subject or '[lilac] 在编译软件包 %s 时发生错误'
+      msgs.append('命令执行失败！\n\n命令 %r 返回了错误号 %d。' \
+                  '命令的输出如下：\n\n%s' % (
+                    exception.cmd, exception.returncode, exception.output))
+      msgs.append('调用栈如下：\n\n' + tb)
+    else:
+      subject = subject or '[lilac] 在编译软件包 %s 时发生未知错误'
+      msgs.append('发生未知错误！调用栈如下：\n\n' + tb)
+
+  if '%s' in subject:
+    subject = subject % name
+
+  if tb_find:
+    msgs.append('获取维护者信息也失败了！调用栈如下：\n\n' + tb_find)
+  if lilaclib.build_output:
+    msgs.append('编译命令输出如下：\n\n' + lilaclib.build_output)
+
+  msg = '\n'.join(msgs)
   sendmail(who, MYEMAIL, subject, msg)
 
 def sign_and_copy():
@@ -165,7 +190,16 @@ def all_packages_I_manage():
 
 def start_build():
   failed = set()
+  built = set()
   dep_map = defaultdict(set)
+
+  def record_failed(pkg):
+    failed.add(pkg)
+    if pkg in dep_map:
+      # all pkgs depend on this fails and don't build them
+      deps = dep_map[pkg]
+      failed.update(deps)
+      building_packages.difference_update(deps)
 
   while True:
     next_round = set()
@@ -177,21 +211,30 @@ def start_build():
       except KeyError:
         break
       try:
-        if not build_package(pkg):
-          failed.add(pkg)
-          if pkg in dep_map:
-            # all pkgs depend on this fails and don't build them
-            deps = dep_map[pkg]
-            failed.update(deps)
-            building_packages.difference_update(deps)
+        if build_package(pkg):
+          built.add(pkg)
+        else:
+          record_failed(pkg)
       except TryNextRound as e:
-        oldset.update(e.deps)
-        building_packages.update(e.deps)
-        for p in e.deps:
-          dep_map[p].add(pkg)
-        next_round.add(pkg)
-        logger.debug('current dep map: %r, next_round: %r, oldset: %r',
-                     dep_map, next_round, oldset)
+        if not (e.deps - built):
+          # all deps built successfully, but packages still missing --- arch
+          # not met
+          send_error_report(pkg, subject='%s 出现依赖问题',
+                            msg = '''\
+在成功地编译打包 {built} 之后，{pkg} 依旧依赖 {deps}。
+
+这可能是 {deps} 中的某些包不支持需要的架构 {arch} 所导致的，请检查。'''.format(
+  built = built, deps = e.deps, arch = e.arch, pkg = pkg,
+))
+          record_failed(pkg)
+        else:
+          oldset.update(e.deps)
+          building_packages.update(e.deps)
+          for p in e.deps:
+            dep_map[p].add(pkg)
+          next_round.add(pkg)
+      logger.debug('current dep map: %r, next_round: %r, oldset: %r',
+                    dep_map, next_round, oldset)
 
     if not next_round:
       break
