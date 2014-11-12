@@ -376,18 +376,19 @@ def run_cmd(cmd, *, use_pty=False, silent=False):
   else:
     stdout = subprocess.PIPE
 
-  exited = False
-  def child_exited(signum, sigframe):
-    nonlocal exited
-    exited = True
-  old_hdl = signal.signal(signal.SIGCHLD, child_exited)
-
   p = subprocess.Popen(cmd, stdout = stdout, stderr = subprocess.STDOUT)
   if use_pty:
     os.close(stdout)
   else:
     rfd = p.stdout.fileno()
   out = []
+
+  exited = False
+  def child_exited(signum, sigframe):
+    nonlocal exited
+    exited = True
+  old_hdl = signal.signal(signal.SIGCHLD, child_exited)
+  # Timing window for child exiting before me reading. Keep it small.
   while not exited:
     try:
       r = os.read(rfd, 4096)
