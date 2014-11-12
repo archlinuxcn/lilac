@@ -393,8 +393,11 @@ def run_cmd(cmd, *, use_pty=False, silent=False):
       r = os.read(rfd, 4096)
     except InterruptedError:
       continue
-    if not r:
-      break
+    except OSError as e:
+      if e.errno == 5: # Input/output error: no clients run
+        break
+      else:
+        raise
     r = r.replace(b'\x0f', b'') # ^O
     if not silent:
       sys.stderr.buffer.write(r)
