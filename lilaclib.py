@@ -273,7 +273,6 @@ def lilac_build(repodir, build_prefix=None, skip_depends=False, oldver=None, new
     else:
       depends = getattr(mod, 'depends', ())
     pkgs_to_build = getattr(mod, 'packages', None)
-    depend_packages = []
     need_build_first = set()
 
     build_prefix = build_prefix or mod.build_prefix
@@ -281,6 +280,7 @@ def lilac_build(repodir, build_prefix=None, skip_depends=False, oldver=None, new
       build_prefix = [build_prefix]
 
     for bp in build_prefix:
+      depend_packages = []
       arch = build_prefix_to_arch(bp)
       for x in depends:
         p = find_local_package(repodir, x, arch)
