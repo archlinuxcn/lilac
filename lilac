@@ -167,7 +167,7 @@ def packages_need_update(U):
       errorlines.append(l)
 
   if unknown or errorlines:
-    subject = '[lilac] nvchecker 配置需要更新'
+    subject = '[lilac] nvchecker 问题'
     msg = ''
     if unknown:
       msg += '以下软件包没有相应的更新配置信息：\n\n' + ''.join(
