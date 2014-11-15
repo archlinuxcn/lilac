@@ -118,7 +118,7 @@ def sign_and_copy():
   for pkg in pkgs:
     run_cmd(['gpg', '--detach-sign', '--', pkg])
   run_cmd(["zsh", "-c",
-           'cp *.(pkg.tar.xz{,.sig}|src.tar.gz) ' + DESTDIR])
+           'cp -l *.(pkg.tar.xz{,.sig}|src.tar.gz) ' + DESTDIR])
 
 def packages_need_update(U):
   full = configparser.ConfigParser(dict_type=dict, allow_no_value=True)
