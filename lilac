@@ -287,7 +287,8 @@ def main():
       update_succeeded = all_building - failed
       failed_info.update({k: nvdata[k][1] for k in failed})
       for x in update_succeeded:
-        del failed_info[x]
+        if x in failed_info:
+          del failed_info[x]
       D['failed'] = failed_info
       if update_succeeded:
         run_cmd(['nvtake', nvchecker_file] + list(need_update))
