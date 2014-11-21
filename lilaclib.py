@@ -44,13 +44,14 @@ def download_official_pkgbuild(name):
     repo = 'packages'
   else:
     repo = 'community'
+  pkgbase = [r['pkgbase'] for r in info['results'] if r['repo'] != 'testing'][0]
 
-  tree_url = 'https://projects.archlinux.org/svntogit/%s.git/tree/trunk?h=packages/%s' % (repo, name)
+  tree_url = 'https://projects.archlinux.org/svntogit/%s.git/tree/trunk?h=packages/%s' % (repo, pkgbase)
   doc = parse_document_from_requests(tree_url, s)
   blobs = doc.xpath('//div[@class="content"]//td/a[contains(concat(" ", normalize-space(@class), " "), " ls-blob ")]')
   files = [x.text for x in blobs]
   for filename in files:
-    blob_url = 'https://projects.archlinux.org/svntogit/%s.git/plain/trunk/%s?h=packages/%s' % (repo, filename, name)
+    blob_url = 'https://projects.archlinux.org/svntogit/%s.git/plain/trunk/%s?h=packages/%s' % (repo, filename, pkgbase)
     with open(filename, 'wb') as f:
       logger.debug('download file %s.', filename)
       data = s.get(blob_url).content
