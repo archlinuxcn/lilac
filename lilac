@@ -285,7 +285,7 @@ def main():
 
       D['last_commit'] = git_last_commit()
       update_succeeded = all_building - failed
-      failed_info.update({k: nvdata[k][1] for k in failed})
+      failed_info.update({k: nvdata[k][1] for k in failed if k in nvdata})
       for x in update_succeeded:
         if x in failed_info:
           del failed_info[x]
