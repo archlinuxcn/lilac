@@ -63,10 +63,11 @@ def download_aur_pkgbuild(name):
   url = url.format(first_two=name[:2], name=name)
   lilac_aur = "lilac_aur"
   run_cmd(['sh', '-c', "curl '%s' | tar xzv --one-top-level='%s' --strip-components=1" % (url, lilac_aur)])
-  try:
-    os.unlink(os.path.join(lilac_aur, '.AURINFO'))
-  except FileNotFoundError:
-    pass
+  for f in ('.AURINFO', '.SRCINFO'):
+    try:
+      os.unlink(os.path.join(lilac_aur, f))
+    except FileNotFoundError:
+      pass
   files = os.listdir(lilac_aur)
   for f in files:
     os.rename(os.path.join(lilac_aur, f), f)
