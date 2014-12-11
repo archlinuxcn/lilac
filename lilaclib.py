@@ -222,15 +222,14 @@ def aur_post_build():
     git_commit()
   del _g.aur_pre_files, _g.aur_building_files
 
-def pypi_pre_build(pypi_name=None, depends=None, python2=False):
+def pypi_pre_build(depends=None, python2=False):
   if os.path.exists('PKGBUILD'):
     pkgver, pkgrel = get_pkgver_and_pkgrel()
   else:
     pkgver = None
 
-  if pypi_name is None:
-    name = os.path.basename(os.getcwd())
-    pypi_name = name.split('-', 1)[-1]
+  name = os.path.basename(os.getcwd())
+  pypi_name = name.split('-', 1)[-1]
   pkgbuild = run_cmd(['pypi2pkgbuild', pypi_name], silent=True)
   if depends is None:
     depends = ['python-setuptools']
