@@ -35,6 +35,8 @@ class TryNextRound(Exception):
     self.deps = pkgs
     self.arch = arch
 
+class NoUpdateError(Exception): pass
+
 def download_official_pkgbuild(name):
   url = 'https://www.archlinux.org/packages/search/json/?name=' + name
   logger.info('download PKGBUILD for %s.', name)
@@ -212,7 +214,7 @@ def vcs_update():
   run_cmd(['makepkg', '-o'], use_pty=True)
   output = run_cmd(["git", "status", "-s", "PKGBUILD"]).strip()
   if not output:
-    raise RuntimeError('no update available. something goes wrong?')
+    raise NoUpdateError('no update available. something goes wrong?')
 
 def aur_post_build():
   git_rm_files(_g.aur_pre_files)
@@ -252,7 +254,7 @@ def pypi_post_build():
   git_add_files('PKGBUILD')
   git_commit()
 
-def lilac_build(repodir, build_prefix=None, skip_depends=False, oldver=None, newver=None):
+def lilac_build(repodir, build_prefix=None, skip_depends=False, oldver=None, newver=None, accept_noupdate=False):
   spec = importlib.util.spec_from_file_location('lilac.py', 'lilac.py')
   mod = spec.loader.load_module()
   run_cmd(["sh", "-c", "rm -f -- *.pkg.tar.xz *.pkg.tar.xz.sig *.src.tar.gz"])
@@ -267,7 +269,13 @@ def lilac_build(repodir, build_prefix=None, skip_depends=False, oldver=None, new
       # fill nvchecker result unless already filled (e.g. by hand)
       mod._G = SimpleNamespace(oldver = oldver, newver = newver)
     if hasattr(mod, 'pre_build'):
-      mod.pre_build()
+      if accept_noupdate or (oldver is None and newver is not None):
+        try:
+          mod.pre_build()
+        except NoUpdateError:
+          pass # first build, no update of course
+      else:
+        mod.pre_build()
 
     # we don't install any dependencies when testing
     if skip_depends:
@@ -365,6 +373,7 @@ def single_main(build_prefix='makepkg'):
     repodir = os.path.dirname(
       os.path.dirname(sys.modules['__main__'].__file__)),
     skip_depends = True,
+    accept_noupdate = True,
   )
 
 def run_cmd(cmd, *, use_pty=False, silent=False):
