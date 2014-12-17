@@ -269,6 +269,7 @@ def lilac_build(repodir, build_prefix=None, skip_depends=False, oldver=None, new
       # fill nvchecker result unless already filled (e.g. by hand)
       mod._G = SimpleNamespace(oldver = oldver, newver = newver)
     if hasattr(mod, 'pre_build'):
+      logger.debug('accept_noupdate=%r, oldver=%r, newver=%r', accept_noupdate, oldver, newver)
       if accept_noupdate or (oldver is None and newver is not None):
         try:
           mod.pre_build()
