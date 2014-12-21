@@ -16,6 +16,7 @@ DESTDIR = '~/repo'
 MYNAME = 'lilac'
 MYADDRESS = '<lilac@build.archlinuxcn.org>'
 MYMASTER = 'lilydjwg <lilydjwg@gmail.com>'
+REPOMAIL = 'repo@archlinuxcn.org'
 
 from nicelogger import enable_pretty_logging
 enable_pretty_logging('DEBUG', color=True)
@@ -176,7 +177,7 @@ def packages_need_update(U):
     if errorlines:
       msg += '以下软件包在更新检查时出错了：\n\n' + '\n'.join(
         errorlines) + '\n'
-    sendmail(MYMASTER, MYEMAIL, subject, msg)
+    sendmail(REPOMAIL, MYEMAIL, subject, msg)
 
   for x in run_cmd(['nvcmp', nvchecker_file]).splitlines():
     pkg, oldver, _, newver = x.split()
