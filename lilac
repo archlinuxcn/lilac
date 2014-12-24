@@ -181,6 +181,8 @@ def packages_need_update(U):
 
   for x in run_cmd(['nvcmp', nvchecker_file]).splitlines():
     pkg, oldver, _, newver = x.split()
+    if oldver == 'None':
+      oldver = None
     nvdata[pkg] = oldver, newver
   with open(newver_file) as f:
     nv_unchanged.update(x.split(None, 1) for x in f)
