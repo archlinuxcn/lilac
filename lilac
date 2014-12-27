@@ -118,7 +118,7 @@ def send_error_report(name, *, msg=None, exc=None, subject=None):
 def sign_and_copy():
   pkgs = [x for x in os.listdir() if x.endswith('.pkg.tar.xz')]
   for pkg in pkgs:
-    run_cmd(['gpg', '--detach-sign', '--', pkg])
+    gpg_sign(pkg)
   run_cmd(["zsh", "-c",
            'cp -l *.(pkg.tar.xz(|.sig)|src.tar.gz) ' + DESTDIR])
 

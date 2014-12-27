@@ -443,3 +443,15 @@ def build_prefix_to_arch(cmd):
     return 'i686'
   else:
     return 'x86_64'
+
+def gpg_sign(file):
+  # GnuPG 2.1.1 forces me to do like this :-(
+  master, slave = os.openpty()
+  cmd = ['gpg', '--detach-sign', '--', file]
+  gpg = subprocess.Popen(cmd, stdin=slave)
+  os.write(master, b'\r')
+  os.close(slave)
+  os.close(master)
+  code = gpg.wait()
+  if code != 0:
+    raise CalledProcessError(code, cmd, '(see log)')
