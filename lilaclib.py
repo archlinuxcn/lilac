@@ -18,7 +18,6 @@ from myutils import at_dir
 from mailutils import assemble_mail
 from serializer import PickledData
 import archpkg
-from expect import Expect
 
 UserAgent = 'lilac/0.1 (package auto-build bot, by lilydjwg)'
 
@@ -444,4 +443,3 @@ def build_prefix_to_arch(cmd):
     return 'i686'
   else:
     return 'x86_64'
-
