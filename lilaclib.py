@@ -454,4 +454,4 @@ def gpg_sign(file):
   os.close(master)
   code = gpg.wait()
   if code != 0:
-    raise CalledProcessError(code, cmd, '(see log)')
+    raise CalledProcessError(code, cmd, '(see log)\n')
