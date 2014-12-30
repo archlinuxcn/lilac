@@ -433,8 +433,10 @@ def edit_file(filename):
     for line in f:
       yield line.rstrip('\n')
 
-def mkaurball():
-  run_cmd(['mkaurball'], use_pty=True)
+
+def mksrcball():
+  run_cmd(['makepkg', '--source'], use_pty=True)
+mkaurball = mksrcball
 
 def build_prefix_to_arch(cmd):
   if cmd == 'makepkg':
