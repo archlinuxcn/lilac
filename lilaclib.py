@@ -211,7 +211,7 @@ def aur_pre_build(name=None, *, do_vcs_update=True):
     vcs_update()
 
 def vcs_update():
-  run_cmd(['makepkg', '-o'], use_pty=True)
+  run_cmd(['makepkg', '-od'], use_pty=True)
   output = run_cmd(["git", "status", "-s", "PKGBUILD"]).strip()
   if not output:
     raise NoUpdateError('no update available. something goes wrong?')
