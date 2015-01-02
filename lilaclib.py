@@ -277,6 +277,7 @@ def lilac_build(repodir, build_prefix=None, skip_depends=False, oldver=None, new
           pass # first build, no update of course
       else:
         mod.pre_build()
+    recv_gpg_keys()
 
     # we don't install any dependencies when testing
     if skip_depends:
