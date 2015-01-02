@@ -1,0 +1,7 @@
+#!/bin/bash -e
+
+. ./PKGBUILD
+for key in $validpgpkeys; do
+  echo "Receiving key ${key}..."
+  gpg --recv-keys $key
+done

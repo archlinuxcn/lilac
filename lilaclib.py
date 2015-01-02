@@ -445,3 +445,6 @@ def build_prefix_to_arch(cmd):
     return 'i686'
   else:
     return 'x86_64'
+
+def recv_gpg_keys():
+  run_cmd(['recv_gpg_keys'])
