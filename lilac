@@ -226,7 +226,7 @@ def start_build():
         if not (e.deps - built):
           # all deps built successfully, but packages still missing --- arch
           # not met
-          send_error_report(pkg, subject='%s 出现依赖问题',
+          send_error_report(pkg, subject='[lilac] %s 出现依赖问题',
                             msg = '''\
 在成功地编译打包 {built} 之后，{pkg} 依旧依赖 {deps}。
 
