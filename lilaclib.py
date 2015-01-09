@@ -203,10 +203,21 @@ def git_last_commit(ref=None):
   return run_cmd(cmd).strip()
 
 def aur_pre_build(name=None, *, do_vcs_update=True):
+  if os.path.exists('PKGBUILD'):
+    pkgver, pkgrel = get_pkgver_and_pkgrel()
+  else:
+    pkgver = None
+
   _g.aur_pre_files = clean_directory()
   if name is None:
     name = os.path.basename(os.getcwd())
   _g.aur_building_files = download_aur_pkgbuild(name)
+
+  new_pkgver = get_pkgver_and_pkgrel()[0]
+  if pkgver == new_pkgver:
+    # change pkgrel to what specified in PKGBUILD
+    update_pkgrel(pkgrel)
+
   if do_vcs_update and name.endswith(('-git', '-hg', '-svn', '-bzr')):
     vcs_update()
 
