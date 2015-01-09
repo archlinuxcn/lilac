@@ -214,7 +214,7 @@ def aur_pre_build(name=None, *, do_vcs_update=True):
   _g.aur_building_files = download_aur_pkgbuild(name)
 
   new_pkgver = get_pkgver_and_pkgrel()[0]
-  if pkgver == new_pkgver:
+  if pkgver and pkgver == new_pkgver:
     # change pkgrel to what specified in PKGBUILD
     update_pkgrel(pkgrel)
 
@@ -257,7 +257,7 @@ def pypi_pre_build(depends=None, python2=False):
     f.write(pkgbuild)
 
   new_pkgver = get_pkgver_and_pkgrel()[0]
-  if pkgver == new_pkgver:
+  if pkgver and pkgver == new_pkgver:
     # change pkgrel to what specified in PKGBUILD
     update_pkgrel(pkgrel)
 
