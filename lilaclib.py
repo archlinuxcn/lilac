@@ -35,8 +35,6 @@ class TryNextRound(Exception):
     self.deps = pkgs
     self.arch = arch
 
-class NoUpdateError(Exception): pass
-
 def download_official_pkgbuild(name):
   url = 'https://www.archlinux.org/packages/search/json/?name=' + name
   logger.info('download PKGBUILD for %s.', name)
@@ -223,9 +221,6 @@ def aur_pre_build(name=None, *, do_vcs_update=True):
 
 def vcs_update():
   run_cmd(['makepkg', '-od'], use_pty=True)
-  output = run_cmd(["git", "status", "-s", "PKGBUILD"]).strip()
-  if not output:
-    raise NoUpdateError('no update available. something goes wrong?')
 
 def aur_post_build():
   git_rm_files(_g.aur_pre_files)
@@ -281,13 +276,7 @@ def lilac_build(repodir, build_prefix=None, skip_depends=False, oldver=None, new
       mod._G = SimpleNamespace(oldver = oldver, newver = newver)
     if hasattr(mod, 'pre_build'):
       logger.debug('accept_noupdate=%r, oldver=%r, newver=%r', accept_noupdate, oldver, newver)
-      if accept_noupdate or (oldver is None and newver is not None):
-        try:
-          mod.pre_build()
-        except NoUpdateError:
-          pass # first build, no update of course
-      else:
-        mod.pre_build()
+      mod.pre_build()
     recv_gpg_keys()
 
     # we don't install any dependencies when testing
