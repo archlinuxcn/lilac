@@ -369,6 +369,7 @@ def find_local_package(repodir, pkgname, arch):
         return os.path.abspath(ret)
 
 def single_main(build_prefix='makepkg'):
+  prepend_self_path()
   enable_pretty_logging('DEBUG')
   lilac_build(
     build_prefix = build_prefix,
@@ -377,6 +378,11 @@ def single_main(build_prefix='makepkg'):
     skip_depends = True,
     accept_noupdate = True,
   )
+
+def prepend_self_path():
+  mydir = os.path.realpath(os.path.dirname(__file__))
+  path = os.environ['PATH']
+  os.environ['PATH'] = mydir + os.pathsep + path
 
 def run_cmd(cmd, *, use_pty=False, silent=False):
   logger.debug('running %r, %susing pty,%s showing output', cmd,
