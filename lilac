@@ -12,7 +12,7 @@ import lilaclib
 from lilaclib import *
 
 REPODIR = os.path.expanduser('~/archgitrepo')
-DESTDIR = '~/repo'
+DESTDIR = os.path.expanduser('~/repo')
 MYNAME = 'lilac'
 MYADDRESS = '<lilac@build.archlinuxcn.org>'
 MYMASTER = 'lilydjwg <lilydjwg@gmail.com>'
@@ -120,8 +120,13 @@ def sign_and_copy():
   for pkg in pkgs:
     run_cmd(['gpg', '--pinentry-mode', 'loopback', '--passphrase', '',
              '--detach-sign', '--', pkg])
-  run_cmd(["zsh", "-c",
-           'cp -l *.(pkg.tar.xz(|.sig)|src.tar.gz) ' + DESTDIR])
+  for f in os.listdir():
+    if not f.endswith(('.pkg.tar.xz', '.pkg.tar.xz.sig', '.src.tar.gz')):
+      continue
+    try:
+      os.link(f, os.path.join(DESTDIR, f))
+    except FileExistsError:
+      pass
 
 def packages_need_update(U):
   full = configparser.ConfigParser(dict_type=dict, allow_no_value=True)
