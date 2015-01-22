@@ -213,48 +213,51 @@ def start_build():
       failed.update(deps)
       building_packages.difference_update(deps)
 
-  while True:
-    next_round = set()
-    oldset = building_packages.copy()
-    logger.info('building these packages: %r', building_packages)
+  try:
     while True:
-      try:
-        pkg = building_packages.pop()
-      except KeyError:
+      next_round = set()
+      oldset = building_packages.copy()
+      logger.info('building these packages: %r', building_packages)
+      while True:
+        try:
+          pkg = building_packages.pop()
+        except KeyError:
+          break
+        try:
+          if build_package(pkg):
+            built.add(pkg)
+          else:
+            record_failed(pkg)
+        except TryNextRound as e:
+          if not (e.deps - built):
+            # all deps built successfully, but packages still missing --- arch
+            # not met
+            send_error_report(pkg, subject='[lilac] %s 出现依赖问题',
+                              msg = '''\
+  在成功地编译打包 {built} 之后，{pkg} 依旧依赖 {deps}。
+
+  这可能是 {deps} 中的某些包不支持需要的架构 {arch} 所导致的，请检查。'''.format(
+    built = built, deps = e.deps, arch = e.arch, pkg = pkg,
+  ))
+            record_failed(pkg)
+          else:
+            oldset.update(e.deps)
+            building_packages.update(e.deps)
+            for p in e.deps:
+              dep_map[p].add(pkg)
+            next_round.add(pkg)
+        logger.debug('current dep map: %r, next_round: %r, oldset: %r',
+                      dep_map, next_round, oldset)
+
+      if not next_round:
         break
-      try:
-        if build_package(pkg):
-          built.add(pkg)
-        else:
-          record_failed(pkg)
-      except TryNextRound as e:
-        if not (e.deps - built):
-          # all deps built successfully, but packages still missing --- arch
-          # not met
-          send_error_report(pkg, subject='[lilac] %s 出现依赖问题',
-                            msg = '''\
-在成功地编译打包 {built} 之后，{pkg} 依旧依赖 {deps}。
-
-这可能是 {deps} 中的某些包不支持需要的架构 {arch} 所导致的，请检查。'''.format(
-  built = built, deps = e.deps, arch = e.arch, pkg = pkg,
-))
-          record_failed(pkg)
-        else:
-          oldset.update(e.deps)
-          building_packages.update(e.deps)
-          for p in e.deps:
-            dep_map[p].add(pkg)
-          next_round.add(pkg)
-      logger.debug('current dep map: %r, next_round: %r, oldset: %r',
-                    dep_map, next_round, oldset)
-
-    if not next_round:
-      break
-    if oldset == next_round:
-      raise Exception('cyclic dependency? %r' % next_round)
-    building_packages.update(next_round - failed)
-    logger.debug('new round, to be built: %r, failed: %r',
-                 building_packages, failed)
+      if oldset == next_round:
+        raise Exception('cyclic dependency? %r' % next_round)
+      building_packages.update(next_round - failed)
+      logger.debug('new round, to be built: %r, failed: %r',
+                  building_packages, failed)
+  except KeyboardInterrupt:
+    logger.info('keyboard interrupted, bye~')
 
   return failed
 
