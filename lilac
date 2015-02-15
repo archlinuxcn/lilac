@@ -261,44 +261,49 @@ def start_build():
 
   return failed
 
-def main():
+def main(packages=None):
   with PickledData(store, default={}) as D:
     try:
       git_reset_hard()
       git_pull()
 
-      U = all_packages_I_manage()
-      last_commit = D.get('last_commit', EMPTY_COMMIT)
-      revisions = last_commit + '..HEAD'
-      changed = get_changed_packages(revisions, U)
-      failed_info = D.get('failed', {})
-      updated, unknown = packages_need_update(U)
+      if packages is None:
+        U = all_packages_I_manage()
+        last_commit = D.get('last_commit', EMPTY_COMMIT)
+        revisions = last_commit + '..HEAD'
+        changed = get_changed_packages(revisions, U)
+        failed_info = D.get('failed', {})
+        updated, unknown = packages_need_update(U)
 
-      failed_prev = set(failed_info.keys())
-      failed_updated = {k for k, v in failed_info.items()
-                        if k in nvdata and nvdata[k][1] != v}
-      # build updated; if last build failed but it gets updated once more,
-      # build it again
-      need_update = updated | failed_updated
-      # no update from upstream, but build instructions have changed; rebuild
-      # failed ones
-      need_rebuild_failed = failed_prev & changed
-      # if pkgrel is updated, build a new release
-      need_rebuild_pkgrel = {x for x in changed
-                             if pkgrel_changed(revisions, x)} - unknown
-      all_building = need_update | need_rebuild_failed | need_rebuild_pkgrel
+        failed_prev = set(failed_info.keys())
+        failed_updated = {k for k, v in failed_info.items()
+                          if k in nvdata and nvdata[k][1] != v}
+        # build updated; if last build failed but it gets updated once more,
+        # build it again
+        need_update = updated | failed_updated
+        # no update from upstream, but build instructions have changed; rebuild
+        # failed ones
+        need_rebuild_failed = failed_prev & changed
+        # if pkgrel is updated, build a new release
+        need_rebuild_pkgrel = {x for x in changed
+                              if pkgrel_changed(revisions, x)} - unknown
+        all_building = need_update | need_rebuild_failed | need_rebuild_pkgrel
 
-      logger.info('these updated (pkgrel) packages should be rebuilt: %r',
-                  need_rebuild_pkgrel or None)
-      logger.info('these previously-failed packages should be rebuilt: %r',
-                  need_rebuild_failed or None)
-      logger.info('these packages are updated as detected by nvchecker: %r',
-                  need_update or None)
+        logger.info('these updated (pkgrel) packages should be rebuilt: %r',
+                    need_rebuild_pkgrel or None)
+        logger.info('these previously-failed packages should be rebuilt: %r',
+                    need_rebuild_failed or None)
+        logger.info('these packages are updated as detected by nvchecker: %r',
+                    need_update or None)
+      else:
+        all_building = packages
+        logger.info('these packages are manually specified: %r', all_building)
 
       building_packages.update(all_building)
       failed = start_build()
 
-      D['last_commit'] = git_last_commit()
+      if packages is None:
+        D['last_commit'] = git_last_commit()
       update_succeeded = all_building - failed
       failed_info.update({k: nvdata[k][1] for k in failed if k in nvdata})
       for x in update_succeeded:
@@ -323,5 +328,4 @@ if __name__ == '__main__':
   if len(sys.argv) == 1:
     main()
   else:
-    building_packages.update(sys.argv[1:])
-    start_build()
+    main(sys.argv[1:])

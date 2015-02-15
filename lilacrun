@@ -18,4 +18,4 @@ export PATH=$HOME/bin:$HOME/.local/bin:$PATH
 export PYTHONPATH=$HOME/scripts/python/pylib
 export MAKEFLAGS="-j8 -l8"
 
-lilac > ~/.lilac/log/$(date +'%Y-%m-%dT%H:%M:%S') 2>&1
+lilac "$@" > ~/.lilac/log/"$(date +'%Y-%m-%dT%H:%M:%S')" 2>&1
