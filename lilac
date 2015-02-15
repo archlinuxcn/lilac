@@ -264,6 +264,8 @@ def start_build():
 def main(packages=None):
   with PickledData(store, default={}) as D:
     try:
+      failed_info = D.get('failed', {})
+
       if packages is None:
         git_reset_hard()
         git_pull()
@@ -272,7 +274,6 @@ def main(packages=None):
         last_commit = D.get('last_commit', EMPTY_COMMIT)
         revisions = last_commit + '..HEAD'
         changed = get_changed_packages(revisions, U)
-        failed_info = D.get('failed', {})
         updated, unknown = packages_need_update(U)
 
         failed_prev = set(failed_info.keys())
@@ -313,8 +314,10 @@ def main(packages=None):
       D['failed'] = failed_info
       if update_succeeded:
         run_cmd(['nvtake', nvchecker_file] + list(need_update))
-      git_reset_hard()
-      git_push()
+
+      if packages is None:
+        git_reset_hard()
+        git_push()
     except Exception as e:
       tb = traceback.format_exc()
       logger.exception('unexpected error')
