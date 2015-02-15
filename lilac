@@ -297,6 +297,7 @@ def main(packages=None):
                     need_update or None)
       else:
         all_building = set(packages)
+        updated, unknown = packages_need_update(all_building)
         logger.info('these packages are manually specified: %r', all_building)
 
       building_packages.update(all_building)
