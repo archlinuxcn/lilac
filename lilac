@@ -296,7 +296,7 @@ def main(packages=None):
         logger.info('these packages are updated as detected by nvchecker: %r',
                     need_update or None)
       else:
-        all_building = packages
+        all_building = set(packages)
         logger.info('these packages are manually specified: %r', all_building)
 
       building_packages.update(all_building)
