@@ -29,4 +29,6 @@ Python 库
 TODO
 ====
 
+* parse dependency tree first, build later
+  * build dependency before the package itself even when packages exist,
 * AUR batch uploader
