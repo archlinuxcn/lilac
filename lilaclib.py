@@ -9,6 +9,7 @@ from types import SimpleNamespace
 import importlib.util
 import re
 import fileinput
+import contextlib
 
 import requests
 
@@ -30,7 +31,7 @@ _g = SimpleNamespace()
 build_output = None
 PYPI_URL = 'https://pypi.python.org/pypi/%s/json'
 
-class TryNextRound(Exception):
+class MissingDependencies(Exception):
   def __init__(self, pkgs, arch):
     self.deps = pkgs
     self.arch = arch
@@ -265,62 +266,60 @@ def pypi_post_build():
   git_commit()
 
 def lilac_build(repodir, build_prefix=None, skip_depends=False, oldver=None, newver=None, accept_noupdate=False):
-  spec = importlib.util.spec_from_file_location('lilac.py', 'lilac.py')
-  mod = spec.loader.load_module()
-  run_cmd(["sh", "-c", "rm -f -- *.pkg.tar.xz *.pkg.tar.xz.sig *.src.tar.gz"])
-  success = False
+  with load_lilac() as mod:
+    run_cmd(["sh", "-c", "rm -f -- *.pkg.tar.xz *.pkg.tar.xz.sig *.src.tar.gz"])
+    success = False
 
-  global build_output
-  # reset in case no one cleans it up
-  build_output = None
+    global build_output
+    # reset in case no one cleans it up
+    build_output = None
 
-  try:
-    if not hasattr(mod, '_G'):
-      # fill nvchecker result unless already filled (e.g. by hand)
-      mod._G = SimpleNamespace(oldver = oldver, newver = newver)
-    if hasattr(mod, 'pre_build'):
-      logger.debug('accept_noupdate=%r, oldver=%r, newver=%r', accept_noupdate, oldver, newver)
-      mod.pre_build()
-    recv_gpg_keys()
+    try:
+      if not hasattr(mod, '_G'):
+        # fill nvchecker result unless already filled (e.g. by hand)
+        mod._G = SimpleNamespace(oldver = oldver, newver = newver)
+      if hasattr(mod, 'pre_build'):
+        logger.debug('accept_noupdate=%r, oldver=%r, newver=%r', accept_noupdate, oldver, newver)
+        mod.pre_build()
+      recv_gpg_keys()
 
-    # we don't install any dependencies when testing
-    if skip_depends:
-      depends = ()
-    else:
-      depends = getattr(mod, 'depends', ())
-    pkgs_to_build = getattr(mod, 'packages', None)
-    need_build_first = set()
+      # we don't install any dependencies when testing
+      if skip_depends:
+        depends = ()
+      else:
+        depends = getattr(mod, 'depends', ())
+      pkgs_to_build = getattr(mod, 'packages', None)
+      need_build_first = set()
 
-    build_prefix = build_prefix or mod.build_prefix
-    if isinstance(build_prefix, str):
-      build_prefix = [build_prefix]
+      build_prefix = build_prefix or mod.build_prefix
+      if isinstance(build_prefix, str):
+        build_prefix = [build_prefix]
 
-    for bp in build_prefix:
-      depend_packages = []
-      arch = build_prefix_to_arch(bp)
-      for x in depends:
-        p = find_local_package(repodir, x, arch)
-        if not p:
-          if isinstance(x, tuple):
-            x = x[0]
-          need_build_first.add(x)
-        else:
-          depend_packages.append(p)
-      if need_build_first:
-        raise TryNextRound(need_build_first, arch)
+      for bp in build_prefix:
+        depend_packages = []
+        arch = build_prefix_to_arch(bp)
+        for x in depends:
+          p = find_local_package(repodir, x, arch)
+          if not p:
+            if isinstance(x, tuple):
+              x = x[0]
+            need_build_first.add(x)
+          else:
+            depend_packages.append(p)
+        if need_build_first:
+          raise MissingDependencies(need_build_first, arch)
 
-      call_build_cmd(bp, depend_packages, pkgs_to_build)
+        call_build_cmd(bp, depend_packages, pkgs_to_build)
 
-    pkgs = [x for x in os.listdir() if x.endswith('.pkg.tar.xz')]
-    if not pkgs:
-      raise Exception('no package built')
-    if hasattr(mod, 'post_build'):
-      mod.post_build()
-    success = True
-  finally:
-    del sys.modules['lilac.py']
-    if hasattr(mod, 'post_build_always'):
-      mod.post_build_always(success=success)
+      pkgs = [x for x in os.listdir() if x.endswith('.pkg.tar.xz')]
+      if not pkgs:
+        raise Exception('no package built')
+      if hasattr(mod, 'post_build'):
+        mod.post_build()
+      success = True
+    finally:
+      if hasattr(mod, 'post_build_always'):
+        mod.post_build_always(success=success)
 
 def call_build_cmd(tag, depends, pkgs_to_build=None):
   global build_output
@@ -459,3 +458,15 @@ def build_prefix_to_arch(cmd):
 
 def recv_gpg_keys():
   run_cmd(['recv_gpg_keys'])
+
+@contextlib.contextmanager
+def load_lilac():
+  try:
+    spec = importlib.util.spec_from_file_location('lilac.py', 'lilac.py')
+    mod = spec.loader.load_module()
+    yield mod
+  finally:
+    try:
+      del sys.modules['lilac.py']
+    except KeyError:
+      pass
