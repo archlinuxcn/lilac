@@ -77,7 +77,7 @@ def build_package(package):
       lilaclib.build_output = None
       build_logger.info('%s successful', package)
       return True
-    except TryNextRound:
+    except MissingDependencies:
       raise
     except Exception as e:
       tb = traceback.format_exc()
