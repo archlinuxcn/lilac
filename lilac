@@ -219,9 +219,13 @@ def all_packages_I_manage():
   r = glob.glob('*/lilac.py')
   return {x.split('/', 1)[0] for x in r}
 
-def start_build():
-  dep_map, failed = read_dependencies(building_packages)
-  packages = toposort_flatten(dep_map)
+def start_build(*, dont_build_deps=False):
+  if dont_build_deps:
+    dep_map, failed = read_dependencies(building_packages)
+    packages = toposort_flatten(dep_map)
+  else:
+    packages = building_packages
+    failed = set()
   built = set()
 
   try:
@@ -291,10 +295,13 @@ def main(packages=None):
       else:
         all_building = set(packages)
         updated, unknown = packages_need_update(all_building)
+        need_update = updated
         logger.info('these packages are manually specified: %r', all_building)
 
+      dont_build_deps = bool(packages)
+
       building_packages.update(all_building)
-      failed = start_build()
+      failed = start_build(dont_build_deps=dont_build_deps)
 
       if packages is None:
         D['last_commit'] = git_last_commit()
@@ -304,7 +311,7 @@ def main(packages=None):
         if x in failed_info:
           del failed_info[x]
       D['failed'] = failed_info
-      if update_succeeded:
+      if need_update:
         run_cmd(['nvtake', nvchecker_file] + list(need_update))
 
       if packages is None:
