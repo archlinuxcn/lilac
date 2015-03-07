@@ -221,11 +221,11 @@ def all_packages_I_manage():
 
 def start_build(*, dont_build_deps=False):
   if dont_build_deps:
-    dep_map, failed = read_dependencies(building_packages)
-    packages = toposort_flatten(dep_map)
-  else:
     packages = building_packages
     failed = set()
+  else:
+    dep_map, failed = read_dependencies(building_packages)
+    packages = toposort_flatten(dep_map)
   built = set()
 
   try:
