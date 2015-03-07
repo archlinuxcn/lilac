@@ -65,25 +65,23 @@ def read_dependencies(packages):
 
 def build_package(package):
   logger.info('building %s', package)
-  path = os.path.join(REPODIR, package)
-  with at_dir(path):
-    try:
-      n = nvdata.get(package, (nv_unchanged[package],) * 2)
-      lilac_build(
-        REPODIR,
-        oldver = n[0], newver = n[1],
-      )
-      sign_and_copy()
-      lilaclib.build_output = None
-      build_logger.info('%s successful', package)
-      return True
-    except MissingDependencies:
-      raise
-    except Exception as e:
-      tb = traceback.format_exc()
-      logger.exception('packaging error')
-      send_error_report(package, exc=(e, tb))
-      build_logger.error('%s failed', package)
+  try:
+    n = nvdata.get(package, (nv_unchanged[package],) * 2)
+    lilac_build(
+      REPODIR,
+      oldver = n[0], newver = n[1],
+    )
+    sign_and_copy()
+    lilaclib.build_output = None
+    build_logger.info('%s successful', package)
+    return True
+  except MissingDependencies:
+    raise
+  except Exception as e:
+    tb = traceback.format_exc()
+    logger.exception('packaging error')
+    send_error_report(package, exc=(e, tb))
+    build_logger.error('%s failed', package)
 
 def find_maintainer_or_admin(package=None):
   if package is not None:
@@ -132,6 +130,7 @@ def send_error_report(name, *, msg=None, exc=None, subject=None):
     msgs.append('编译命令输出如下：\n\n' + lilaclib.build_output)
 
   msg = '\n'.join(msgs)
+  logger.debug('mail to %s:\nsubject: %s\nbody: %s', who, subject, msg[:200])
   sendmail(who, MYEMAIL, subject, msg)
 
 def sign_and_copy():
@@ -235,22 +234,24 @@ def start_build(*, dont_build_deps=False):
         # marked as failed, skip
         continue
 
-      try:
-        if build_package(pkg):
-          built.add(pkg)
-        else:
-          failed.add(pkg)
-      except MissingDependencies as e:
-        # all deps built successfully, but packages still missing --- arch
-        # not met
-        send_error_report(pkg, subject='[lilac] %s 出现依赖问题',
-                          msg = '''\
-在成功地编译打包 {built} 之后，{pkg} 依旧依赖 {deps}。
+      path = os.path.join(REPODIR, pkg)
+      with at_dir(path):
+        try:
+          if build_package(pkg):
+            built.add(pkg)
+          else:
+            failed.add(pkg)
+        except MissingDependencies as e:
+          # all deps built successfully, but packages still missing --- arch
+          # not met
+          send_error_report(pkg, subject='[lilac] %s 出现依赖问题',
+                            msg = '''\
+  在成功地编译打包 {built} 之后，{pkg} 依旧依赖 {deps}。
 
-这可能是 {deps} 中的某些包不支持需要的架构 {arch} 所导致的，请检查。'''.format(
-built = built, deps = e.deps, arch = e.arch, pkg = pkg,
-))
-        failed.add(pkg)
+  这可能是 {deps} 中的某些包不支持需要的架构 {arch} 所导致的，请检查。'''.format(
+  built = built, deps = e.deps, arch = e.arch, pkg = pkg,
+  ))
+          failed.add(pkg)
 
   except KeyboardInterrupt:
     logger.info('keyboard interrupted, bye~')
