@@ -67,10 +67,12 @@ def build_package(package):
   logger.info('building %s', package)
   try:
     n = nvdata.get(package, (nv_unchanged[package],) * 2)
-    lilac_build(
-      REPODIR,
-      oldver = n[0], newver = n[1],
-    )
+    # wait at most 6 hours
+    with execution_timeout(6 * 3600):
+      lilac_build(
+        REPODIR,
+        oldver = n[0], newver = n[1],
+      )
     sign_and_copy()
     lilaclib.build_output = None
     build_logger.info('%s successful', package)

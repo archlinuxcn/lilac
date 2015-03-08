@@ -15,7 +15,7 @@ import requests
 
 from nicelogger import enable_pretty_logging
 from htmlutils import parse_document_from_requests
-from myutils import at_dir
+from myutils import at_dir, execution_timeout
 from mailutils import assemble_mail
 from serializer import PickledData
 import archpkg
