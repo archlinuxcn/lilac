@@ -328,7 +328,7 @@ def call_build_cmd(tag, depends, pkgs_to_build=None):
     if pkgs_to_build:
       cmd.extend(['--pkg', ','.join(pkgs_to_build)])
   else:
-    cmd = ['sudo', '%s-build' % tag, '--']
+    cmd = ['%s-build' % tag, '--']
 
     if depends:
       for x in depends:
