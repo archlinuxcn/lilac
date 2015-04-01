@@ -37,6 +37,7 @@ nvchecker_file = os.path.join(mydir, 'nvchecker.ini')
 building_packages = set()
 nvdata = {}
 nv_unchanged = {}
+DEPENDS = {}
 
 build_logger = logging.getLogger('build')
 def setup_build_logger():
@@ -72,6 +73,7 @@ def build_package(package):
       lilac_build(
         REPODIR,
         oldver = n[0], newver = n[1],
+        depends = DEPENDS.get(package, ()),
       )
     sign_and_copy()
     lilaclib.build_output = None
@@ -221,12 +223,13 @@ def all_packages_I_manage():
   return {x.split('/', 1)[0] for x in r}
 
 def start_build(*, dont_build_deps=False):
+  global DEPENDS
   if dont_build_deps:
     packages = building_packages
     failed = set()
   else:
-    dep_map, failed = read_dependencies(building_packages)
-    packages = toposort_flatten(dep_map)
+    DEPENDS, failed = read_dependencies(building_packages)
+    packages = toposort_flatten(DEPENDS)
   built = set()
 
   try:

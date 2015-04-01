@@ -265,7 +265,7 @@ def pypi_post_build():
   git_add_files('PKGBUILD')
   git_commit()
 
-def lilac_build(repodir, build_prefix=None, skip_depends=False, oldver=None, newver=None, accept_noupdate=False):
+def lilac_build(repodir, build_prefix=None, oldver=None, newver=None, accept_noupdate=False, depends=()):
   with load_lilac() as mod:
     run_cmd(["sh", "-c", "rm -f -- *.pkg.tar.xz *.pkg.tar.xz.sig *.src.tar.gz"])
     success = False
@@ -283,11 +283,6 @@ def lilac_build(repodir, build_prefix=None, skip_depends=False, oldver=None, new
         mod.pre_build()
       recv_gpg_keys()
 
-      # we don't install any dependencies when testing
-      if skip_depends:
-        depends = ()
-      else:
-        depends = getattr(mod, 'depends', ())
       pkgs_to_build = getattr(mod, 'packages', None)
       need_build_first = set()
 
@@ -378,7 +373,6 @@ def single_main(build_prefix='makepkg'):
     build_prefix = build_prefix,
     repodir = os.path.dirname(
       os.path.dirname(sys.modules['__main__'].__file__)),
-    skip_depends = True,
     accept_noupdate = True,
   )
 
