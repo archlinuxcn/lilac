@@ -223,13 +223,35 @@ def all_packages_I_manage():
   return {x.split('/', 1)[0] for x in r}
 
 def start_build(*, dont_build_deps=False):
-  global DEPENDS
   if dont_build_deps:
     packages = building_packages
     failed = set()
   else:
-    DEPENDS, failed = read_dependencies(building_packages)
-    packages = toposort_flatten(DEPENDS)
+    dep_map, failed = read_dependencies(building_packages)
+    packages = toposort_flatten(dep_map)
+
+    all_denpendencies = set()
+    depfailed = failed.copy()
+    while True:
+      for d in dep_map.values():
+        all_denpendencies.update(d)
+      missing = all_denpendencies - set(dep_map.keys()) - failed
+      if not missing:
+        break
+      newmap, newdepfailed = read_dependencies(missing)
+      dep_map.update(newmap)
+      depfailed.update(newdepfailed)
+
+    def find_deps(p):
+      direct_deps = dep_map[p]
+      for a in direct_deps:
+        if a in dep_map:
+          yield from find_deps(a)
+        yield a
+
+    for p in dep_map:
+      DEPENDS[p] = set(find_deps(p))
+
   built = set()
 
   try:
