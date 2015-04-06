@@ -250,7 +250,7 @@ def start_build(*, dont_build_deps=False):
         yield a
 
     for p in dep_map:
-      DEPENDS[p] = set(find_deps(p))
+      DEPENDS[p] = tuple(find_deps(p))
 
   built = set()
 
