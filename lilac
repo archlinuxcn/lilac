@@ -228,8 +228,17 @@ def start_build(*, dont_build_deps=False):
     failed = set()
   else:
     dep_map, failed = read_dependencies(building_packages)
-    packages = toposort_flatten(dep_map)
+    # used to decide what and in which order to build
+    dironly_dep_map = {
+      k: (v[0] if isinstance(v, tuple) else v)
+      for k, v in dep_map.items()
+    }
+    packages = toposort_flatten(dironly_dep_map)
 
+    # update dep_map to include indirect dependencies
+    # FIXME: why not include these in previous step?
+    #        maybe we should check further to see if a built packagee already
+    #        exists before deciding to build it
     all_denpendencies = set()
     depfailed = failed.copy()
     while True:
@@ -249,6 +258,7 @@ def start_build(*, dont_build_deps=False):
           yield from find_deps(a)
         yield a
 
+    # used to decide what to install when building
     for p in dep_map:
       DEPENDS[p] = tuple(find_deps(p))
 
