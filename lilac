@@ -230,8 +230,8 @@ def start_build(*, dont_build_deps=False):
     dep_map, failed = read_dependencies(building_packages)
     # used to decide what and in which order to build
     dironly_dep_map = {
-      k: (v[0] if isinstance(v, tuple) else v)
-      for k, v in dep_map.items()
+      k: set(v[0] if isinstance(v, tuple) else v for v in vs)
+      for k, vs in dep_map.items()
     }
     packages = toposort_flatten(dironly_dep_map)
 
