@@ -49,6 +49,8 @@ def read_dependencies(packages):
   dep_map = {}
   failed = set()
   for package in packages:
+    if isinstance(package, tuple):
+      package = package[0]
     path = os.path.join(REPODIR, package)
     with at_dir(path):
       try:
