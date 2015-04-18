@@ -10,6 +10,7 @@ import importlib.util
 import re
 import fileinput
 import contextlib
+from collections import defaultdict
 
 import requests
 
@@ -18,7 +19,6 @@ from htmlutils import parse_document_from_requests
 from myutils import at_dir, execution_timeout
 from mailutils import assemble_mail
 from serializer import PickledData
-import archpkg
 
 UserAgent = 'lilac/0.1 (package auto-build bot, by lilydjwg)'
 
@@ -31,10 +31,57 @@ _g = SimpleNamespace()
 build_output = None
 PYPI_URL = 'https://pypi.python.org/pypi/%s/json'
 
+class Dependency:
+  pkgfile = None
+  _CACHE = {}
+
+  @classmethod
+  def get(cls, topdir, what):
+    if isinstance(what, tuple):
+      pkgbase, pkgname = what
+    else:
+      pkgbase = pkgname = what
+
+    key = pkgbase, pkgname
+    if key not in cls._CACHE:
+      cls._CACHE[key] = cls(topdir, pkgbase, pkgname)
+    return cls._CACHE[key]
+
+  def __init__(self, topdir, pkgbase, pkgname):
+    self.pkgbase = pkgbase
+    self.pkgname = pkgname
+    self.directory = os.path.join(topdir, pkgbase)
+
+  def resolve(self):
+    if self.pkgfile is None:
+      self.pkgfile = self._resolve()
+    return self.pkgfile
+
+  def _resolve(self):
+    try:
+      return self._find_local_package()
+    except FileNotFoundError:
+      return None
+
+  def _find_local_package(self):
+    with at_dir(self.directory):
+      pkgs = [x for x in os.listdir() if x.endswith('.pkg.tar.xz')]
+      if len(pkgs) == 1:
+        return os.path.abspath(pkgs[0])
+      elif not pkgs:
+        raise FileNotFoundError
+      else:
+        ret = sorted(
+          pkgs, reverse=True, key=lambda n: os.stat(n).st_mtime)[0]
+        return os.path.abspath(ret)
+
 class MissingDependencies(Exception):
-  def __init__(self, pkgs, arch):
+  def __init__(self, pkgs):
     self.deps = pkgs
-    self.arch = arch
+
+class BuildPrefixError(Exception):
+  def __init__(self, build_prefix):
+    self.build_prefix = build_prefix
 
 def download_official_pkgbuild(name):
   url = 'https://www.archlinux.org/packages/search/json/?name=' + name
@@ -287,25 +334,20 @@ def lilac_build(repodir, build_prefix=None, oldver=None, newver=None, accept_nou
       need_build_first = set()
 
       build_prefix = build_prefix or mod.build_prefix
-      if isinstance(build_prefix, str):
-        build_prefix = [build_prefix]
+      if not isinstance(build_prefix, str) or 'i686' in build_prefix:
+        raise BuildPrefixError(build_prefix)
 
-      for bp in build_prefix:
-        depend_packages = []
-        arch = build_prefix_to_arch(bp)
-        for x in depends:
-          p = find_local_package(repodir, x, arch)
-          if not p:
-            if isinstance(x, tuple):
-              x = x[0]
-            need_build_first.add(x)
-          else:
-            depend_packages.append(p)
-        if need_build_first:
-          raise MissingDependencies(need_build_first, arch)
+      depend_packages = []
+      for x in depends:
+        p = x.resolve()
+        if p is None:
+          need_build_first.add(x.pkgbase)
+        else:
+          depend_packages.append(p)
+      if need_build_first:
+        raise MissingDependencies(need_build_first)
 
-        call_build_cmd(bp, depend_packages, pkgs_to_build)
-
+      call_build_cmd(build_prefix, depend_packages, pkgs_to_build)
       pkgs = [x for x in os.listdir() if x.endswith('.pkg.tar.xz')]
       if not pkgs:
         raise Exception('no package built')
@@ -336,35 +378,6 @@ def call_build_cmd(tag, depends, pkgs_to_build=None):
 
   # NOTE that Ctrl-C here may not succeed
   build_output = run_cmd(cmd, use_pty=True)
-
-def find_local_package(repodir, pkgname, arch):
-  by = os.path.basename(os.getcwd())
-  if isinstance(pkgname, tuple):
-    d, name = pkgname
-  else:
-    d = name = pkgname
-
-  with at_dir(repodir):
-    if not os.path.isdir(d):
-      raise FileNotFoundError(
-        'no idea to satisfy denpendency %s for %s' % (pkgname, by))
-
-    with at_dir(d):
-      names = [x for x in os.listdir() if x.endswith('.pkg.tar.xz')]
-      pkgs = []
-      for x in names:
-        info = archpkg.PkgNameInfo.parseFilename(x)
-        if info.name == name and info.arch in ('any', arch):
-          pkgs.append(x)
-
-      if len(pkgs) == 1:
-        return os.path.abspath(pkgs[0])
-      elif not pkgs:
-        return
-      else:
-        ret = sorted(
-          pkgs, reverse=True, key=lambda n: os.stat(n).st_mtime)[0]
-        return os.path.abspath(ret)
 
 def single_main(build_prefix='makepkg'):
   prepend_self_path()
@@ -441,14 +454,6 @@ def edit_file(filename):
 def mksrcball():
   run_cmd(['makepkg', '--source'], use_pty=True)
 mkaurball = mksrcball
-
-def build_prefix_to_arch(cmd):
-  if cmd == 'makepkg':
-    return os.uname().machine
-  elif cmd.endswith('-i686'):
-    return 'i686'
-  else:
-    return 'x86_64'
 
 def recv_gpg_keys():
   run_cmd(['recv_gpg_keys'])
