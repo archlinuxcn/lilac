@@ -19,6 +19,7 @@ from htmlutils import parse_document_from_requests
 from myutils import at_dir, execution_timeout
 from mailutils import assemble_mail
 from serializer import PickledData
+import archpkg
 
 UserAgent = 'lilac/0.1 (package auto-build bot, by lilydjwg)'
 
@@ -32,7 +33,6 @@ build_output = None
 PYPI_URL = 'https://pypi.python.org/pypi/%s/json'
 
 class Dependency:
-  pkgfile = None
   _CACHE = {}
 
   @classmethod
@@ -53,11 +53,6 @@ class Dependency:
     self.directory = os.path.join(topdir, pkgbase)
 
   def resolve(self):
-    if self.pkgfile is None:
-      self.pkgfile = self._resolve()
-    return self.pkgfile
-
-  def _resolve(self):
     try:
       return self._find_local_package()
     except FileNotFoundError:
@@ -65,7 +60,12 @@ class Dependency:
 
   def _find_local_package(self):
     with at_dir(self.directory):
-      pkgs = [x for x in os.listdir() if x.endswith('.pkg.tar.xz')]
+      fnames = [x for x in os.listdir() if x.endswith('.pkg.tar.xz')]
+      for x in fnames:
+        info = archpkg.PkgNameInfo.parseFilename(x)
+        if info.name == self.pkgname:
+          pkgs.append(x)
+
       if len(pkgs) == 1:
         return os.path.abspath(pkgs[0])
       elif not pkgs:
