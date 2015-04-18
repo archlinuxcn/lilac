@@ -93,6 +93,7 @@ def build_package(package):
     build_logger.info('%s successful', package)
     return True
   except (MissingDependencies, BuildPrefixError):
+    build_logger.error('%s failed', package)
     raise
   except Exception as e:
     tb = traceback.format_exc()
