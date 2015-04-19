@@ -61,6 +61,7 @@ class Dependency:
   def _find_local_package(self):
     with at_dir(self.directory):
       fnames = [x for x in os.listdir() if x.endswith('.pkg.tar.xz')]
+      pkgs = []
       for x in fnames:
         info = archpkg.PkgNameInfo.parseFilename(x)
         if info.name == self.pkgname:
