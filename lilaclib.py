@@ -401,12 +401,14 @@ def run_cmd(cmd, *, use_pty=False, silent=False):
                ' not' if silent else '')
   if use_pty:
     rfd, stdout = os.openpty()
+    stdin = stdout
     # for fd leakage
     logger.debug('pty master fd=%d, slave fd=%d.', rfd, stdout)
   else:
+    stdin = subprocess.DEVNULL
     stdout = subprocess.PIPE
 
-  p = subprocess.Popen(cmd, stdout = stdout, stderr = subprocess.STDOUT)
+  p = subprocess.Popen(cmd, stdin = stdin, stdout = stdout, stderr = subprocess.STDOUT)
   if use_pty:
     os.close(stdout)
   else:
