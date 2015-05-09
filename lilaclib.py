@@ -408,6 +408,12 @@ def run_cmd(cmd, *, use_pty=False, silent=False):
     stdin = subprocess.DEVNULL
     stdout = subprocess.PIPE
 
+  exited = False
+  def child_exited(signum, sigframe):
+    nonlocal exited
+    exited = True
+  old_hdl = signal.signal(signal.SIGCHLD, child_exited)
+
   p = subprocess.Popen(cmd, stdin = stdin, stdout = stdout, stderr = subprocess.STDOUT)
   if use_pty:
     os.close(stdout)
@@ -415,15 +421,12 @@ def run_cmd(cmd, *, use_pty=False, silent=False):
     rfd = p.stdout.fileno()
   out = []
 
-  exited = False
-  def child_exited(signum, sigframe):
-    nonlocal exited
-    exited = True
-  old_hdl = signal.signal(signal.SIGCHLD, child_exited)
-  # Timing window for child exiting before me reading. Keep it small.
   while not exited:
     try:
       r = os.read(rfd, 4096)
+      if not r:
+        # EOF
+        break
     except InterruptedError:
       continue
     except OSError as e:
