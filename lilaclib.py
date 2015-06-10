@@ -111,9 +111,19 @@ def download_official_pkgbuild(name):
       f.write(data)
   return files
 
+def try_aur_url(name):
+  aur4mig = 'https://aur4.archlinux.org/cgit/aur.git/snapshot/{name}.tar.gz'
+  aur3url = 'https://aur.archlinux.org/packages/{first_two}/{name}/{name}.tar.gz'
+  aur4url = 'https://aur.archlinux.org/cgit/aur.git/snapshot/{name}.tar.gz'
+  templates = [aur4mig, aur3url, aur4url]  # TODO: reorder this after migiration to aur4
+  urls = [url.format(first_two=name[:2], name=name) for url in templates]
+  for url in urls:
+    if requests.head(url).status_code == 200:
+      return url
+  return aur3url  # fallback to aur3url and handle errors there
+
 def download_aur_pkgbuild(name):
-  url = 'https://aur.archlinux.org/packages/{first_two}/{name}/{name}.tar.gz'
-  url = url.format(first_two=name[:2], name=name)
+  url = try_aur_url(name)
   lilac_aur = "lilac_aur"
   run_cmd(['sh', '-c', "curl '%s' | tar xzv --one-top-level='%s' --strip-components=1" % (url, lilac_aur)])
   for f in ('.AURINFO', '.SRCINFO'):
