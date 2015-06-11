@@ -11,6 +11,8 @@ import re
 import fileinput
 import contextlib
 from collections import defaultdict
+from io import BytesIO
+import tarfile
 
 import requests
 
@@ -84,6 +86,10 @@ class BuildPrefixError(Exception):
   def __init__(self, build_prefix):
     self.build_prefix = build_prefix
 
+class AurDownloadError(Exception):
+  def __init__(self, pkgname):
+    self.pkgname = pkgname
+
 def download_official_pkgbuild(name):
   url = 'https://www.archlinux.org/packages/search/json/?name=' + name
   logger.info('download PKGBUILD for %s.', name)
@@ -115,26 +121,39 @@ def try_aur_url(name):
   aur4mig = 'https://aur4.archlinux.org/cgit/aur.git/snapshot/{name}.tar.gz'
   aur3url = 'https://aur.archlinux.org/packages/{first_two}/{name}/{name}.tar.gz'
   aur4url = 'https://aur.archlinux.org/cgit/aur.git/snapshot/{name}.tar.gz'
-  templates = [aur4mig, aur3url, aur4url]  # TODO: reorder this after migiration to aur4
+  templates = [aur4mig, aur3url, aur4url]  # TODO: reorder this after migration to aur4
   urls = [url.format(first_two=name[:2], name=name) for url in templates]
   for url in urls:
-    if requests.head(url).status_code == 200:
-      return url
-  return aur3url  # fallback to aur3url and handle errors there
+    response = requests.get(url)
+    if response.status_code == 200:
+      logger.debug("downloaded aur tarball '%s' from url '%s'" % (name, url))
+      return response.content
+  logger.error("failed to find aur url for '%s'" % name)
+  raise AurDownloadError(name)
 
 def download_aur_pkgbuild(name):
-  url = try_aur_url(name)
+  tar_content = BytesIO(try_aur_url(name))
+  tar_file = None
   lilac_aur = "lilac_aur"
-  run_cmd(['sh', '-c', "curl '%s' | tar xzv --one-top-level='%s' --strip-components=1" % (url, lilac_aur)])
-  for f in ('.AURINFO', '.SRCINFO'):
-    try:
-      os.unlink(os.path.join(lilac_aur, f))
-    except FileNotFoundError:
-      pass
-  files = os.listdir(lilac_aur)
-  for f in files:
-    os.rename(os.path.join(lilac_aur, f), f)
-  os.rmdir(lilac_aur)
+  files = []
+  try:
+    tar_file = tarfile.open(name=name+".tar.gz", mode="r:gz", fileobj=tar_content)
+    tar_file.extractall(path=lilac_aur)
+    for f in ('.AURINFO', '.SRCINFO'):
+      try:
+        os.unlink(os.path.join(os.path.join(lilac_aur, name), f))
+      except FileNotFoundError:
+        pass
+    files = os.listdir(os.path.join(lilac_aur, name))
+    for f in files:
+      os.rename(os.path.join(os.path.join(lilac_aur, name), f), f)
+    os.rmdir(os.path.join(lilac_aur, name))
+    os.rmdir(lilac_aur)
+  finally:
+    if tar_file:
+      tar_file.close()
+    if tar_content:
+      tar_content.close()
   return files
 
 def get_pypi_info(name):

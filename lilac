@@ -135,6 +135,10 @@ def send_error_report(name, *, msg=None, exc=None, subject=None):
                   '命令的输出如下：\n\n%s' % (
                     exception.cmd, exception.returncode, exception.output))
       msgs.append('调用栈如下：\n\n' + tb)
+    elif isinstance(exception, AurDownloadError):
+      subject = subject or '[lilac] 在获取AUR包 %s 时发生错误'
+      msgs.append('获取AUR包失败！\n\n')
+      msgs.append('调用栈如下：\n\n' + tb)
     else:
       subject = subject or '[lilac] 在编译软件包 %s 时发生未知错误'
       msgs.append('发生未知错误！调用栈如下：\n\n' + tb)
