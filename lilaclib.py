@@ -134,21 +134,19 @@ def try_aur_url(name):
 def download_aur_pkgbuild(name):
   tar_content = BytesIO(try_aur_url(name))
   tar_file = None
-  lilac_aur = "lilac_aur"
   files = []
   try:
     tar_file = tarfile.open(name=name+".tar.gz", mode="r:gz", fileobj=tar_content)
-    tar_file.extractall(path=lilac_aur)
-    for f in ('.AURINFO', '.SRCINFO'):
-      try:
-        os.unlink(os.path.join(os.path.join(lilac_aur, name), f))
-      except FileNotFoundError:
-        pass
-    files = os.listdir(os.path.join(lilac_aur, name))
-    for f in files:
-      os.rename(os.path.join(os.path.join(lilac_aur, name), f), f)
-    os.rmdir(os.path.join(lilac_aur, name))
-    os.rmdir(lilac_aur)
+    for filename in tar_file.getnames():
+      basename, remain = os.path.split(filename)
+      if basename == '':
+        continue
+      if remain in ('.AURINFO', '.SRCINFO'):
+        continue
+      contentfile = open(remain, "wb")
+      contentfile.write(tar_file.extractfile(filename).read())
+      contentfile.close()
+      files.append(remain)
   finally:
     if tar_file:
       tar_file.close()
