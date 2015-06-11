@@ -126,32 +126,24 @@ def try_aur_url(name):
   for url in urls:
     response = requests.get(url)
     if response.status_code == 200:
-      logger.debug("downloaded aur tarball '%s' from url '%s'" % (name, url))
+      logger.debug("downloaded aur tarball '%s' from url '%s'", name, url)
       return response.content
-  logger.error("failed to find aur url for '%s'" % name)
+  logger.error("failed to find aur url for '%s'", name)
   raise AurDownloadError(name)
 
 def download_aur_pkgbuild(name):
-  tar_content = BytesIO(try_aur_url(name))
-  tar_file = None
+  content = BytesIO(try_aur_url(name))
   files = []
-  try:
-    tar_file = tarfile.open(name=name+".tar.gz", mode="r:gz", fileobj=tar_content)
-    for filename in tar_file.getnames():
+  with tarfile.open(name=name+".tar.gz", mode="r:gz", fileobj=content) as tarf:
+    for filename in tarf.getnames():
       basename, remain = os.path.split(filename)
       if basename == '':
         continue
       if remain in ('.AURINFO', '.SRCINFO'):
         continue
-      contentfile = open(remain, "wb")
-      contentfile.write(tar_file.extractfile(filename).read())
-      contentfile.close()
+      with open(remain, "wb") as f:
+        f.write(tarf.extractfile(filename).read())
       files.append(remain)
-  finally:
-    if tar_file:
-      tar_file.close()
-    if tar_content:
-      tar_content.close()
   return files
 
 def get_pypi_info(name):
