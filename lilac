@@ -17,6 +17,7 @@ MYNAME = 'lilac'
 MYADDRESS = '<lilac@build.archlinuxcn.org>'
 MYMASTER = 'lilydjwg <lilydjwg@gmail.com>'
 REPOMAIL = 'repo@archlinuxcn.org'
+GITHUB_REPO = 'archlinuxcn/repo'
 
 from nicelogger import enable_pretty_logging
 enable_pretty_logging('DEBUG', color=True)
@@ -117,6 +118,15 @@ def find_maintainer_or_admin(package=None):
 
   return who, more
 
+def github_create_issue(subject, message):
+  if 'LILAC_GITHUB_TOKEN' not in os.environ:
+    return None
+  token = os.environ['LILAC_GITHUB_TOKEN']
+  data = {'title': subject, 'body': message, 'labels': ['lilac']}
+  headers = {'Authorization': "token " + token}
+  url = 'https://api.github.com/repos/%s/issues' % GITHUB_REPO
+  return s.post(url, headers=headers, data=json.dumps(data))
+
 def send_error_report(name, *, msg=None, exc=None, subject=None):
   if msg is None and exc is None:
     raise TypeError('send_error_report received inefficient args')
@@ -154,6 +164,7 @@ def send_error_report(name, *, msg=None, exc=None, subject=None):
   msg = '\n'.join(msgs)
   logger.debug('mail to %s:\nsubject: %s\nbody: %s', who, subject, msg[:200])
   sendmail(who, MYEMAIL, subject, msg)
+  github_create_issue(subject, msg)
 
 def sign_and_copy():
   pkgs = [x for x in os.listdir() if x.endswith('.pkg.tar.xz')]
@@ -186,6 +197,7 @@ def packages_need_update(U):
     if more:
       msg += '\n获取维护者信息也失败了！调用栈如下：\n\n' + more
     sendmail(who, MYEMAIL, subject, msg)
+    github_create_issue(subject, msg)
     raise
 
   all_known = set(full.sections())
@@ -224,6 +236,7 @@ def packages_need_update(U):
       msg += '以下软件包在更新检查时出错了：\n\n' + '\n'.join(
         errorlines) + '\n'
     sendmail(REPOMAIL, MYEMAIL, subject, msg)
+    github_create_issue(subject, msg)
 
   for x in run_cmd(['nvcmp', nvchecker_file]).splitlines():
     pkg, oldver, _, newver = x.split()
