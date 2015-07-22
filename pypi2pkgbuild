@@ -8,7 +8,7 @@ import sys
 
 template = '''\
 _pkgname={name}
-pkgname=python-$_pkgname
+pkgname=python-{pkgname}
 pkgver={version}
 pkgrel=1
 pkgdesc="{summary}"
@@ -39,6 +39,7 @@ def get_pkgbuild(j):
   release = [x for x in j['releases'][info['version']]
              if x['python_version'] == 'source'][-1]
   info.update(release)
+  info['pkgname'] = info['name'].lower()
   s = template.format_map(info)
   return s
 
