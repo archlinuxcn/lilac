@@ -13,7 +13,6 @@
 * curl
 * git
 * makepkg
-* mkaurball (optional)
 * zsh (batch)
 * nvchecker (batch)
 * gpg (batch)
@@ -29,4 +28,4 @@ Python 库
 TODO
 ====
 
-* AUR batch uploader
+* push to AUR

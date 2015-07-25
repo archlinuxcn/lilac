@@ -475,11 +475,6 @@ def edit_file(filename):
     for line in f:
       yield line.rstrip('\n')
 
-
-def mksrcball():
-  run_cmd(['makepkg', '--source'], use_pty=True)
-mkaurball = mksrcball
-
 def recv_gpg_keys():
   run_cmd(['recv_gpg_keys'])
 
