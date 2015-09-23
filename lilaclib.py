@@ -195,6 +195,8 @@ def get_commit_and_email(head, file='*'):
 def sendmail(to, from_, subject, msg):
   s = smtplib.SMTP()
   s.connect()
+  if len(msg) > 5 * 1024 ** 2:
+    msg = msg[:1024 ** 2] + '\n\n日志过长，省略ing……\n\n' + msg[-1024 ** 2:]
   msg = assemble_mail(subject, to, from_, text=msg)
   s.send_message(msg)
   s.quit()
