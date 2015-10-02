@@ -118,13 +118,11 @@ def download_official_pkgbuild(name):
   return files
 
 def try_aur_url(name):
-  aur4mig = 'https://aur4.archlinux.org/cgit/aur.git/snapshot/{name}.tar.gz'
-  aur3url = 'https://aur.archlinux.org/packages/{first_two}/{name}/{name}.tar.gz'
   aur4url = 'https://aur.archlinux.org/cgit/aur.git/snapshot/{name}.tar.gz'
-  templates = [aur4mig, aur3url, aur4url]  # TODO: reorder this after migration to aur4
+  templates = [aur4url]
   urls = [url.format(first_two=name[:2], name=name) for url in templates]
   for url in urls:
-    response = requests.get(url)
+    response = s.get(url)
     if response.status_code == 200:
       logger.debug("downloaded aur tarball '%s' from url '%s'", name, url)
       return response.content
