@@ -304,7 +304,7 @@ def aur_post_build():
     git_commit()
   del _g.aur_pre_files, _g.aur_building_files
 
-def pypi_pre_build(depends=None, python2=False, pypi_name=None):
+def pypi_pre_build(depends=None, python2=False, pypi_name=None, arch=None):
   if os.path.exists('PKGBUILD'):
     pkgver, pkgrel = get_pkgver_and_pkgrel()
   else:
@@ -323,6 +323,10 @@ def pypi_pre_build(depends=None, python2=False, pypi_name=None):
     "depends=('python' %s)" % ' '.join("'%s'" % x for x in depends))
   if python2:
     pkgbuild = re.sub(r'\bpython3?(?!.)', 'python2', pkgbuild)
+  if arch is not None:
+    pkgbuild = pkgbuild.replace(
+      "arch=('any')",
+      "arch=(%s)" % ' '.join("'%s'" % x for x in arch))
   with open('PKGBUILD', 'w') as f:
     f.write(pkgbuild)
 
