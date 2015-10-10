@@ -13,6 +13,7 @@ import contextlib
 from collections import defaultdict
 from io import BytesIO
 import tarfile
+from functools import partial
 
 import requests
 
@@ -350,6 +351,7 @@ def lilac_build(repodir, build_prefix=None, oldver=None, newver=None, accept_nou
       if not hasattr(mod, '_G'):
         # fill nvchecker result unless already filled (e.g. by hand)
         mod._G = SimpleNamespace(oldver = oldver, newver = newver)
+      mod.update_pkgver = partial(update_pkgver, newver=newver)
       if hasattr(mod, 'pre_build'):
         logger.debug('accept_noupdate=%r, oldver=%r, newver=%r', accept_noupdate, oldver, newver)
         mod.pre_build()
@@ -479,6 +481,14 @@ def edit_file(filename):
   with fileinput.input(files=(filename,), inplace=True) as f:
     for line in f:
       yield line.rstrip('\n')
+
+def update_pkgver(newver):
+  for l in edit_file('PKGBUILD'):
+    l = l.rstrip('\n')
+    if l.startswith('pkgver='):
+      l = 'pkgver=' + newver
+    print(l)
+  run_cmd(['updpkgsums'])
 
 def recv_gpg_keys():
   run_cmd(['recv_gpg_keys'])
