@@ -25,10 +25,8 @@ logger = logging.getLogger(__name__)
 MYEMAIL = MYNAME + ' ' + MYADDRESS
 nvchecker_full = os.path.expanduser(os.path.join(REPODIR, 'nvchecker.ini'))
 mydir = os.path.expanduser('~/.lilac')
-try:
-  os.mkdir(mydir)
-except FileExistsError:
-  pass
+AUR_REPO_DIR = os.path.join(mydir, 'aur')
+os.mkdirs(AUR_REPO_DIR)
 store = os.path.join(mydir, 'store')
 oldver_file = os.path.join(mydir, 'oldver')
 open(oldver_file, 'a').close()
@@ -367,6 +365,8 @@ def main(packages=None):
 if __name__ == '__main__':
   setup_build_logger()
   os.chdir(REPODIR)
+  lilaclib.AUR_REPO_DIR = AUR_REPO_DIR
+  lilaclib.send_error_report = send_error_report
 
   if len(sys.argv) == 1:
     main()

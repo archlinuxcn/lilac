@@ -14,6 +14,7 @@ from collections import defaultdict
 from io import BytesIO
 import tarfile
 from functools import partial
+import shutil
 
 import requests
 
@@ -34,6 +35,12 @@ EMPTY_COMMIT = '4b825dc642cb6eb9a060e54bf8d69288fbee4904'
 _g = SimpleNamespace()
 build_output = None
 PYPI_URL = 'https://pypi.python.org/pypi/%s/json'
+
+# to be override
+AUR_REPO_DIR = '/tmp'
+def send_error_report(name, *, msg=None, exc=None, subject=None):
+  # exc_info used as such needs Python 3.5+
+  logger.error('%s\n\n%s', subject, msg, exc_info=exc)
 
 class Dependency:
   _CACHE = {}
@@ -504,3 +511,38 @@ def load_lilac():
       del sys.modules['lilac.py']
     except KeyError:
       pass
+
+def _update_aur_repo_real(pkgname):
+  aurpath = os.path.join(AUR_REPO_DIR, pkgname)
+  if not os.path.isdir(aurpath):
+    logger.info('cloning AUR repo: %s', aurpath)
+    run_cmd(['git', 'clone', 'aur@aur4.archlinux.org:%s.git' % pkgname])
+  else:
+    with at_dir(aurpath):
+      git_reset_hard()
+      git_pull()
+
+  logger.info('copying files to AUR repo: %s', aurpath)
+  files = run_cmd(['git', 'ls-files']).splitlines()
+  for f in files:
+    if f in SPECIAL_FILES:
+      continue
+    logger.debug('copying file %s', f)
+    shutil.copy(f, aurpath)
+
+  with at_dir(aurpath):
+    run_cmd(['mksrcinfo'])
+    run_cmd(['git', 'add', '.'])
+    run_cmd(['git', 'commit', '-m', 'update by lilac'])
+    run_cmd(['git', 'push'])
+
+def update_aur_repo():
+  pkgname = os.path.basename(os.getcwd())
+  try:
+    _update_aur_repo_real(pkgname)
+  except CalledProcessError as e:
+    send_error_report(
+      pkgname,
+      exc = e,
+      subject = '[lilac] 提交软件包到 AUR 时出错',
+    )
