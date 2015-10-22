@@ -516,7 +516,8 @@ def _update_aur_repo_real(pkgname):
   aurpath = os.path.join(AUR_REPO_DIR, pkgname)
   if not os.path.isdir(aurpath):
     logger.info('cloning AUR repo: %s', aurpath)
-    run_cmd(['git', 'clone', 'aur@aur4.archlinux.org:%s.git' % pkgname])
+    with at_dir(AUR_REPO_DIR):
+      run_cmd(['git', 'clone', 'aur@aur4.archlinux.org:%s.git' % pkgname])
   else:
     with at_dir(aurpath):
       git_reset_hard()
