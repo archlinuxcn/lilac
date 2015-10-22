@@ -26,7 +26,7 @@ MYEMAIL = MYNAME + ' ' + MYADDRESS
 nvchecker_full = os.path.expanduser(os.path.join(REPODIR, 'nvchecker.ini'))
 mydir = os.path.expanduser('~/.lilac')
 AUR_REPO_DIR = os.path.join(mydir, 'aur')
-os.makedirs(AUR_REPO_DIR)
+os.makedirs(AUR_REPO_DIR, exist_ok=True)
 store = os.path.join(mydir, 'store')
 oldver_file = os.path.join(mydir, 'oldver')
 open(oldver_file, 'a').close()
