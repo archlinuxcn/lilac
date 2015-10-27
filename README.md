@@ -24,8 +24,3 @@ Python 库
 
 * requests
 * winterpy
-
-TODO
-====
-
-* push to AUR
