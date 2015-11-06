@@ -1,4 +1,5 @@
 import subprocess
+import traceback
 from subprocess import CalledProcessError
 import os
 import logging
@@ -542,8 +543,9 @@ def update_aur_repo():
   try:
     _update_aur_repo_real(pkgname)
   except CalledProcessError as e:
+    tb = traceback.format_exc()
     send_error_report(
       pkgname,
-      exc = e,
+      exc = (e, tb),
       subject = '[lilac] 提交软件包到 AUR 时出错',
     )
