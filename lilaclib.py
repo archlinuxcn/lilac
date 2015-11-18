@@ -311,7 +311,9 @@ def aur_post_build():
     git_commit()
   del _g.aur_pre_files, _g.aur_building_files
 
-def pypi_pre_build(depends=None, python2=False, pypi_name=None, arch=None):
+def pypi_pre_build(depends=None, python2=False, pypi_name=None, arch=None,
+                   makedepends=None, depends_setuptools=True,
+                  ):
   if os.path.exists('PKGBUILD'):
     pkgver, pkgrel = get_pkgver_and_pkgrel()
   else:
@@ -321,13 +323,27 @@ def pypi_pre_build(depends=None, python2=False, pypi_name=None, arch=None):
     name = os.path.basename(os.getcwd())
     pypi_name = name.split('-', 1)[-1]
   pkgbuild = run_cmd(['pypi2pkgbuild', pypi_name], silent=True)
-  if depends is None:
-    depends = ['python-setuptools']
-  else:
-    depends.append('python-setuptools')
+
+  if depends_setuptools:
+    if depends is None:
+      depends = ['python-setuptools']
+    else:
+      depends.append('python-setuptools')
+  elif makedepends is None:
+    makedepends = ['python-setuptools']
+  elif makedepends:
+    makedepends.append('python-setuptools')
+
   pkgbuild = pkgbuild.replace(
     "depends=('python')",
     "depends=('python' %s)" % ' '.join("'%s'" % x for x in depends))
+
+  if makedepends:
+    pkgbuild = pkgbuild.replace(
+      '\nsource=',
+      '\nmakedepends=(%s)\nsource=' %
+      ' '.join("'%s'" % x for x in makedepends))
+
   if python2:
     pkgbuild = re.sub(r'\bpython3?(?!.)', 'python2', pkgbuild)
   if arch is not None:
