@@ -43,6 +43,13 @@ def setup_build_logger():
   handler.setFormatter(logging.Formatter('[%(asctime)s] %(message)s', '%Y-%m-%d %H:%M:%S'))
   build_logger.addHandler(handler)
 
+def check_depends(name, depends):
+  failed = [d for d in depends
+            if not os.path.isdir(d)]
+  if failed:
+    logger.error('%s has non-existent depends: %r', name, failed)
+    raise FileNotFoundError('%s 的以下依赖不存在：%r' % (name, failed))
+
 def read_dependencies(packages):
   # package should be built before which
   package_and_deps_to_build = {}
@@ -59,6 +66,7 @@ def read_dependencies(packages):
         with load_lilac() as mod:
           depends = getattr(mod, 'depends', ())
           if depends:
+            check_depends(package, depends)
             ds = [Dependency.get(REPODIR, x) for x in depends]
             dep_to_install[package][:0] = ds
             not_built = {x.pkgbase for x in ds if not x.resolve()}
