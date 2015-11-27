@@ -45,7 +45,7 @@ def setup_build_logger():
 
 def check_depends(name, depends):
   failed = [d for d in depends
-            if not os.path.isdir(d)]
+            if not os.path.isdir(os.path.join(REPODIR, d))]
   if failed:
     logger.error('%s has non-existent depends: %r', name, failed)
     raise FileNotFoundError('%s 的以下依赖不存在：%r' % (name, failed))
