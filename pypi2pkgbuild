@@ -4,8 +4,6 @@ import json
 import urllib.request
 import sys
 
-# Gist: https://gist.github.com/lilydjwg/3aac529836e89b87a0ec
-
 template = '''\
 _pkgname={name}
 pkgname=python-{pkgname}
