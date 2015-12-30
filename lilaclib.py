@@ -564,5 +564,5 @@ def update_aur_repo():
     send_error_report(
       pkgname,
       exc = (e, tb),
-      subject = '[lilac] 提交软件包到 AUR 时出错',
+      subject = '[lilac] 提交软件包 %s 到 AUR 时出错',
     )
