@@ -346,7 +346,7 @@ def pypi_pre_build(depends=None, python2=False, pypi_name=None, arch=None,
       ' '.join("'%s'" % x for x in makedepends))
 
   if python2:
-    pkgbuild = re.sub(r'\bpython3?(?!.)', 'python2', pkgbuild)
+    pkgbuild = re.sub(r'\bpython3?(?!\.)', 'python2', pkgbuild)
   if arch is not None:
     pkgbuild = pkgbuild.replace(
       "arch=('any')",
