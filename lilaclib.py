@@ -146,7 +146,7 @@ def download_aur_pkgbuild(name):
       basename, remain = os.path.split(filename)
       if basename == '':
         continue
-      if remain in ('.AURINFO', '.SRCINFO'):
+      if remain in ('.AURINFO', '.SRCINFO', '.gitignore'):
         continue
       with open(remain, "wb") as f:
         f.write(tarf.extractfile(filename).read())
