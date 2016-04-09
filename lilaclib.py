@@ -244,7 +244,12 @@ def git_rm_files(files):
 def git_add_files(files):
   if isinstance(files, str):
     files = [files]
-  run_cmd(['git', 'add', '--'] + files)
+  try:
+    run_cmd(['git', 'add', '--'] + files)
+  except CalledProcessError:
+    # on error, there may be a partial add, e.g. some files are ignored
+    run_cmd(['git', 'reset', '--'] + files)
+    raise
 
 def git_commit(*, check_status=True):
   if check_status:
