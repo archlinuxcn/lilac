@@ -91,6 +91,11 @@ def build_package(package):
   logger.info('building %s', package)
   try:
     n = nvdata.get(package, (nv_unchanged[package],) * 2)
+    maintainer = find_maintainer(MYADDRESS)
+    name, email = maintainer.split('<', 1)
+    name = name.strip('" ')
+    email = email.rstrip('>')
+    os.environ['PACKAGER'] = 'lilac (on behalf of %s) <%s>' % (name, email)
     # wait at most 6 hours
     with execution_timeout(6 * 3600):
       lilac_build(
