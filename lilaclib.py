@@ -481,8 +481,7 @@ def run_cmd(cmd, *, use_pty=False, silent=False):
     try:
       r = os.read(rfd, 4096)
       if not r:
-        # EOF
-        break
+        continue
     except InterruptedError:
       continue
     except OSError as e:
