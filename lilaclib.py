@@ -477,11 +477,14 @@ def run_cmd(cmd, *, use_pty=False, silent=False):
     rfd = p.stdout.fileno()
   out = []
 
-  while not exited:
+  while True:
     try:
       r = os.read(rfd, 4096)
       if not r:
-        continue
+        if exited:
+          break
+        else:
+          continue
     except InterruptedError:
       continue
     except OSError as e:
