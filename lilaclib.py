@@ -324,9 +324,9 @@ def pypi_pre_build(depends=None, python2=False, pypi_name=None, arch=None,
   else:
     pkgver = None
 
+  pkgname = os.path.basename(os.getcwd())
   if pypi_name is None:
-    name = os.path.basename(os.getcwd())
-    pypi_name = name.split('-', 1)[-1]
+    pypi_name = pkgname.split('-', 1)[-1]
   pkgbuild = run_cmd(['pypi2pkgbuild', pypi_name], silent=True)
 
   if depends_setuptools:
@@ -338,6 +338,8 @@ def pypi_pre_build(depends=None, python2=False, pypi_name=None, arch=None,
     makedepends = ['python-setuptools']
   elif makedepends:
     makedepends.append('python-setuptools')
+
+  pkgbuild = re.sub(r'^pkgname=.*', 'pkgname=%s' % pkgname, pkgbuild)
 
   if depends:
     pkgbuild = pkgbuild.replace(
