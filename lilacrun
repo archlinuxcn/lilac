@@ -12,10 +12,8 @@ lockit
 mkdir -p ~/.lilac/log
 
 export TZ=Asia/Shanghai
-export PACKAGER='lilac (on build machine by lilydjwg) <lilac@build.archlinuxcn.org>'
 export TERM=xterm
 export PATH=$HOME/bin:$HOME/.local/bin:$PATH
 export PYTHONPATH=$HOME/scripts/python/pylib
-export MAKEFLAGS="-j8 -l8"
 
 lilac "$@" > ~/.lilac/log/"$(date +'%Y-%m-%dT%H:%M:%S')" 2>&1
