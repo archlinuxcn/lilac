@@ -12,6 +12,7 @@ lockit
 mkdir -p ~/.lilac/log
 
 export TZ=Asia/Shanghai
+export LANG=zh_CN.UTF-8
 export TERM=xterm
 export PATH=$HOME/bin:$HOME/.local/bin:$PATH
 export PYTHONPATH=$HOME/scripts/python/pylib
