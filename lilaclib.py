@@ -162,7 +162,7 @@ def get_pkgver_and_pkgrel():
   with open('PKGBUILD') as f:
     for l in f:
       if l.startswith('pkgrel='):
-        pkgrel = float(l.rstrip().split('=', 1)[-1])
+        pkgrel = float(l.rstrip().split('=', 1)[-1].strip('\'"'))
         if int(pkgrel) == pkgrel:
             pkgrel = int(pkgrel)
       elif l.startswith('pkgver='):
