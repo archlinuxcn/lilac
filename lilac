@@ -96,13 +96,23 @@ def build_package(package):
     name = name.strip('" ')
     email = email.rstrip('>')
     os.environ['PACKAGER'] = 'lilac (on behalf of %s) <%s>' % (name, email)
-    # wait at most 6 hours
-    with execution_timeout(6 * 3600):
-      lilac_build(
-        REPODIR,
-        oldver = n[0], newver = n[1],
-        depends = DEPENDS.get(package, ()),
-      )
+    if is_nodejs_thing():
+      # nodejs things have bad error handling. If they go mad, allow them to
+      # be mad only one hour.
+      time_limit = 1
+    else:
+      # wait at most 6 hours
+      time_limit = 6
+    try:
+      with execution_timeout(time_limit * 3600):
+        lilac_build(
+          REPODIR,
+          oldver = n[0], newver = n[1],
+          depends = DEPENDS.get(package, ()),
+        )
+    except TimeoutError:
+      kill_child_processes()
+      raise
     sign_and_copy()
     lilaclib.build_output = None
     build_logger.info('%s successful', package)

@@ -575,3 +575,17 @@ def update_aur_repo():
       exc = (e, tb),
       subject = '[lilac] 提交软件包 %s 到 AUR 时出错',
     )
+
+def kill_child_processes():
+  pids = subprocess.check_output(
+    ['pid_children', str(os.getpid())]
+  ).decode().split()
+  for pid in pids:
+    try:
+      os.kill(int(pid), signal.SIGKILL)
+    except OSError:
+      pass
+
+def is_nodejs_thing():
+  with open('PKGBUILD') as f:
+    return 'nodejs' in f.read()
