@@ -18,6 +18,7 @@
 * gpg (batch)
 * Local MTA (batch)
 * devtools (batch)
+* pid_children (batch) (a program to find out descendant processes by pid)
 
 Python 库
 ---------
