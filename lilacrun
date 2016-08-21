@@ -11,7 +11,9 @@ lockit () {
 lockit
 mkdir -p ~/.lilac/log
 
+set +e
 . /etc/profile
+set -e
 export TZ=Asia/Shanghai
 export LANG=zh_CN.UTF-8
 export TERM=xterm
