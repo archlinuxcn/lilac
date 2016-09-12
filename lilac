@@ -11,18 +11,20 @@ import lilaclib
 from lilaclib import *
 from toposort import toposort_flatten
 
-REPODIR = os.path.expanduser('~/archgitrepo')
-DESTDIR = os.path.expanduser('~/repo')
-MYNAME = 'lilac'
-MYADDRESS = '<lilac@build.archlinuxcn.org>'
-MYMASTER = 'lilydjwg <lilydjwg@gmail.com>'
-REPOMAIL = 'repo@archlinuxcn.org'
-
 from nicelogger import enable_pretty_logging
 enable_pretty_logging('DEBUG', color=True)
 
+config = configparser.ConfigParser()
+config.read(os.environ['LILACPATH'] + '/config.ini')
+REPODIR = config.get('repository', 'repodir')
+DESTDIR = config.get('repository', 'destdir')
+REPOMAIL = config.get('repository', 'email')
+MYNAME = config.get('lilac', 'name')
+MYADDRESS = config.get('lilac', 'email')
+MYMASTER = config.get('lilac', 'master')
+
 logger = logging.getLogger(__name__)
-MYEMAIL = MYNAME + ' ' + MYADDRESS
+MYEMAIL = MYNAME + ' <' + MYADDRESS + '>'
 nvchecker_full = os.path.expanduser(os.path.join(REPODIR, 'nvchecker.ini'))
 mydir = os.path.expanduser('~/.lilac')
 AUR_REPO_DIR = os.path.join(mydir, 'aur')
