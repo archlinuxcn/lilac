@@ -24,12 +24,13 @@ mkdir -p ~/.lilac/log
 set +e
 . /etc/profile
 set -e
-export TZ=$(getconfig lilacrun timezone)
-export LANG=$(getconfig lilacrun locale)
-export TERM=$(getconfig lilacrun terminal)
 
-LILACPATH="$(dirname "$(readlink -f "${0}")")"
 export LILACPATH
+LILACPATH="$(dirname "$(readlink -f "${0}")")"
+
+export TZ=$(getconfig 'enviroment variables' timezone)
+export LANG=$(getconfig 'enviroment variables' locale)
+export TERM=$(getconfig 'enviroment variables' terminal)
 export PATH=$LILACPATH:$PATH
 
 [ ! -d "$LILACPATH"/pylib ] && download-pylib
