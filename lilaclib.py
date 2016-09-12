@@ -407,7 +407,7 @@ def lilac_build(repodir, build_prefix=None, oldver=None, newver=None, accept_nou
         raise MissingDependencies(need_build_first)
 
       call_build_cmd(build_prefix, depend_packages, pkgs_to_build)
-      pkgs = [x for x in os.listdir() if x.endswith('.pkg.tar.xz')]
+      pkgs = [x for x in os.listdir() if x.endswith('.pkg.tar') or x.endswith('.pkg.tar.gz') or x.endswith('.pkg.tar.bz2') or x.endswith('.pkg.tar.xz')]
       if not pkgs:
         raise Exception('no package built')
       if hasattr(mod, 'post_build'):
