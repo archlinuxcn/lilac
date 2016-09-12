@@ -15,7 +15,7 @@ download-pylib(){
 }
 
 getconfig(){
-  awk -F '=' "/\[$1\]/{i=1}i==1&&\$1~/$2/{print \$2;exit}" $LILACPATH/config.ini
+  awk -F '=' "/\[$1\]/{i=1}i==1&&\$1~/$2/{print \$2;exit}" "$LILACPATH"/config.ini
 }
 
 lockit
@@ -25,15 +25,15 @@ set +e
 . /etc/profile
 set -e
 
-export LILACPATH
+export LILACPATH TZ LANG TERM PATH PYTHONPATH
 LILACPATH="$(dirname "$(readlink -f "${0}")")"
 
-export TZ=$(getconfig 'enviroment variables' timezone)
-export LANG=$(getconfig 'enviroment variables' locale)
-export TERM=$(getconfig 'enviroment variables' terminal)
-export PATH=$LILACPATH:$PATH
+TZ=$(getconfig 'enviroment variables' timezone)
+LANG=$(getconfig 'enviroment variables' locale)
+TERM=$(getconfig 'enviroment variables' terminal)
+PATH=$LILACPATH:$PATH
 
 [ ! -d "$LILACPATH"/pylib ] && download-pylib
-export PYTHONPATH=$LILACPATH/pylib:$PYTHONPATH
+PYTHONPATH=$LILACPATH/pylib:$PYTHONPATH
 
 lilac "$@" > ~/.lilac/log/"$(date +'%Y-%m-%dT%H:%M:%S')" 2>&1
