@@ -7,18 +7,22 @@ import glob
 import logging
 import configparser
 import fcntl
+import requests
+import time
 
 def check_pylibs():
   os.makedirs(lilacpath+'/pylib', exist_ok=True)
-  pylibs=['archpkg','htmlutils','mailutils','myutils','nicelogger','serializer']
+  pylibs = ['archpkg', 'htmlutils', 'mailutils', 'myutils', 'nicelogger', 'serializer']
+  s = requests.Session()
   for pylib in pylibs:
-    pylib=pylib+'.py'
+    pylib += '.py'
     if not os.path.exists(lilacpath+'/pylib/'+pylib):
-        import urllib.request
         print('Downloading '+pylib)
-        urllib.request.urlretrieve('https://raw.githubusercontent.com/lilydjwg/winterpy/master/pylib/'+pylib,lilacpath+'/pylib/'+pylib)
+        r = s.get('https://raw.githubusercontent.com/lilydjwg/winterpy/master/pylib/'+pylib)
+        with open(lilacpath+'/pylib/'+pylib, 'w') as f:
+          f.write(r.content.decode('utf-8'))
 
-lilacpath=sys.path[0]
+lilacpath = sys.path[0]
 check_pylibs()
 sys.path.append(lilacpath+'/pylib')
 
@@ -26,9 +30,8 @@ config = configparser.ConfigParser()
 config.read(lilacpath+'/config.ini')
 
 # Setting up enviroment variables
-for item in config.items('enviroment variables'):
-  os.environ[item[0].upper()]=item[1]
-os.environ['PATH']=lilacpath+':'+os.environ['PATH']
+os.environ.update(config.items('enviroment variables'))
+os.environ['PATH'] = lilacpath+':'+os.environ['PATH']
 
 REPODIR = os.path.expanduser(config.get('repository', 'repodir'))
 DESTDIR = os.path.expanduser(config.get('repository', 'destdir'))
@@ -45,7 +48,6 @@ nvchecker_file = os.path.join(mydir, 'nvchecker.ini')
 oldver_file = os.path.join(mydir, 'oldver')
 newver_file = os.path.join(mydir, 'newver')
 nvchecker_full = os.path.expanduser(os.path.join(REPODIR, 'nvchecker.ini'))
-lock=open(mydir+'/.lock')
 os.makedirs(AUR_REPO_DIR, exist_ok=True)
 open(oldver_file, 'a').close()
 building_packages = set()
@@ -58,30 +60,23 @@ from lilaclib import *
 from toposort import toposort_flatten
 from nicelogger import enable_pretty_logging
 
-if config.get('lilac','output')=='off':
+if not config.getboolean('lilac', 'output'):
   import datetime
   os.makedirs(mydir+'/log', exist_ok=True)
-  logfile=mydir+'/log/'+datetime.datetime.now().strftime('%Y-%m-%dT%H:%M:%S')
-  log=open(logfile,'w')
-  sys.stdout=log
-  sys.stderr=log
+  logfile = os.path.join(mydir, 'log', time.strftime('%Y-%m-%dT%H:%M:%S'))
   logging.basicConfig(filename=logfile)
 
 enable_pretty_logging('DEBUG', color=True)
 logger = logging.getLogger(__name__)
 build_logger = logging.getLogger('build')
+
 def lockit():
+  lock = os.open(mydir+'/.lock', os.O_WRONLY, 600)
   try:
-    fcntl.flock(lock,fcntl.LOCK_EX|fcntl.LOCK_NB)
-  except:
+    fcntl.flock(lock, fcntl.LOCK_EX|fcntl.LOCK_NB)
+  except IOError:
     logger.warning('Waiting for lock to release...')
-    while True:
-      try:
-        fcntl.flock(lock,fcntl.LOCK_EX|fcntl.LOCK_NB)
-        break
-      except:
-        import time
-        time.sleep(1)
+    fcntl.flock(lock, fcntl.LOCK_EX)
 def setup_build_logger():
   handler = logging.FileHandler(os.path.join(mydir, 'build.log'))
   handler.setFormatter(logging.Formatter('[%(asctime)s] %(message)s', '%Y-%m-%d %H:%M:%S'))
@@ -446,5 +441,4 @@ if __name__ == '__main__':
     else:
       main(sys.argv[1:])
   except Exception as e:
-    print(e)
-    fcntl.flock(lock,fcntl.LOCK_UN)
+    logger.exception('unexpected error')
