@@ -48,9 +48,6 @@ nvchecker_full = os.path.expanduser(os.path.join(REPODIR, 'nvchecker.ini'))
 lock=open(mydir+'/.lock')
 os.makedirs(AUR_REPO_DIR, exist_ok=True)
 open(oldver_file, 'a').close()
-if config.get('lilac','output')=='off':
-  os.makedirs(mydir+'/log', exist_ok=True)
-
 building_packages = set()
 nvdata = {}
 nv_unchanged = {}
@@ -61,6 +58,13 @@ from lilaclib import *
 from toposort import toposort_flatten
 from nicelogger import enable_pretty_logging
 enable_pretty_logging('DEBUG', color=True)
+
+if config.get('lilac','output')=='off':
+  import datetime
+  os.makedirs(mydir+'/log', exist_ok=True)
+  log=open(mydir+'/log/'+datetime.datetime.now().strftime('%Y-%m-%dT%H:%M:%S'),'w')
+  sys.stdout=log
+  sys.stderr=log
 
 logger = logging.getLogger(__name__)
 build_logger = logging.getLogger('build')
@@ -430,7 +434,6 @@ def main(packages=None):
 if __name__ == '__main__':
   lockit()
   try:
-    os.system('sleep 10')
     setup_build_logger()
     os.chdir(REPODIR)
     lilaclib.AUR_REPO_DIR = AUR_REPO_DIR
