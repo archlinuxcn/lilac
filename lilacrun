@@ -24,13 +24,3 @@ mkdir -p ~/.lilac/log
 set +e
 . /etc/profile
 set -e
-
-export LILACPATH TZ LANG TERM PATH PYTHONPATH
-LILACPATH="$(dirname "$(readlink -f "${0}")")"
-
-PATH=$LILACPATH:$PATH
-
-[ ! -d "$LILACPATH"/pylib ] && download-pylib
-PYTHONPATH=$LILACPATH/pylib:$PYTHONPATH
-
-lilac "$@" #> ~/.lilac/log/"$(date +'%Y-%m-%dT%H:%M:%S')" 2>&1

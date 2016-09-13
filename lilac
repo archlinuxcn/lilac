@@ -7,6 +7,20 @@ import glob
 import logging
 import configparser
 
+def check_pylibs():
+  os.makedirs(lilacpath+'/pylib', exist_ok=True)
+  pylibs=['archpkg','htmlutils','mailutils','myutils','nicelogger','serializer']
+  for pylib in pylibs:
+    pylib=pylib+'.py'
+    if not os.path.exists(lilacpath+'/pylib/'+pylib):
+        import urllib.request
+        print('Downloading '+pylib)
+        urllib.request.urlretrieve('https://raw.githubusercontent.com/lilydjwg/winterpy/master/pylib/'+pylib,lilacpath+'/pylib/'+pylib)
+
+lilacpath=sys.path[0]
+check_pylibs()
+sys.path.append(lilacpath+'/pylib')
+
 import lilaclib
 from lilaclib import *
 from toposort import toposort_flatten
@@ -15,16 +29,19 @@ from nicelogger import enable_pretty_logging
 enable_pretty_logging('DEBUG', color=True)
 
 config = configparser.ConfigParser()
-config.read(os.environ['LILACPATH'] + '/config.ini')
+config.read(lilacpath+'/config.ini')
+
+# Setting up enviroment variables
+for item in config.items('enviroment variables'):
+  os.environ[item[0].upper()]=item[1]
+os.environ['PATH']=lilacpath+':'+os.environ['PATH']
+
 REPODIR = config.get('repository', 'repodir')
 DESTDIR = config.get('repository', 'destdir')
 REPOMAIL = config.get('repository', 'email')
 MYNAME = config.get('lilac', 'name')
 MYADDRESS = config.get('lilac', 'email')
 MYMASTER = config.get('lilac', 'master')
-
-for item in config.items('enviroment variables'):
-    os.environ[item[0].upper()]=item[1]
 
 logger = logging.getLogger(__name__)
 MYEMAIL = MYNAME + ' <' + MYADDRESS + '>'
@@ -43,6 +60,7 @@ nv_unchanged = {}
 DEPENDS = {}
 
 build_logger = logging.getLogger('build')
+
 def setup_build_logger():
   handler = logging.FileHandler(os.path.join(mydir, 'build.log'))
   handler.setFormatter(logging.Formatter('[%(asctime)s] %(message)s', '%Y-%m-%d %H:%M:%S'))
