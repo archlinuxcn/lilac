@@ -23,6 +23,9 @@ MYNAME = config.get('lilac', 'name')
 MYADDRESS = config.get('lilac', 'email')
 MYMASTER = config.get('lilac', 'master')
 
+for item in config.items('enviroment variables'):
+    os.environ[item[0].upper()]=item[1]
+
 logger = logging.getLogger(__name__)
 MYEMAIL = MYNAME + ' <' + MYADDRESS + '>'
 nvchecker_full = os.path.expanduser(os.path.join(REPODIR, 'nvchecker.ini'))
