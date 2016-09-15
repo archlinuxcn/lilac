@@ -416,7 +416,7 @@ def main(packages=None):
 
       if packages is None:
         git_reset_hard()
-        if config.getboolean('lilac','git push'):
+        if config.getboolean('lilac', 'git_push'):
           git_push()
     except Exception as e:
       tb = traceback.format_exc()
