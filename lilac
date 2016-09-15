@@ -431,6 +431,7 @@ def setup():
     fd = os.open(logfile, os.O_WRONLY | os.O_CREAT)
     os.dup2(fd, 1)
     os.dup2(fd, 2)
+    os.close(fd)
 
   enable_pretty_logging('DEBUG', color=True)
 
