@@ -7,31 +7,36 @@ import glob
 import logging
 import configparser
 import fcntl
-import requests
 import time
 
-def check_pylibs():
-  os.makedirs(lilacpath+'/pylib', exist_ok=True)
-  pylibs = ['archpkg', 'htmlutils', 'mailutils', 'myutils', 'nicelogger', 'serializer']
-  s = requests.Session()
-  for pylib in pylibs:
-    pylib += '.py'
-    if not os.path.exists(lilacpath+'/pylib/'+pylib):
-        print('Downloading '+pylib)
-        r = s.get('https://raw.githubusercontent.com/lilydjwg/winterpy/master/pylib/'+pylib)
-        with open(lilacpath+'/pylib/'+pylib, 'w') as f:
-          f.write(r.content.decode('utf-8'))
+topdir = sys.path[0]
 
-lilacpath = sys.path[0]
-check_pylibs()
-sys.path.append(lilacpath+'/pylib')
+def may_download_winterpy_libs():
+  import requests
+  os.makedirs(topdir+'/pylib', exist_ok=True)
+  libs = ['archpkg', 'htmlutils', 'mailutils', 'myutils',
+            'nicelogger', 'serializer']
+  s = requests.Session()
+  for name in libs:
+    name += '.py'
+    path = os.path.join(topdir, 'pylib', name)
+    if not os.path.exists(path):
+        print('Downloading %s' % name)
+        r = s.get('https://raw.githubusercontent.com/lilydjwg/winterpy/master/pylib/'+name)
+        with open(path, 'wb') as f:
+          f.write(r.content)
+
+if __name__ == '__main__':
+  may_download_winterpy_libs()
+
+sys.path.append(topdir+'/pylib')
 
 config = configparser.ConfigParser()
-config.read(lilacpath+'/config.ini')
+config.read(topdir+'/config.ini')
 
 # Setting up enviroment variables
 os.environ.update(config.items('enviroment variables'))
-os.environ['PATH'] = lilacpath+':'+os.environ['PATH']
+os.environ['PATH'] = topdir + ':' + os.environ['PATH']
 
 REPODIR = os.path.expanduser(config.get('repository', 'repodir'))
 DESTDIR = os.path.expanduser(config.get('repository', 'destdir'))
@@ -42,14 +47,9 @@ MYMASTER = config.get('lilac', 'master')
 MYEMAIL = MYNAME + ' <' + MYADDRESS + '>'
 
 mydir = os.path.expanduser('~/.lilac')
-AUR_REPO_DIR = os.path.join(mydir, 'aur')
-store = os.path.join(mydir, 'store')
 nvchecker_file = os.path.join(mydir, 'nvchecker.ini')
 oldver_file = os.path.join(mydir, 'oldver')
 newver_file = os.path.join(mydir, 'newver')
-nvchecker_full = os.path.expanduser(os.path.join(REPODIR, 'nvchecker.ini'))
-os.makedirs(AUR_REPO_DIR, exist_ok=True)
-open(oldver_file, 'a').close()
 building_packages = set()
 nvdata = {}
 nv_unchanged = {}
@@ -60,23 +60,17 @@ from lilaclib import *
 from toposort import toposort_flatten
 from nicelogger import enable_pretty_logging
 
-if not config.getboolean('lilac', 'output'):
-  import datetime
-  os.makedirs(mydir+'/log', exist_ok=True)
-  logfile = os.path.join(mydir, 'log', time.strftime('%Y-%m-%dT%H:%M:%S'))
-  logging.basicConfig(filename=logfile)
-
-enable_pretty_logging('DEBUG', color=True)
 logger = logging.getLogger(__name__)
 build_logger = logging.getLogger('build')
 
 def lockit():
-  lock = os.open(mydir+'/.lock', os.O_WRONLY, 600)
+  lock = os.open(mydir+'/.lock', os.O_WRONLY | os.O_CREAT, 600)
   try:
     fcntl.flock(lock, fcntl.LOCK_EX|fcntl.LOCK_NB)
-  except IOError:
+  except BlockingIOError:
     logger.warning('Waiting for lock to release...')
     fcntl.flock(lock, fcntl.LOCK_EX)
+
 def setup_build_logger():
   handler = logging.FileHandler(os.path.join(mydir, 'build.log'))
   handler.setFormatter(logging.Formatter('[%(asctime)s] %(message)s', '%Y-%m-%d %H:%M:%S'))
@@ -234,6 +228,7 @@ def sign_and_copy():
 
 def packages_need_update(U):
   full = configparser.ConfigParser(dict_type=dict, allow_no_value=True)
+  nvchecker_full = os.path.expanduser(os.path.join(REPODIR, 'nvchecker.ini'))
   try:
     full.read([nvchecker_full])
   except:
@@ -362,6 +357,7 @@ def start_build(*, dont_build_deps=False):
   return failed
 
 def main(packages=None):
+  store = os.path.join(mydir, 'store')
   with PickledData(store, default={}) as D:
     try:
       failed_info = D.get('failed', {})
@@ -429,17 +425,35 @@ def main(packages=None):
       msg = '调用栈如下：\n\n' + tb
       sendmail(MYMASTER, MYEMAIL, subject, msg)
 
-if __name__ == '__main__':
+def setup():
+  if config.getboolean('lilac', 'log_to_file'):
+    os.makedirs(os.path.join(mydir, 'log'), exist_ok=True)
+    logfile = os.path.join(mydir, 'log', time.strftime('%Y-%m-%dT%H:%M:%S'))
+    log_handler = logging.handlers.FileHandler(logfile)
+  else:
+    log_handler = None
+  enable_pretty_logging('DEBUG', handler=log_handler, color=True)
+
   lockit()
+
+  if not os.path.exists(oldver_file):
+    open(oldver_file, 'a').close()
+
+  aur_repo_dir = os.path.join(mydir, 'aur')
+  os.makedirs(aur_repo_dir, exist_ok=True)
+  lilaclib.AUR_REPO_DIR = aur_repo_dir
+
+  setup_build_logger()
+  os.chdir(REPODIR)
+  lilaclib.send_error_report = send_error_report
+
+if __name__ == '__main__':
   try:
-    setup_build_logger()
-    os.chdir(REPODIR)
-    lilaclib.AUR_REPO_DIR = AUR_REPO_DIR
-    lilaclib.send_error_report = send_error_report
+    setup()
 
     if len(sys.argv) == 1:
       main()
     else:
       main(sys.argv[1:])
-  except Exception as e:
+  except Exception:
     logger.exception('unexpected error')
