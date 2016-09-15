@@ -10,6 +10,7 @@ name = lilac
 email = lilac@example.com
 master = Your Name <youremail@example.com>
 log_to_file = off
+git_push = false
 
 [repository]
 email = repo@example.com
