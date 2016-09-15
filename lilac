@@ -428,10 +428,11 @@ def setup():
   if config.getboolean('lilac', 'log_to_file'):
     os.makedirs(os.path.join(mydir, 'log'), exist_ok=True)
     logfile = os.path.join(mydir, 'log', time.strftime('%Y-%m-%dT%H:%M:%S'))
-    log_handler = logging.FileHandler(logfile)
-  else:
-    log_handler = None
-  enable_pretty_logging('DEBUG', handler=log_handler, color=True)
+    fd = os.open(logfile, os.O_WRONLY | os.O_CREAT)
+    os.dup2(fd, 1)
+    os.dup2(fd, 2)
+
+  enable_pretty_logging('DEBUG', color=True)
 
   lockit()
 
