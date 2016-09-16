@@ -3,7 +3,12 @@ TZ = Asia/Shanghai
 LANG = zh_CN.UTF-8
 TERM = xterm
 # to raise the rate limit for GitHub API
-NVCHECKER_GITHUB_TOKEN =
+NVCHECKER_GITHUB_TOKEN = 
+
+[repository]
+email = repo@example.com
+repodir = /path/to/gitrepo
+destdir = /path/to/pkgdir
 
 [lilac]
 name = lilac
@@ -12,9 +17,14 @@ master = Your Name <youremail@example.com>
 log_to_file = off
 git_push = false
 
-[repository]
-email = repo@example.com
-repodir = /path/to/gitrepo
-destdir = /path/to/pkgdir
+[smtp]
+# leave it to empty to use localhost
+host = 
+# leave it to empty to use default port
+port = 
+use_ssl = no
+# leave the following to empty if not needed
+username = 
+password = 
 
 # vim: se ft=dosini:
