@@ -8,6 +8,7 @@ import logging
 import configparser
 import fcntl
 import time
+import smtplib
 
 topdir = sys.path[0]
 
@@ -81,6 +82,25 @@ def _check_dir(d):
   if isinstance(d, tuple):
     d = d[0]
   return os.path.isdir(os.path.join(REPODIR, d))
+
+def smtp_connect():
+  host = config.get('smtp', 'host')
+  if host == '':
+      host = 'localhost'
+  port = config.getint('smtp', 'port')
+  username = config.get('smtp', 'username')
+  password = config.get('smtp', 'password')
+  if config.getboolean('smtp', 'use_ssl'):
+    smtp_cls = smtplib.SMTP
+  else:
+    smtp_cls = smtplib.SMTP_SSL
+  if port == '':
+    connection = smtp_cls(host)
+  else:
+    connection = smtp_cls(host, port)
+  if username != '' and password != '':
+    connection.login(username, password)
+  return connection
 
 def check_depends(name, depends):
   failed = [d for d in depends if not _check_dir(d)]
@@ -449,6 +469,7 @@ def setup():
   setup_build_logger()
   os.chdir(REPODIR)
   lilaclib.send_error_report = send_error_report
+  lilaclib.smtp_connect = smtp_connect
 
 if __name__ == '__main__':
   try:
