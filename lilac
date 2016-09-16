@@ -116,7 +116,7 @@ def read_dependencies(packages):
         tb = traceback.format_exc()
         logger.exception('error while loading lilac.py for %s', package)
         send_error_report(package, exc=(e, tb),
-                          subject='[%s] 为软件包 %s 载入 lilac.py 时失败' %MYNAME)
+                          subject='为软件包 %s 载入 lilac.py 时失败')
         build_logger.error('%s failed', package)
         failed.add(package)
   return package_and_deps_to_build, dep_to_install, failed
@@ -189,17 +189,17 @@ def send_error_report(name, *, msg=None, exc=None, subject=None):
   if exc is not None:
     exception, tb = exc
     if isinstance(exception, CalledProcessError):
-      subject = subject or '[%s] 在编译软件包 %s 时发生错误' %MYNAME
+      subject = subject or '在编译软件包 %s 时发生错误'
       msgs.append('命令执行失败！\n\n命令 %r 返回了错误号 %d。' \
                   '命令的输出如下：\n\n%s' % (
                     exception.cmd, exception.returncode, exception.output))
       msgs.append('调用栈如下：\n\n' + tb)
     elif isinstance(exception, AurDownloadError):
-      subject = subject or '[%s] 在获取AUR包 %s 时发生错误' %MYNAME
+      subject = subject or '在获取AUR包 %s 时发生错误'
       msgs.append('获取AUR包失败！\n\n')
       msgs.append('调用栈如下：\n\n' + tb)
     else:
-      subject = subject or '[%s] 在编译软件包 %s 时发生未知错误' %MYNAME
+      subject = subject or '在编译软件包 %s 时发生未知错误'
       msgs.append('发生未知错误！调用栈如下：\n\n' + tb)
 
   if '%s' in subject:
@@ -241,7 +241,7 @@ def packages_need_update(U):
       who = MYMASTER
       more = traceback.format_exc()
 
-    subject = '[%s] nvchecker 配置文件错误' %MYNAME
+    subject = 'nvchecker 配置文件错误'
     msg = '调用栈如下：\n\n' + tb
     if more:
       msg += '\n获取维护者信息也失败了！调用栈如下：\n\n' + more
@@ -275,7 +275,7 @@ def packages_need_update(U):
       errorlines.append(l)
 
   if unknown or errorlines:
-    subject = '[%s] nvchecker 问题' %MYNAME
+    subject = 'nvchecker 问题'
     msg = ''
     if unknown:
       msg += '以下软件包没有相应的更新配置信息：\n\n' + ''.join(
@@ -329,7 +329,7 @@ def start_build(*, dont_build_deps=False):
             failed.add(pkg)
 
         except BuildPrefixError as e:
-          send_error_report(pkg, subject='[%s] lilac.py 脚本不被支持' %MYNAME,
+          send_error_report(pkg, subject='lilac.py 脚本不被支持',
                             msg = '''\
 软件包 {pkg} 的 build_prefix {bp!r} 不再被支持。
 注意：32位软件包的支持已经被放弃。如有需要，请自行编译后上传。'''.format(
@@ -343,7 +343,7 @@ def start_build(*, dont_build_deps=False):
           if faileddeps:
             reason += '唔，这些包没能成功打包呢：%r' % faileddeps
 
-          send_error_report(pkg, subject='[%s] %s 出现依赖问题' %MYNAME,
+          send_error_report(pkg, subject='%s 出现依赖问题',
                             msg = '''\
   在成功地编译打包 {built} 之后，{pkg} 依旧依赖 {deps}。
 
@@ -422,7 +422,7 @@ def main(packages=None):
     except Exception as e:
       tb = traceback.format_exc()
       logger.exception('unexpected error')
-      subject = '[%s] 运行时错误' %MYNAME
+      subject = '运行时错误'
       msg = '调用栈如下：\n\n' + tb
       sendmail(MYMASTER, MYEMAIL, subject, msg)
 
@@ -449,6 +449,7 @@ def setup():
   setup_build_logger()
   os.chdir(REPODIR)
   lilaclib.send_error_report = send_error_report
+  lilaclib.mailtag = MYNAME
 
 if __name__ == '__main__':
   try:

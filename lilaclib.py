@@ -39,6 +39,8 @@ PYPI_URL = 'https://pypi.python.org/pypi/%s/json'
 
 # to be override
 AUR_REPO_DIR = '/tmp'
+mailtag = 'lilac'
+
 def send_error_report(name, *, msg=None, exc=None, subject=None):
   # exc_info used as such needs Python 3.5+
   logger.error('%s\n\n%s', subject, msg, exc_info=exc)
@@ -204,7 +206,7 @@ def sendmail(to, from_, subject, msg):
   s.connect()
   if len(msg) > 5 * 1024 ** 2:
     msg = msg[:1024 ** 2] + '\n\n日志过长，省略ing……\n\n' + msg[-1024 ** 2:]
-  msg = assemble_mail(subject, to, from_, text=msg)
+  msg = assemble_mail('[%s] %s' % (mailtag, subject), to, from_, text=msg)
   s.send_message(msg)
   s.quit()
 
