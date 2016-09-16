@@ -32,6 +32,7 @@ if __name__ == '__main__':
 sys.path.append(topdir+'/pylib')
 
 config = configparser.ConfigParser()
+config.optionxform = lambda option: option
 config.read(topdir+'/config.ini')
 
 # Setting up enviroment variables
