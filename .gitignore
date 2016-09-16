@@ -1,3 +1,4 @@
 pylib/
 __pycache__/
 *.sw*
+config.ini
