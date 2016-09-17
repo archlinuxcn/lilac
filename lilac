@@ -47,6 +47,7 @@ MYNAME = config.get('lilac', 'name')
 MYADDRESS = config.get('lilac', 'email')
 MYMASTER = config.get('lilac', 'master')
 MYEMAIL = MYNAME + ' <' + MYADDRESS + '>'
+send_email = config.getboolean('lilac', 'send_email')
 
 mydir = os.path.expanduser('~/.lilac')
 nvchecker_file = os.path.join(mydir, 'nvchecker.ini')
@@ -227,7 +228,8 @@ def send_error_report(name, *, msg=None, exc=None, subject=None):
 
   msg = '\n'.join(msgs)
   logger.debug('mail to %s:\nsubject: %s\nbody: %s', who, subject, msg[:200])
-  sendmail(who, MYEMAIL, subject, msg)
+  if send_email:
+    sendmail(who, MYEMAIL, subject, msg)
 
 def sign_and_copy():
   pkgs = [x for x in os.listdir() if x.endswith('.pkg.tar.xz')]
@@ -260,7 +262,8 @@ def packages_need_update(U):
     msg = '调用栈如下：\n\n' + tb
     if more:
       msg += '\n获取维护者信息也失败了！调用栈如下：\n\n' + more
-    sendmail(who, MYEMAIL, subject, msg)
+    if send_email:
+      sendmail(who, MYEMAIL, subject, msg)
     raise
 
   all_known = set(full.sections())
@@ -298,7 +301,8 @@ def packages_need_update(U):
     if errorlines:
       msg += '以下软件包在更新检查时出错了：\n\n' + '\n'.join(
         errorlines) + '\n'
-    sendmail(REPOMAIL, MYEMAIL, subject, msg)
+    if send_email:
+      sendmail(REPOMAIL, MYEMAIL, subject, msg)
 
   for x in run_cmd(['nvcmp', nvchecker_file]).splitlines():
     pkg, oldver, _, newver = x.split()
@@ -439,7 +443,8 @@ def main(packages=None):
       logger.exception('unexpected error')
       subject = '运行时错误'
       msg = '调用栈如下：\n\n' + tb
-      sendmail(MYMASTER, MYEMAIL, subject, msg)
+      if send_email:
+        sendmail(MYMASTER, MYEMAIL, subject, msg)
 
 def setup():
   if config.getboolean('lilac', 'log_to_file'):
