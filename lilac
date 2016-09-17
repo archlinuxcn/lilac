@@ -464,7 +464,7 @@ def setup():
   setup_build_logger()
   os.chdir(REPODIR)
   lilaclib.send_error_report = send_error_report
-  lilaclib.mailtag = MYNAME
+  lilaclib.MAILTAG = MYNAME
   lilaclib.smtp_connect = smtp_connect
 
 if __name__ == '__main__':
