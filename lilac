@@ -9,8 +9,14 @@ import configparser
 import fcntl
 import time
 import smtplib
+import argparse
 
 topdir = os.path.dirname(os.path.abspath(__file__))
+
+parser = argparse.ArgumentParser()
+parser.add_argument('-c', '--config-file', help='path to the configuration file', type=str, default=topdir+'/config.ini')
+parser.add_argument('packages', help='manually specified packages to build', nargs='*')
+args = parser.parse_args()
 
 def may_download_winterpy_libs():
   import requests
@@ -34,7 +40,7 @@ sys.path.append(topdir+'/pylib')
 
 config = configparser.ConfigParser()
 config.optionxform = lambda option: option
-config.read(topdir+'/config.ini')
+config.read(os.path.expanduser(args.config_file))
 
 # Setting up enviroment variables
 os.environ.update(config.items('enviroment variables'))
@@ -471,9 +477,9 @@ if __name__ == '__main__':
   try:
     setup()
 
-    if len(sys.argv) == 1:
+    if len(args.packages) == 0:
       main()
     else:
-      main(sys.argv[1:])
+      main(args.packages)
   except Exception:
     logger.exception('unexpected error')
