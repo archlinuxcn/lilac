@@ -188,7 +188,7 @@ def find_maintainer(me, file='*'):
   head = 'HEAD'
   while True:
     commit, author = get_commit_and_email(head, file)
-    if not author.endswith(me):
+    if me not in author:
       return author
     head = commit + '^'
 
