@@ -1,9 +1,15 @@
 [enviroment variables]
 TZ = Asia/Shanghai
-LANG = zh_CN.UTF-8
 TERM = xterm
-# to raise the rate limit for GitHub API
-NVCHECKER_GITHUB_TOKEN =
+# this doesn't help with Python itself; please set externally if desirable
+# LANG = zh_CN.UTF-8
+# to raise the rate limit for GitHub API set the following variable
+# NVCHECKER_GITHUB_TOKEN =
+
+[repository]
+email = repo@example.com
+repodir = /path/to/gitrepo
+destdir = /path/to/pkgdir
 
 [lilac]
 name = lilac
@@ -12,9 +18,12 @@ master = Your Name <youremail@example.com>
 log_to_file = off
 git_push = false
 
-[repository]
-email = repo@example.com
-repodir = /path/to/gitrepo
-destdir = /path/to/pkgdir
+[smtp]
+# You can configure a SMTP account here; it defaults to localhost:53
+#host =
+#port =
+#use_ssl = no
+#username =
+#password =
 
 # vim: se ft=dosini:

@@ -41,6 +41,11 @@ PYPI_URL = 'https://pypi.python.org/pypi/%s/json'
 AUR_REPO_DIR = '/tmp'
 mailtag = 'lilac'
 
+def smtp_connect():
+  s = smtplib.SMTP()
+  s.connect()
+  return s
+
 def send_error_report(name, *, msg=None, exc=None, subject=None):
   # exc_info used as such needs Python 3.5+
   logger.error('%s\n\n%s', subject, msg, exc_info=exc)
@@ -190,7 +195,7 @@ def find_maintainer(me, file='*'):
   head = 'HEAD'
   while True:
     commit, author = get_commit_and_email(head, file)
-    if not author.endswith(me):
+    if me not in author:
       return author
     head = commit + '^'
 
@@ -202,8 +207,7 @@ def get_commit_and_email(head, file='*'):
   return commit, author
 
 def sendmail(to, from_, subject, msg):
-  s = smtplib.SMTP()
-  s.connect()
+  s = smtp_connect()
   if len(msg) > 5 * 1024 ** 2:
     msg = msg[:1024 ** 2] + '\n\n日志过长，省略ing……\n\n' + msg[-1024 ** 2:]
   msg = assemble_mail('[%s] %s' % (mailtag, subject), to, from_, text=msg)

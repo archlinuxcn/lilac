@@ -8,8 +8,9 @@ import logging
 import configparser
 import fcntl
 import time
+import smtplib
 
-topdir = sys.path[0]
+topdir = os.path.dirname(os.path.abspath(__file__))
 
 def may_download_winterpy_libs():
   import requests
@@ -65,7 +66,7 @@ logger = logging.getLogger(__name__)
 build_logger = logging.getLogger('build')
 
 def lockit():
-  lock = os.open(mydir+'/.lock', os.O_WRONLY | os.O_CREAT, 600)
+  lock = os.open(mydir+'/.lock', os.O_WRONLY | os.O_CREAT, 0o600)
   try:
     fcntl.flock(lock, fcntl.LOCK_EX|fcntl.LOCK_NB)
   except BlockingIOError:
@@ -81,6 +82,20 @@ def _check_dir(d):
   if isinstance(d, tuple):
     d = d[0]
   return os.path.isdir(os.path.join(REPODIR, d))
+
+def smtp_connect():
+  host = config.get('smtp', 'host', fallback='')
+  port = config.getint('smtp', 'port', fallback=0)
+  username = config.get('smtp', 'username', fallback='')
+  password = config.get('smtp', 'password', fallback='')
+  if config.getboolean('smtp', 'use_ssl', fallback=False):
+    smtp_cls = smtplib.SMTP
+  else:
+    smtp_cls = smtplib.SMTP_SSL
+  connection = smtp_cls(host, port)
+  if username != '' and password != '':
+    connection.login(username, password)
+  return connection
 
 def check_depends(name, depends):
   failed = [d for d in depends if not _check_dir(d)]
@@ -430,7 +445,7 @@ def setup():
   if config.getboolean('lilac', 'log_to_file'):
     os.makedirs(os.path.join(mydir, 'log'), exist_ok=True)
     logfile = os.path.join(mydir, 'log', time.strftime('%Y-%m-%dT%H:%M:%S'))
-    fd = os.open(logfile, os.O_WRONLY | os.O_CREAT)
+    fd = os.open(logfile, os.O_WRONLY | os.O_CREAT, 0o644)
     os.dup2(fd, 1)
     os.dup2(fd, 2)
     os.close(fd)
@@ -450,6 +465,7 @@ def setup():
   os.chdir(REPODIR)
   lilaclib.send_error_report = send_error_report
   lilaclib.mailtag = MYNAME
+  lilaclib.smtp_connect = smtp_connect
 
 if __name__ == '__main__':
   try:
