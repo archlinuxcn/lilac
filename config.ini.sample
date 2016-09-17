@@ -2,8 +2,8 @@
 TZ = Asia/Shanghai
 LANG = zh_CN.UTF-8
 TERM = xterm
-# to raise the rate limit for GitHub API
-NVCHECKER_GITHUB_TOKEN = 
+# to raise the rate limit for GitHub API set the following variable
+# NVCHECKER_GITHUB_TOKEN =
 
 [repository]
 email = repo@example.com
@@ -18,13 +18,11 @@ log_to_file = off
 git_push = false
 
 [smtp]
-# leave it to empty to use localhost
-host = 
-# leave it to empty to use default port
-port = 
-use_ssl = no
-# leave the following to empty if not needed
-username = 
-password = 
+# You can configure a SMTP account here; it defaults to localhost:53
+#host =
+#port =
+#use_ssl = no
+#username =
+#password =
 
 # vim: se ft=dosini:
