@@ -1,6 +1,7 @@
 [enviroment variables]
 TZ = Asia/Shanghai
-LANG = zh_CN.UTF-8
+# this doesn't help with Python itself; please set externally if desirable
+# LANG = zh_CN.UTF-8
 TERM = xterm
 # to raise the rate limit for GitHub API
 NVCHECKER_GITHUB_TOKEN =
