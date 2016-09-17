@@ -9,7 +9,7 @@ import configparser
 import fcntl
 import time
 
-topdir = sys.path[0]
+topdir = os.path.dirname(os.path.abspath(__file__))
 
 def may_download_winterpy_libs():
   import requests
