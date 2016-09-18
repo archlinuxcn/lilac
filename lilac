@@ -93,6 +93,7 @@ def smtp_connect():
   else:
     smtp_cls = smtplib.SMTP_SSL
   connection = smtp_cls(host, port)
+  connection.connect()
   if username != '' and password != '':
     connection.login(username, password)
   return connection
