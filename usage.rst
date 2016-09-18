@@ -2,21 +2,21 @@
 ========
 lilac 是由百合仙子（a.k.a. `依云 <https://github.com/lilydjwg>`_\ ）为社区编译机写的编译机器人。该机器人通过与 ``nvchecker`` 配合检查软件包新的版本，并通过社区源软件包目录下的 ``lilac.py`` 脚本对有新版本释出的软件自动进行打包构建，减去了手工打包的麻烦。在此特别感谢仙子~
 
-目前 lilac 每日北京时间凌晨在社区编译机上运行，以检查软件的新版本及自动打包。
+目前 lilac 每日北京时间1, 9, 17点17分在社区编译机上运行，以检查软件的新版本及自动打包。
 
 注意（非常重要）
 ----------------
-1. Stephen Zhang/zsrkmyn 用血的经验告诉乃：任何情况下，维护者个人请勿在社区编译机上直接运行 ``lilac`` 或 ``lilacrun``\ ，否则会导致严重后果！
- 
+1. Stephen Zhang/zsrkmyn 用血的经验告诉乃：任何情况下，维护者个人请勿在社区编译机上直接运行 ``lilac``\ ，否则会导致严重后果！
+
 2. 本地调试 lilac.py 文件，只需要设置好 PYTHONPATH 以及 PATH 环境变量，然后直接运行 ``./lilac.py``\ 。
 
-3. 如果需要在本地调试 lilac 时，请\ **务必修改**\ lilac中的代码，注意以下几点：
+3. 如果需要在本地调试 lilac 时，请\ **务必**\ 注意以下几点：
 
- 1. 注释 ``git_push()`` 相关代码，防止对远程仓库的污染；
+ 1. ``cp config.ini.sample config.ini`` 并修改 ``config.ini`` 以适应本地需求；
 
- #. 修改 ``lilac`` 顶部定义的相关变量，以适应本地需求；
+ #. 设置 ``git_push=false`` 以防止对远程仓库的污染；
 
- #. 修改或注释 ``sendmail()`` 相关代码，防止对其他维护者发送出错时的报错邮件，或者因为连接不上邮件服务器而出错。
+ #. 设置 ``send_email=false`` 以防止对其他维护者发送出错时的报错邮件，或者因为连接不上邮件服务器而出错。
 
 
 安装及配置
@@ -32,7 +32,7 @@ lilac 是由百合仙子（a.k.a. `依云 <https://github.com/lilydjwg>`_\ ）�
   cd lilac
   wget "https://raw.githubusercontent.com/lilydjwg/winterpy/master/pylib/"{archpkg,htmlutils,mailutils,myutils,nicelogger,serializer}.py
 
-**再次强调**\ ：除非你很清楚 lilac 的运作，否则请勿直接运行 ``lilac`` 或 ``lilacrun``\ ！
+**再次强调**\ ：除非你很清楚 lilac 的运作，否则请勿直接运行 ``lilac``\ ！
 
 设置环境变量
 ------------

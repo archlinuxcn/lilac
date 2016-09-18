@@ -17,6 +17,7 @@ email = lilac@example.com
 master = Your Name <youremail@example.com>
 log_to_file = off
 git_push = false
+send_email = false
 
 [smtp]
 # You can configure a SMTP account here; it defaults to localhost:53
