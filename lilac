@@ -13,10 +13,37 @@ import argparse
 
 topdir = os.path.dirname(os.path.abspath(__file__))
 
-parser = argparse.ArgumentParser()
-parser.add_argument('-c', '--config-file', help='path to the configuration file', type=str, default=topdir+'/config.ini')
-parser.add_argument('packages', help='manually specified packages to build', nargs='*')
-args = parser.parse_args()
+class Config():
+
+  def __init__(self, config_file):
+    inireader = configparser.ConfigParser()
+    inireader.optionxform = lambda option: option
+    inireader.read(os.path.expanduser(config_file))
+
+    # Setting up enviroment variables
+    os.environ.update(inireader.items('enviroment variables'))
+    os.environ['PATH'] = topdir + ':' + os.environ['PATH']
+    os.environ.update(inireader.items('enviroment variables'))
+
+    # Setting up repository
+    Config.REPODIR = os.path.expanduser(inireader.get('repository', 'repodir'))
+    Config.DESTDIR = os.path.expanduser(inireader.get('repository', 'destdir'))
+    Config.REPOMAIL = inireader.get('repository', 'email')
+
+    # Setting up lilac
+    Config.MYNAME = inireader.get('lilac', 'name')
+    Config.MYADDRESS = inireader.get('lilac', 'email')
+    Config.MYMASTER = inireader.get('lilac', 'master')
+    Config.MYEMAIL = Config.MYNAME + ' <' + Config.MYADDRESS + '>'
+    Config.log_to_file = inireader.getboolean('lilac', 'log_to_file')
+    Config.git_push = inireader.getboolean('lilac', 'git_push')
+
+    # Setting up smtp
+    Config.smtp_host = inireader.get('smtp', 'host', fallback='')
+    Config.smtp_port = inireader.getint('smtp', 'port', fallback=0)
+    Config.smtp_use_ssl = inireader.getboolean('smtp', 'use_ssl', fallback=False)
+    Config.smtp_username = inireader.get('smtp', 'username', fallback='')
+    Config.smtp_password = inireader.get('smtp', 'password', fallback='')
 
 def may_download_winterpy_libs():
   import requests
@@ -37,22 +64,6 @@ if __name__ == '__main__':
   may_download_winterpy_libs()
 
 sys.path.append(topdir+'/pylib')
-
-config = configparser.ConfigParser()
-config.optionxform = lambda option: option
-config.read(os.path.expanduser(args.config_file))
-
-# Setting up enviroment variables
-os.environ.update(config.items('enviroment variables'))
-os.environ['PATH'] = topdir + ':' + os.environ['PATH']
-
-REPODIR = os.path.expanduser(config.get('repository', 'repodir'))
-DESTDIR = os.path.expanduser(config.get('repository', 'destdir'))
-REPOMAIL = config.get('repository', 'email')
-MYNAME = config.get('lilac', 'name')
-MYADDRESS = config.get('lilac', 'email')
-MYMASTER = config.get('lilac', 'master')
-MYEMAIL = MYNAME + ' <' + MYADDRESS + '>'
 
 mydir = os.path.expanduser('~/.lilac')
 nvchecker_file = os.path.join(mydir, 'nvchecker.ini')
@@ -87,20 +98,16 @@ def setup_build_logger():
 def _check_dir(d):
   if isinstance(d, tuple):
     d = d[0]
-  return os.path.isdir(os.path.join(REPODIR, d))
+  return os.path.isdir(os.path.join(Config.REPODIR, d))
 
 def smtp_connect():
-  host = config.get('smtp', 'host', fallback='')
-  port = config.getint('smtp', 'port', fallback=0)
-  username = config.get('smtp', 'username', fallback='')
-  password = config.get('smtp', 'password', fallback='')
-  if config.getboolean('smtp', 'use_ssl', fallback=False):
+  if not Config.smtp_use_ssl:
     smtp_cls = smtplib.SMTP
   else:
     smtp_cls = smtplib.SMTP_SSL
-  connection = smtp_cls(host, port)
-  if username != '' and password != '':
-    connection.login(username, password)
+  connection = smtp_cls(Config.smtp_host, Config.smtp_port)
+  if Config.smtp_username != '' and Config.smtp_password != '':
+    connection.login(Config.smtp_username, Config.smtp_password)
   return connection
 
 def check_depends(name, depends):
@@ -119,14 +126,14 @@ def read_dependencies(packages):
   while packages:
     package = packages.pop()
     examined.add(package)
-    path = os.path.join(REPODIR, package)
+    path = os.path.join(Config.REPODIR, package)
     with at_dir(path):
       try:
         with load_lilac() as mod:
           depends = getattr(mod, 'depends', ())
           if depends:
             check_depends(package, depends)
-            ds = [Dependency.get(REPODIR, x) for x in depends]
+            ds = [Dependency.get(Config.REPODIR, x) for x in depends]
             dep_to_install[package][:0] = ds
             not_built = {x.pkgbase for x in ds if not x.resolve()}
             packages.update(not_built - examined)
@@ -150,7 +157,7 @@ def build_package(package):
     name, email = maintainer.split('<', 1)
     name = name.strip('" ')
     email = email.rstrip('>')
-    os.environ['PACKAGER'] = '%s (on behalf of %s) <%s>' % (MYNAME, name, email)
+    os.environ['PACKAGER'] = '%s (on behalf of %s) <%s>' % (Config.MYNAME, name, email)
     if is_nodejs_thing():
       # nodejs things have bad error handling. If they go mad, allow them to
       # be mad only one hour.
@@ -161,7 +168,7 @@ def build_package(package):
     try:
       with execution_timeout(time_limit * 3600):
         lilac_build(
-          REPODIR,
+          Config.REPODIR,
           oldver = n[0], newver = n[1],
           depends = DEPENDS.get(package, ()),
         )
@@ -183,7 +190,7 @@ def build_package(package):
 
 def find_maintainer_or_admin(package=None):
   if package is not None:
-    path = os.path.join(REPODIR, package)
+    path = os.path.join(Config.REPODIR, package)
   else:
     path = '.'
 
@@ -233,7 +240,7 @@ def send_error_report(name, *, msg=None, exc=None, subject=None):
 
   msg = '\n'.join(msgs)
   logger.debug('mail to %s:\nsubject: %s\nbody: %s', who, subject, msg[:200])
-  sendmail(who, MYEMAIL, subject, msg)
+  sendmail(who, Config.MYEMAIL, subject, msg)
 
 def sign_and_copy():
   pkgs = [x for x in os.listdir() if x.endswith('.pkg.tar.xz')]
@@ -244,13 +251,13 @@ def sign_and_copy():
     if not f.endswith(('.pkg.tar.xz', '.pkg.tar.xz.sig', '.src.tar.gz')):
       continue
     try:
-      os.link(f, os.path.join(DESTDIR, f))
+      os.link(f, os.path.join(Config.DESTDIR, f))
     except FileExistsError:
       pass
 
 def packages_need_update(U):
   full = configparser.ConfigParser(dict_type=dict, allow_no_value=True)
-  nvchecker_full = os.path.expanduser(os.path.join(REPODIR, 'nvchecker.ini'))
+  nvchecker_full = os.path.expanduser(os.path.join(Config.REPODIR, 'nvchecker.ini'))
   try:
     full.read([nvchecker_full])
   except:
@@ -266,7 +273,7 @@ def packages_need_update(U):
     msg = '调用栈如下：\n\n' + tb
     if more:
       msg += '\n获取维护者信息也失败了！调用栈如下：\n\n' + more
-    sendmail(who, MYEMAIL, subject, msg)
+    sendmail(who, Config.MYEMAIL, subject, msg)
     raise
 
   all_known = set(full.sections())
@@ -304,7 +311,7 @@ def packages_need_update(U):
     if errorlines:
       msg += '以下软件包在更新检查时出错了：\n\n' + '\n'.join(
         errorlines) + '\n'
-    sendmail(REPOMAIL, MYEMAIL, subject, msg)
+    sendmail(Config.REPOMAIL, Config.MYEMAIL, subject, msg)
 
   for x in run_cmd(['nvcmp', nvchecker_file]).splitlines():
     pkg, oldver, _, newver = x.split()
@@ -341,7 +348,7 @@ def start_build(*, dont_build_deps=False):
         # marked as failed, skip
         continue
 
-      path = os.path.join(REPODIR, pkg)
+      path = os.path.join(Config.REPODIR, pkg)
       with at_dir(path):
         try:
           if build_package(pkg):
@@ -438,17 +445,23 @@ def main(packages=None):
 
       if packages is None:
         git_reset_hard()
-        if config.getboolean('lilac', 'git_push'):
+        if Config.git_push:
           git_push()
     except Exception as e:
       tb = traceback.format_exc()
       logger.exception('unexpected error')
       subject = '运行时错误'
       msg = '调用栈如下：\n\n' + tb
-      sendmail(MYMASTER, MYEMAIL, subject, msg)
+      sendmail(MYMASTER, Config.MYEMAIL, subject, msg)
 
 def setup():
-  if config.getboolean('lilac', 'log_to_file'):
+  parser = argparse.ArgumentParser()
+  parser.add_argument('-c', '--config-file', help='path to the configuration file', type=str, default=topdir+'/config.ini')
+  parser.add_argument('packages', help='manually specified packages to build', nargs='*')
+  args = parser.parse_args()
+  Config(args.config_file)
+
+  if Config.log_to_file:
     os.makedirs(os.path.join(mydir, 'log'), exist_ok=True)
     logfile = os.path.join(mydir, 'log', time.strftime('%Y-%m-%dT%H:%M:%S'))
     fd = os.open(logfile, os.O_WRONLY | os.O_CREAT, 0o644)
@@ -468,9 +481,9 @@ def setup():
   lilaclib.AUR_REPO_DIR = aur_repo_dir
 
   setup_build_logger()
-  os.chdir(REPODIR)
+  os.chdir(Config.REPODIR)
   lilaclib.send_error_report = send_error_report
-  lilaclib.MAILTAG = MYNAME
+  lilaclib.MAILTAG = Config.MYNAME
   lilaclib.smtp_connect = smtp_connect
 
 if __name__ == '__main__':
