@@ -149,14 +149,14 @@ def download_aur_pkgbuild(name):
   content = BytesIO(try_aur_url(name))
   files = []
   with tarfile.open(name=name+".tar.gz", mode="r:gz", fileobj=content) as tarf:
-    for filename in tarf.getnames():
-      basename, remain = os.path.split(filename)
+    for tarinfo in tarf:
+      basename, remain = os.path.split(tarinfo.name)
       if basename == '':
         continue
       if remain in ('.AURINFO', '.SRCINFO', '.gitignore'):
         continue
-      with open(remain, "wb") as f:
-        f.write(tarf.extractfile(filename).read())
+      tarinfo.name = remain
+      tarf.extract(tarinfo)
       files.append(remain)
   return files
 
