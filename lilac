@@ -316,6 +316,16 @@ def packages_need_update(U):
   updated = set(nvdata.keys())
   return updated, unknown
 
+def load_rebuilding_list():
+  file = os.path.join(mydir, 'rebuild.list')
+  if not os.path.exists(file):
+    return {}
+
+  with open(file) as f:
+    packages = set(f.read().split())
+  os.umlink(file)
+  return packages
+
 def all_packages_I_manage():
   r = glob.glob('*/lilac.py')
   return {x.split('/', 1)[0] for x in r}
@@ -392,6 +402,7 @@ def main(packages=None):
         revisions = last_commit + '..HEAD'
         changed = get_changed_packages(revisions, U)
         updated, unknown = packages_need_update(U)
+        rebuilding = load_rebuilding_list()
 
         failed_prev = set(failed_info.keys())
         failed_updated = {k for k, v in failed_info.items()
@@ -405,7 +416,8 @@ def main(packages=None):
         # if pkgrel is updated, build a new release
         need_rebuild_pkgrel = {x for x in changed
                               if pkgrel_changed(revisions, x)} - unknown
-        all_building = need_update | need_rebuild_failed | need_rebuild_pkgrel
+        all_building = (need_update | need_rebuild_failed | need_rebuild_pkgrel
+                        | rebuilding)
 
         logger.info('these updated (pkgrel) packages should be rebuilt: %r',
                     need_rebuild_pkgrel or None)
