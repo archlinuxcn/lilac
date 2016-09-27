@@ -37,6 +37,7 @@ class Config():
     Config.MYEMAIL = Config.MYNAME + ' <' + Config.MYADDRESS + '>'
     Config.log_to_file = inireader.getboolean('lilac', 'log_to_file')
     Config.git_push = inireader.getboolean('lilac', 'git_push')
+    Config.send_email = inireader.getboolean('lilac', 'send_email')
 
     # Setting up smtp
     Config.smtp_host = inireader.get('smtp', 'host', fallback='')
@@ -101,11 +102,12 @@ def _check_dir(d):
   return os.path.isdir(os.path.join(Config.REPODIR, d))
 
 def smtp_connect():
-  if not Config.smtp_use_ssl:
-    smtp_cls = smtplib.SMTP
-  else:
+  if Config.smtp_use_ssl:
     smtp_cls = smtplib.SMTP_SSL
+  else:
+    smtp_cls = smtplib.SMTP
   connection = smtp_cls(Config.smtp_host, Config.smtp_port)
+  connection.connect()
   if Config.smtp_username != '' and Config.smtp_password != '':
     connection.login(Config.smtp_username, Config.smtp_password)
   return connection
@@ -240,7 +242,8 @@ def send_error_report(name, *, msg=None, exc=None, subject=None):
 
   msg = '\n'.join(msgs)
   logger.debug('mail to %s:\nsubject: %s\nbody: %s', who, subject, msg[:200])
-  sendmail(who, Config.MYEMAIL, subject, msg)
+  if Config.send_email:
+    sendmail(who, MYEMAIL, subject, msg)
 
 def sign_and_copy():
   pkgs = [x for x in os.listdir() if x.endswith('.pkg.tar.xz')]
@@ -273,7 +276,8 @@ def packages_need_update(U):
     msg = '调用栈如下：\n\n' + tb
     if more:
       msg += '\n获取维护者信息也失败了！调用栈如下：\n\n' + more
-    sendmail(who, Config.MYEMAIL, subject, msg)
+    if Config.send_email:
+      sendmail(who, MYEMAIL, subject, msg)
     raise
 
   all_known = set(full.sections())
@@ -311,7 +315,8 @@ def packages_need_update(U):
     if errorlines:
       msg += '以下软件包在更新检查时出错了：\n\n' + '\n'.join(
         errorlines) + '\n'
-    sendmail(Config.REPOMAIL, Config.MYEMAIL, subject, msg)
+    if Config.send_email:
+      sendmail(REPOMAIL, MYEMAIL, subject, msg)
 
   for x in run_cmd(['nvcmp', nvchecker_file]).splitlines():
     pkg, oldver, _, newver = x.split()
@@ -323,6 +328,16 @@ def packages_need_update(U):
 
   updated = set(nvdata.keys())
   return updated, unknown
+
+def load_rebuilding_list():
+  file = os.path.join(mydir, 'rebuild.list')
+  if not os.path.exists(file):
+    return {}
+
+  with open(file) as f:
+    packages = set(f.read().split())
+  os.umlink(file)
+  return packages
 
 def all_packages_I_manage():
   r = glob.glob('*/lilac.py')
@@ -400,6 +415,7 @@ def main(packages=None):
         revisions = last_commit + '..HEAD'
         changed = get_changed_packages(revisions, U)
         updated, unknown = packages_need_update(U)
+        rebuilding = load_rebuilding_list()
 
         failed_prev = set(failed_info.keys())
         failed_updated = {k for k, v in failed_info.items()
@@ -413,7 +429,8 @@ def main(packages=None):
         # if pkgrel is updated, build a new release
         need_rebuild_pkgrel = {x for x in changed
                               if pkgrel_changed(revisions, x)} - unknown
-        all_building = need_update | need_rebuild_failed | need_rebuild_pkgrel
+        all_building = (need_update | need_rebuild_failed | need_rebuild_pkgrel
+                        | rebuilding)
 
         logger.info('these updated (pkgrel) packages should be rebuilt: %r',
                     need_rebuild_pkgrel or None)
@@ -452,7 +469,8 @@ def main(packages=None):
       logger.exception('unexpected error')
       subject = '运行时错误'
       msg = '调用栈如下：\n\n' + tb
-      sendmail(MYMASTER, Config.MYEMAIL, subject, msg)
+      if Config.send_email:
+        sendmail(MYMASTER, MYEMAIL, subject, msg)
 
 def setup():
   parser = argparse.ArgumentParser()
@@ -469,7 +487,11 @@ def setup():
     os.dup2(fd, 2)
     os.close(fd)
 
-  enable_pretty_logging('DEBUG', color=True)
+  enable_pretty_logging('DEBUG')
+  if 'MAKEFLAGS' not in os.environ:
+    cores = os.cpu_count()
+    if cores is not None:
+      os.environ['MAKEFLAGS'] = '-j{0} -l{0}'.format(cores)
 
   lockit()
 
