@@ -94,7 +94,9 @@ def smtp_connect():
   else:
     smtp_cls = smtplib.SMTP
   connection = smtp_cls(host, port)
-  connection.connect()
+  if not host:
+    # __init__ doesn't connect; let's do it
+    connection.connect()
   if username != '' and password != '':
     connection.login(username, password)
   return connection
