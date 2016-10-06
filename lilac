@@ -434,8 +434,13 @@ def main(packages=None):
         if x in failed_info:
           del failed_info[x]
       D['failed'] = failed_info
-      if need_update:
-        run_cmd(['nvtake', nvchecker_file] + list(need_update))
+
+      if config.getboolean('lilac', 'try_rebuild'):
+        if update_succeeded:
+          run_cmd(['nvtake', nvchecker_file] + list(update_succeeded))
+      else:
+        if need_update:
+          run_cmd(['nvtake', nvchecker_file] + list(need_update))
 
       if packages is None:
         git_reset_hard()
