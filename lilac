@@ -435,7 +435,7 @@ def main(packages=None):
           del failed_info[x]
       D['failed'] = failed_info
 
-      if config.getboolean('lilac', 'try_rebuild'):
+      if config.getboolean('lilac', 'rebuild_failed_pkgs'):
         if update_succeeded:
           run_cmd(['nvtake', nvchecker_file] + list(update_succeeded))
       else:
