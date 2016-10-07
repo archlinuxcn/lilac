@@ -15,7 +15,7 @@ destdir = /path/to/pkgdir
 name = lilac
 email = lilac@example.com
 master = Your Name <youremail@example.com>
-# Set to yes to automatically rebuild packages which built failed last time
+# Set to yes to automatically rebuild packages which failed to build last time
 rebuild_failed_pkgs = yes
 log_to_file = no
 git_push = no
