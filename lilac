@@ -106,8 +106,10 @@ def smtp_connect():
     smtp_cls = smtplib.SMTP_SSL
   else:
     smtp_cls = smtplib.SMTP
-  connection = smtp_cls(Config.smtp_host, Config.smtp_port)
-  connection.connect()
+  connection = smtp_cls(Config.host, Config.port)
+  if not Config.host:
+    # __init__ doesn't connect; let's do it
+    connection.connect()
   if Config.smtp_username != '' and Config.smtp_password != '':
     connection.login(Config.smtp_username, Config.smtp_password)
   return connection
@@ -457,8 +459,13 @@ def main(packages=None):
         if x in failed_info:
           del failed_info[x]
       D['failed'] = failed_info
-      if need_update:
-        run_cmd(['nvtake', nvchecker_file] + list(need_update))
+
+      if config.getboolean('lilac', 'rebuild_failed_pkgs'):
+        if update_succeeded:
+          run_cmd(['nvtake', nvchecker_file] + list(update_succeeded))
+      else:
+        if need_update:
+          run_cmd(['nvtake', nvchecker_file] + list(need_update))
 
       if packages is None:
         git_reset_hard()

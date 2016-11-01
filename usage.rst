@@ -14,9 +14,9 @@ lilac 是由百合仙子（a.k.a. `依云 <https://github.com/lilydjwg>`_\ ）�
 
  1. ``cp config.ini.sample config.ini`` 并修改 ``config.ini`` 以适应本地需求；
 
- #. 设置 ``git_push=false`` 以防止对远程仓库的污染；
+ #. 设置 ``git_push=no`` 以防止对远程仓库的污染；
 
- #. 设置 ``send_email=false`` 以防止对其他维护者发送出错时的报错邮件，或者因为连接不上邮件服务器而出错。
+ #. 设置 ``send_email=no`` 以防止对其他维护者发送出错时的报错邮件，或者因为连接不上邮件服务器而出错。
 
 
 安装及配置

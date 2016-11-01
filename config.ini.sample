@@ -15,9 +15,11 @@ destdir = /path/to/pkgdir
 name = lilac
 email = lilac@example.com
 master = Your Name <youremail@example.com>
-log_to_file = off
-git_push = false
-send_email = false
+# Set to yes to automatically rebuild packages which failed to build last time
+rebuild_failed_pkgs = yes
+log_to_file = no
+git_push = no
+send_email = no
 
 [smtp]
 # You can configure a SMTP account here; it defaults to localhost:53
