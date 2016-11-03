@@ -10,41 +10,42 @@ import fcntl
 import time
 import smtplib
 import argparse
+import types
 
 topdir = os.path.dirname(os.path.abspath(__file__))
 
-class Config():
+Config = types.SimpleNamespace()
 
-  def __init__(self, config_file):
-    inireader = configparser.ConfigParser()
-    inireader.optionxform = lambda option: option
-    inireader.read(os.path.expanduser(config_file))
+def init_config(config_file):
+  inireader = configparser.ConfigParser()
+  inireader.optionxform = lambda option: option
+  inireader.read(config_file)
 
-    # Setting up enviroment variables
-    os.environ.update(inireader.items('enviroment variables'))
-    os.environ['PATH'] = topdir + ':' + os.environ['PATH']
-    os.environ.update(inireader.items('enviroment variables'))
+  # Setting up enviroment variables
+  os.environ.update(inireader.items('enviroment variables'))
+  os.environ['PATH'] = topdir + ':' + os.environ['PATH']
+  os.environ.update(inireader.items('enviroment variables'))
 
-    # Setting up repository
-    Config.REPODIR = os.path.expanduser(inireader.get('repository', 'repodir'))
-    Config.DESTDIR = os.path.expanduser(inireader.get('repository', 'destdir'))
-    Config.REPOMAIL = inireader.get('repository', 'email')
+  # Setting up repository
+  Config.REPODIR = os.path.expanduser(inireader.get('repository', 'repodir'))
+  Config.DESTDIR = os.path.expanduser(inireader.get('repository', 'destdir'))
+  Config.REPOMAIL = inireader.get('repository', 'email')
 
-    # Setting up lilac
-    Config.MYNAME = inireader.get('lilac', 'name')
-    Config.MYADDRESS = inireader.get('lilac', 'email')
-    Config.MYMASTER = inireader.get('lilac', 'master')
-    Config.MYEMAIL = Config.MYNAME + ' <' + Config.MYADDRESS + '>'
-    Config.log_to_file = inireader.getboolean('lilac', 'log_to_file')
-    Config.git_push = inireader.getboolean('lilac', 'git_push')
-    Config.send_email = inireader.getboolean('lilac', 'send_email')
+  # Setting up lilac
+  Config.MYNAME = inireader.get('lilac', 'name')
+  Config.MYADDRESS = inireader.get('lilac', 'email')
+  Config.MYMASTER = inireader.get('lilac', 'master')
+  Config.MYEMAIL = Config.MYNAME + ' <' + Config.MYADDRESS + '>'
+  Config.log_to_file = inireader.getboolean('lilac', 'log_to_file')
+  Config.git_push = inireader.getboolean('lilac', 'git_push')
+  Config.send_email = inireader.getboolean('lilac', 'send_email')
 
-    # Setting up smtp
-    Config.smtp_host = inireader.get('smtp', 'host', fallback='')
-    Config.smtp_port = inireader.getint('smtp', 'port', fallback=0)
-    Config.smtp_use_ssl = inireader.getboolean('smtp', 'use_ssl', fallback=False)
-    Config.smtp_username = inireader.get('smtp', 'username', fallback='')
-    Config.smtp_password = inireader.get('smtp', 'password', fallback='')
+  # Setting up smtp
+  Config.smtp_host = inireader.get('smtp', 'host', fallback='')
+  Config.smtp_port = inireader.getint('smtp', 'port', fallback=0)
+  Config.smtp_use_ssl = inireader.getboolean('smtp', 'use_ssl', fallback=False)
+  Config.smtp_username = inireader.get('smtp', 'username', fallback='')
+  Config.smtp_password = inireader.get('smtp', 'password', fallback='')
 
 def may_download_winterpy_libs():
   import requests
@@ -481,10 +482,13 @@ def main(packages=None):
 
 def setup():
   parser = argparse.ArgumentParser()
-  parser.add_argument('-c', '--config-file', help='path to the configuration file', type=str, default=topdir+'/config.ini')
-  parser.add_argument('packages', help='manually specified packages to build', nargs='*')
+  parser.add_argument('-c', '--config-file', type=str,
+                      default = topdir+'/config.ini',
+                      help = 'path to the configuration file')
+  parser.add_argument('packages', nargs='*',
+                      help='manually specify packages to build')
   args = parser.parse_args()
-  Config(args.config_file)
+  init_config(args.config_file)
 
   if Config.log_to_file:
     os.makedirs(os.path.join(mydir, 'log'), exist_ok=True)
