@@ -480,14 +480,7 @@ def main(packages=None):
       if Config.send_email:
         sendmail(MYMASTER, MYEMAIL, subject, msg)
 
-def setup():
-  parser = argparse.ArgumentParser()
-  parser.add_argument('-c', '--config-file', type=str,
-                      default = topdir+'/config.ini',
-                      help = 'path to the configuration file')
-  parser.add_argument('packages', nargs='*',
-                      help='manually specify packages to build')
-  args = parser.parse_args()
+def setup(args):
   init_config(args.config_file)
 
   if Config.log_to_file:
@@ -521,7 +514,15 @@ def setup():
 
 if __name__ == '__main__':
   try:
-    setup()
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-c', '--config-file', type=str,
+                        default = topdir+'/config.ini',
+                        help = 'path to the configuration file')
+    parser.add_argument('packages', nargs='*',
+                        help='manually specify packages to build')
+    args = parser.parse_args()
+
+    setup(args)
 
     if len(args.packages) == 0:
       main()
