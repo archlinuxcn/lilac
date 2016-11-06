@@ -17,6 +17,8 @@ depends=('python')
 source=('{url}')
 md5sums=('{md5_digest}')
 
+export LANG=en_US.UTF-8
+
 build() {{
   cd "$srcdir/$_pkgname-$pkgver"
   python3 setup.py build
