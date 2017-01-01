@@ -310,6 +310,10 @@ def aur_pre_build(name=None, *, do_vcs_update=True):
 
   if do_vcs_update and name.endswith(('-git', '-hg', '-svn', '-bzr')):
     vcs_update()
+    # recheck after sync, because AUR pkgver may lag behind
+    new_pkgver, new_pkgrel = get_pkgver_and_pkgrel()
+    if pkgver and pkgver == new_pkgver:
+      update_pkgrel(max(pkgrel, new_pkgrel))
 
 def vcs_update():
   run_cmd(['makepkg', '-od'], use_pty=True)
