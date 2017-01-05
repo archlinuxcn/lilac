@@ -316,6 +316,8 @@ def aur_pre_build(name=None, *, do_vcs_update=True):
       update_pkgrel(max(pkgrel, new_pkgrel))
 
 def vcs_update():
+  # clean up the old source tree
+  shutil.rmtree('src', ignore_errors=True)
   run_cmd(['makepkg', '-od'], use_pty=True)
 
 def aur_post_build():
