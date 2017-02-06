@@ -308,7 +308,8 @@ def packages_need_update(U):
       sendmail(REPOMAIL, MYEMAIL, subject, msg)
 
   for x in run_cmd(['nvcmp', nvchecker_file]).splitlines():
-    pkg, oldver, _, newver = x.split()
+    oldver, newver = x.split(' -> ')
+    pkg, oldver = x.split(' ', 1)
     if oldver == 'None':
       oldver = None
     nvdata[pkg] = oldver, newver
