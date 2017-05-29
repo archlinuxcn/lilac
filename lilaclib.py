@@ -537,7 +537,6 @@ def edit_file(filename):
 
 def update_pkgver(newver):
   for l in edit_file('PKGBUILD'):
-    l = l.rstrip('\n')
     if l.startswith('pkgver='):
       l = 'pkgver=' + newver
     print(l)
