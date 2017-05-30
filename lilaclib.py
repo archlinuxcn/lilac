@@ -446,6 +446,7 @@ def call_build_cmd(tag, depends, pkgs_to_build=None):
     cmd = ['%s-build' % tag, '--']
 
     if depends:
+      depends = depends[::-1] # reverse the order of dependency
       for x in depends:
         cmd += ['-I', x]
 
