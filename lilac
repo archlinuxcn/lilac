@@ -12,9 +12,10 @@ import smtplib
 
 topdir = os.path.dirname(os.path.abspath(__file__))
 
-def may_download_winterpy_libs():
+def may_download_pylibs():
   import requests
   os.makedirs(topdir+'/pylib', exist_ok=True)
+  # pylibs from https://github.com/lilydjwg/winterpy
   libs = ['archpkg', 'htmlutils', 'mailutils', 'myutils',
             'nicelogger', 'serializer']
   s = requests.Session()
@@ -26,9 +27,16 @@ def may_download_winterpy_libs():
         r = s.get('https://raw.githubusercontent.com/lilydjwg/winterpy/master/pylib/'+name)
         with open(path, 'wb') as f:
           f.write(r.content)
+  # toposort.py from https://bitbucket.org/ericvsmith/toposort
+  path = os.path.join(topdir, 'pylib', 'toposort.py')
+  if not os.path.exists(path):
+      print('Downloading toposort.py')
+      r = s.get('https://bitbucket.org/ericvsmith/toposort/raw/25b5894c4229cb888f77cf0c077c05e2464446ac/toposort.py')
+      with open(path, 'wb') as f:
+        f.write(r.content)
 
 if __name__ == '__main__':
-  may_download_winterpy_libs()
+  may_download_pylibs()
 
 sys.path.append(topdir+'/pylib')
 
