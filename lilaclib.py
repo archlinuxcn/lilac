@@ -408,7 +408,6 @@ def lilac_build(repodir, build_prefix=None, oldver=None, newver=None, accept_nou
         mod.pre_build()
       recv_gpg_keys()
 
-      pkgs_to_build = getattr(mod, 'packages', None)
       need_build_first = set()
 
       build_prefix = build_prefix or mod.build_prefix
@@ -425,7 +424,7 @@ def lilac_build(repodir, build_prefix=None, oldver=None, newver=None, accept_nou
       if need_build_first:
         raise MissingDependencies(need_build_first)
 
-      call_build_cmd(build_prefix, depend_packages, pkgs_to_build)
+      call_build_cmd(build_prefix, depend_packages)
       pkgs = [x for x in os.listdir() if x.endswith('.pkg.tar.xz')]
       if not pkgs:
         raise Exception('no package built')
@@ -436,12 +435,10 @@ def lilac_build(repodir, build_prefix=None, oldver=None, newver=None, accept_nou
       if hasattr(mod, 'post_build_always'):
         mod.post_build_always(success=success)
 
-def call_build_cmd(tag, depends, pkgs_to_build=None):
+def call_build_cmd(tag, depends):
   global build_output
   if tag == 'makepkg':
     cmd = ['makepkg', '--holdver']
-    if pkgs_to_build:
-      cmd.extend(['--pkg', ','.join(pkgs_to_build)])
   else:
     cmd = ['%s-build' % tag, '--']
 
@@ -450,9 +447,6 @@ def call_build_cmd(tag, depends, pkgs_to_build=None):
         cmd += ['-I', x]
 
     cmd.extend(['--', '--holdver'])
-
-    if pkgs_to_build:
-      cmd.extend(['--pkg', ','.join(pkgs_to_build)])
 
   # NOTE that Ctrl-C here may not succeed
   build_output = run_cmd(cmd, use_pty=True)
