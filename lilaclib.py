@@ -446,7 +446,7 @@ def call_build_cmd(tag, depends):
       for x in depends:
         cmd += ['-I', x]
 
-    cmd.extend(['--', '--holdver'])
+    cmd.extend(['--', '--holdver', '--noprogressbar'])
 
   # NOTE that Ctrl-C here may not succeed
   build_output = run_cmd(cmd, use_pty=True)
