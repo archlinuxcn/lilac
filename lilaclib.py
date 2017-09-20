@@ -389,7 +389,7 @@ def pypi_post_build():
   git_add_files('PKGBUILD')
   git_commit()
 
-def lilac_build(repodir, build_prefix=None, oldver=None, newver=None, accept_noupdate=False, depends=()):
+def lilac_build(repodir, build_prefix=None, oldver=None, newver=None, accept_noupdate=False, depends=(), bindmounts=()):
   with load_lilac() as mod:
     run_cmd(["sh", "-c", "rm -f -- *.pkg.tar.xz *.pkg.tar.xz.sig *.src.tar.gz"])
     success = False
@@ -424,7 +424,7 @@ def lilac_build(repodir, build_prefix=None, oldver=None, newver=None, accept_nou
       if need_build_first:
         raise MissingDependencies(need_build_first)
 
-      call_build_cmd(build_prefix, depend_packages)
+      call_build_cmd(build_prefix, depend_packages, bindmounts)
       pkgs = [x for x in os.listdir() if x.endswith('.pkg.tar.xz')]
       if not pkgs:
         raise Exception('no package built')
@@ -435,7 +435,7 @@ def lilac_build(repodir, build_prefix=None, oldver=None, newver=None, accept_nou
       if hasattr(mod, 'post_build_always'):
         mod.post_build_always(success=success)
 
-def call_build_cmd(tag, depends):
+def call_build_cmd(tag, depends, bindmounts=()):
   global build_output
   if tag == 'makepkg':
     cmd = ['makepkg', '--holdver']
@@ -445,6 +445,10 @@ def call_build_cmd(tag, depends):
     if depends:
       for x in depends:
         cmd += ['-I', x]
+
+    if bindmounts:
+      for x in bindmounts:
+        cmd += ['-d', x]
 
     cmd.extend(['--', '--holdver', '--noprogressbar'])
 

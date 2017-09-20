@@ -11,6 +11,9 @@ import time
 import smtplib
 
 topdir = os.path.dirname(os.path.abspath(__file__))
+BIND_MOUNTS = [
+  os.path.expanduser('~/.cargo') + ':' + '/build/.cargo',
+]
 
 def may_download_winterpy_libs():
   import requests
@@ -162,6 +165,7 @@ def build_package(package):
           REPODIR,
           oldver = n[0], newver = n[1],
           depends = DEPENDS.get(package, ()),
+          bindmounts = BIND_MOUNTS,
         )
     except TimeoutError:
       kill_child_processes()
