@@ -356,7 +356,7 @@ def pypi_pre_build(depends=None, python2=False, pypi_name=None, arch=None,
                     pkgbuild, flags=re.MULTILINE)
 
   if license:
-    pkgbuild = re.sub(r'^license=.*', f'license={license}',
+    pkgbuild = re.sub(r'^license=.*', f'license=({license})',
                       pkgbuild, flags=re.MULTILINE)
 
   if depends:
