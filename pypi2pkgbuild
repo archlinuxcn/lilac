@@ -32,7 +32,10 @@ package() {{
 
 def get_pkgbuild(j):
   info = j['info']
-  info['license'] = info['license'].split()[0]
+  try:
+    info['license'] = info['license'].split()[0]
+  except IndexError:
+    info['license'] = '(FIXME)'
   release = [x for x in j['releases'][info['version']]
              if x['python_version'] == 'source'][-1]
   info.update(release)

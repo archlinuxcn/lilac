@@ -330,7 +330,7 @@ def aur_post_build():
 
 def pypi_pre_build(depends=None, python2=False, pypi_name=None, arch=None,
                    makedepends=None, depends_setuptools=True,
-                   optdepends=None,
+                   optdepends=None, license=None,
                   ):
   if os.path.exists('PKGBUILD'):
     pkgver, pkgrel = get_pkgver_and_pkgrel()
@@ -352,12 +352,17 @@ def pypi_pre_build(depends=None, python2=False, pypi_name=None, arch=None,
   elif makedepends:
     makedepends.append('python-setuptools')
 
-  pkgbuild = re.sub(r'^pkgname=.*', 'pkgname=%s' % pkgname, pkgbuild, flags=re.MULTILINE)
+  pkgbuild = re.sub(r'^pkgname=.*', f'pkgname={pkgname}',
+                    pkgbuild, flags=re.MULTILINE)
+
+  if license:
+    pkgbuild = re.sub(r'^license=.*', f'license={license}',
+                      pkgbuild, flags=re.MULTILINE)
 
   if depends:
     pkgbuild = pkgbuild.replace(
       "depends=('python')",
-      "depends=('python' %s)" % ' '.join("'%s'" % x for x in depends))
+      "depends=('python' %s)" % ' '.join(f"'{x}'" for x in depends))
 
   if makedepends:
     pkgbuild = pkgbuild.replace(
