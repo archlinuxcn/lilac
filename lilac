@@ -172,7 +172,7 @@ def build_package(package):
       raise
     sign_and_copy()
     lilaclib.build_output = None
-    build_logger.info('%s successful', package)
+    build_logger.info('%s %s successful', package, n[1])
     return True
   except (MissingDependencies, BuildPrefixError):
     build_logger.error('%s failed', package)
