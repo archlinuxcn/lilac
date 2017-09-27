@@ -181,7 +181,7 @@ def build_package(package):
     tb = traceback.format_exc()
     logger.exception('packaging error')
     send_error_report(package, exc=(e, tb))
-    build_logger.error('%s failed', package)
+    build_logger.error('%s %s failed', package, n[1])
 
 def find_maintainer_or_admin(package=None):
   if package is not None:
