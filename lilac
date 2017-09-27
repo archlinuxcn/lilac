@@ -318,7 +318,7 @@ def packages_need_update(U):
       oldver = None
     nvdata[pkg] = oldver, newver
   with open(newver_file) as f:
-    nv_unchanged.update(x.split(None, 1) for x in f)
+    nv_unchanged.update(x.rstrip().split(None, 1) for x in f)
 
   updated = set(nvdata.keys())
   return updated, unknown
