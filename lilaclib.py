@@ -11,19 +11,16 @@ import importlib.util
 import re
 import fileinput
 import contextlib
-from collections import defaultdict
 from io import BytesIO
 import tarfile
-from functools import partial
 import shutil
 
 import requests
 
 from nicelogger import enable_pretty_logging
 from htmlutils import parse_document_from_requests
-from myutils import at_dir, execution_timeout
+from myutils import at_dir
 from mailutils import assemble_mail
-from serializer import PickledData
 import archpkg
 
 UserAgent = 'lilac/0.1 (package auto-build bot, by lilydjwg)'
