@@ -407,7 +407,6 @@ def lilac_build(repodir, build_prefix=None, oldver=None, newver=None, accept_nou
       if not hasattr(mod, '_G'):
         # fill nvchecker result unless already filled (e.g. by hand)
         mod._G = SimpleNamespace(oldver = oldver, newver = newver)
-      mod.update_pkgver = partial(update_pkgver, newver=newver)
       if hasattr(mod, 'pre_build'):
         logger.debug('accept_noupdate=%r, oldver=%r, newver=%r', accept_noupdate, oldver, newver)
         mod.pre_build()
@@ -538,13 +537,6 @@ def edit_file(filename):
     for line in f:
       yield line.rstrip('\n')
 
-def update_pkgver(newver):
-  for l in edit_file('PKGBUILD'):
-    if l.startswith('pkgver='):
-      l = 'pkgver=' + newver
-    print(l)
-  run_cmd(['updpkgsums'])
-
 def recv_gpg_keys():
   run_cmd(['recv_gpg_keys'])
 
@@ -610,3 +602,19 @@ def kill_child_processes():
 def is_nodejs_thing():
   with open('PKGBUILD') as f:
     return 'nodejs' in f.read()
+
+def update_pkgver_and_pkgrel(newver):
+  pkgver, pkgrel = get_pkgver_and_pkgrel()
+
+  for line in edit_file('PKGBUILD'):
+    if line.startswith('pkgver=') and pkgver != newver:
+        line = f'pkgver={newver}'
+    elif line.startswith('pkgrel='):
+      if pkgver != newver:
+        line = 'pkgrel=1'
+      else:
+        line = f'pkgrel={int(pkgrel)+1}'
+
+    print(line)
+
+  run_cmd(["updpkgsums"])
