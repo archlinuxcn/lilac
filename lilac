@@ -12,9 +12,6 @@ import smtplib
 from collections import defaultdict
 from subprocess import CalledProcessError
 
-from myutils import at_dir, execution_timeout
-from serializer import PickledData
-
 topdir = os.path.dirname(os.path.abspath(__file__))
 BIND_MOUNTS = [
   os.path.expanduser('~/.cargo') + ':' + '/build/.cargo',
@@ -66,10 +63,14 @@ nvdata = {}
 nv_unchanged = {}
 DEPENDS = {}
 
+from toposort import toposort_flatten
+
+from myutils import at_dir, execution_timeout
+from serializer import PickledData
+from nicelogger import enable_pretty_logging
+
 import lilaclib
 from lilaclib import *
-from toposort import toposort_flatten
-from nicelogger import enable_pretty_logging
 
 logger = logging.getLogger(__name__)
 build_logger = logging.getLogger('build')
