@@ -451,7 +451,7 @@ def call_build_cmd(tag, depends, bindmounts=()):
       for x in bindmounts:
         cmd += ['-d', x]
 
-    cmd.extend(['--', '--holdver', '--noprogressbar'])
+    cmd.extend(['--', '--holdver'])
 
   # NOTE that Ctrl-C here may not succeed
   build_output = run_cmd(cmd, use_pty=True)
