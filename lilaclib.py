@@ -327,6 +327,7 @@ def aur_post_build():
 
 def pypi_pre_build(depends=None, python2=False, pypi_name=None, arch=None,
                    makedepends=None, depends_setuptools=True,
+                   provides=None,
                    optdepends=None, license=None,
                   ):
   if os.path.exists('PKGBUILD'):
@@ -372,6 +373,12 @@ def pypi_pre_build(depends=None, python2=False, pypi_name=None, arch=None,
       '\nsource=',
       '\noptdepends=(%s)\nsource=' %
       ' '.join("'%s'" % x for x in optdepends))
+
+  if provides:
+    pkgbuild = pkgbuild.replace(
+      '\nsource=',
+      '\nprovides=(%s)\nsource=' %
+      ' '.join("'%s'" % x for x in provides))
 
   if python2:
     pkgbuild = re.sub(r'\bpython3?(?!\.)', 'python2', pkgbuild)
