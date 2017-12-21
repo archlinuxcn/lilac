@@ -605,7 +605,8 @@ def kill_child_processes():
 
 def is_nodejs_thing():
   with open('PKGBUILD') as f:
-    return 'nodejs' in f.read()
+    data = f.read()
+    return 'nodejs' in data and 'npm' in data
 
 def update_pkgver_and_pkgrel(newver):
   pkgver, pkgrel = get_pkgver_and_pkgrel()
