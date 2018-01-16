@@ -544,17 +544,16 @@ def edit_file(filename):
 def recv_gpg_keys():
   run_cmd(['recv_gpg_keys'])
 
-@contextlib.contextmanager
-def load_lilac():
+def load_lilac(package):
   try:
-    spec = importlib.util.spec_from_file_location('lilac.py', 'lilac.py')
+    spec = importlib.util.spec_from_file_location('lilac.py', package+'/lilac.py')
     mod = spec.loader.load_module()
-    yield mod
   finally:
     try:
       del sys.modules['lilac.py']
     except KeyError:
       pass
+    return mod
 
 def _update_aur_repo_real(pkgname):
   aurpath = os.path.join(AUR_REPO_DIR, pkgname)
