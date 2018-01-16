@@ -462,6 +462,8 @@ def call_build_cmd(tag, depends, bindmounts=()):
 
   # NOTE that Ctrl-C here may not succeed
   build_output = run_cmd(cmd, use_pty=True)
+  build_output = build_output.replace('\r\n', '\n')
+  build_output = re.sub(r'.*\r', '', build_output)
 
 def single_main(build_prefix='makepkg'):
   prepend_self_path()
