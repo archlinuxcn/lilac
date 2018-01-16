@@ -461,7 +461,13 @@ def call_build_cmd(tag, depends, bindmounts=()):
     cmd.extend(['--', '--holdver'])
 
   # NOTE that Ctrl-C here may not succeed
-  build_output = run_cmd(cmd, use_pty=True)
+  ansi_escape = re.compile(r'\x1B\[[0-?]*[ -/]*[@-~]')
+  with open('lilac.buildlog', 'w') as log:
+      build_output = run_cmd(cmd, use_pty=True)
+      build_output = build_output.replace('\r\n','\n')
+      build_output = ansi_escape.sub('', build_output)
+      build_output = re.sub(r'.*\r','',build_output)
+      log.write(build_output)
 
 def single_main(build_prefix='makepkg'):
   prepend_self_path()
@@ -532,15 +538,6 @@ def run_cmd(cmd, *, use_pty=False, silent=False):
 
   out = b''.join(out)
   out = out.decode('utf-8', errors='replace')
-
-  if cmd[0][-6:] == '-build':
-      ansi_escape = re.compile(r'\x1B\[[0-?]*[ -/]*[@-~]')
-      out=ansi_escape.sub('', out)
-      out=re.sub(r'\r\n','\n',out)
-      out=re.sub(r'.*\r','',out)
-      log = open('lilac.log', 'w')
-      log.writelines(out)
-      log.close()
   if code != 0:
       raise CalledProcessError(code, cmd, out)
   return out
