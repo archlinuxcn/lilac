@@ -532,6 +532,15 @@ def run_cmd(cmd, *, use_pty=False, silent=False):
 
   out = b''.join(out)
   out = out.decode('utf-8', errors='replace')
+
+  if cmd[0][-6:] == '-build':
+      ansi_escape = re.compile(r'\x1B\[[0-?]*[ -/]*[@-~]')
+      out=ansi_escape.sub('', out)
+      out=re.sub(r'\r\n','\n',out)
+      out=re.sub(r'.*\r','',out)
+      log = open('lilac.log', 'w')
+      log.writelines(out)
+      log.close()
   if code != 0:
       raise CalledProcessError(code, cmd, out)
   return out
