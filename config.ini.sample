@@ -20,6 +20,7 @@ rebuild_failed_pkgs = yes
 log_to_file = no
 git_push = no
 send_email = no
+save_buildlog = no
 
 [smtp]
 # You can configure a SMTP account here; it defaults to localhost:53
