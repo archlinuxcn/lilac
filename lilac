@@ -189,7 +189,7 @@ def build_package(package):
     send_error_report(package, exc=(e, tb))
     build_logger.error('%s %s failed', package, n[1])
   if config.getboolean('lilac', 'save_buildlog'):
-    with open('lilac-%s.log' %n[1], 'w') as log:
+    with open('lilac-%s.log' % n[1].replace('/', '-'), 'w') as log:
       log.write(lilaclib.build_output)
   lilaclib.build_output = None
   return built_successfully
