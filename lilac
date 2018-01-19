@@ -152,6 +152,7 @@ def read_dependencies(packages):
 def build_package(package):
   logger.info('building %s', package)
   try:
+    built_successfully = False
     n = nvdata.get(package, (nv_unchanged[package],) * 2)
     maintainer = find_maintainer(MYADDRESS)
     name, email = maintainer.split('<', 1)
@@ -177,9 +178,8 @@ def build_package(package):
       kill_child_processes()
       raise
     sign_and_copy()
-    lilaclib.build_output = None
+    built_successfully = True
     build_logger.info('%s %s successful', package, n[1])
-    return True
   except (MissingDependencies, BuildPrefixError):
     build_logger.error('%s %s failed', package, n[1])
     raise
@@ -188,6 +188,11 @@ def build_package(package):
     logger.exception('packaging error')
     send_error_report(package, exc=(e, tb))
     build_logger.error('%s %s failed', package, n[1])
+  if config.getboolean('lilac', 'save_buildlog'):
+    with open('lilac-%s.log' % n[1].replace('/', '-'), 'w') as log:
+      log.write(lilaclib.build_output)
+  lilaclib.build_output = None
+  return built_successfully
 
 def find_maintainer_or_admin(package=None):
   if package is not None:
