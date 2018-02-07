@@ -153,7 +153,7 @@ def build_package(package):
   logger.info('building %s', package)
   try:
     built_successfully = False
-    n = nvdata.get(package, (nv_unchanged[package],) * 2)
+    n = nvdata.get(package, (nv_unchanged.get(package),) * 2)
     maintainer = find_maintainer(MYADDRESS)
     name, email = maintainer.split('<', 1)
     name = name.strip('" ')
