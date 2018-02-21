@@ -189,19 +189,19 @@ def update_pkgrel(rel=None):
   logger.info('pkgrel updated to %s', rel)
 
 def find_maintainer(me, file='*'):
-  head = 'HEAD'
-  while True:
-    commit, author = get_commit_and_email(head, file)
-    if me not in author:
-      return author
-    head = commit + '^'
-
-def get_commit_and_email(head, file='*'):
   cmd = [
-    "git", "log", "-1", "--format=%H %an <%ae>", head, "--", file,
+    "git", "log", "--format=%H %an <%ae>", "--", file,
   ]
-  commit, author = run_cmd(cmd).rstrip().split(None, 1)
-  return commit, author
+  p = subprocess.Popen(cmd, stdout=subprocess.PIPE, universal_newlines=True)
+
+  try:
+    while True:
+      line = p.stdout.readline()
+      commit, author = line.rstrip().split(None, 1)
+      if me not in author:
+        return author
+  finally:
+    p.terminate()
 
 def sendmail(to, from_, subject, msg):
   s = smtp_connect()
