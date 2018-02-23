@@ -70,6 +70,7 @@ from serializer import PickledData
 from nicelogger import enable_pretty_logging
 
 import lilaclib
+from lilaclib import load_lilac, Dependency
 from lilaclib import *
 
 logger = logging.getLogger(__name__)
@@ -137,9 +138,10 @@ def read_dependencies(packages):
             dep_to_install[package][:0] = ds
             not_built = {x.pkgbase for x in ds if not x.resolve()}
             packages.update(not_built - examined)
+            deps = {x.pkgbase for x in ds}
           else:
-            not_built = set()
-          package_and_deps_to_build[package] = not_built
+            deps = set()
+          package_and_deps_to_build[package] = deps
       except Exception as e:
         tb = traceback.format_exc()
         logger.exception('error while loading lilac.py for %s', package)
