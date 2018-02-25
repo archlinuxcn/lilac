@@ -1,6 +1,6 @@
 写在前面
 ========
-lilac 是由百合仙子（a.k.a. `依云 <https://github.com/lilydjwg>`_\ ）为社区编译机写的编译机器人。该机器人通过与 ``nvchecker`` 配合检查软件包新的版本，并通过社区源软件包目录下的 ``lilac.py`` 脚本对有新版本释出的软件自动进行打包构建，减去了手工打包的麻烦。在此特别感谢仙子~
+lilac 是由百合仙子（a.k.a. `依云 <https://github.com/lilydjwg>`_\ ）为社区编译机写的编译机器人。该机器人通过与 `nvchecker <https://github.com/lilydjwg/nvchecker>`_ 配合检查软件包新的版本，并通过社区源软件包目录下的 ``lilac.py`` 脚本对有新版本释出的软件自动进行打包构建，减去了手工打包的麻烦。在此特别感谢仙子~
 
 目前 lilac 每日北京时间1, 9, 17点17分在社区编译机上运行，以检查软件的新版本及自动打包。
 
@@ -8,7 +8,7 @@ lilac 是由百合仙子（a.k.a. `依云 <https://github.com/lilydjwg>`_\ ）�
 ----------------
 1. Stephen Zhang/zsrkmyn 用血的经验告诉乃：任何情况下，维护者个人请勿在社区编译机上直接运行 ``lilac``\ ，否则会导致严重后果！
 
-2. 本地调试 lilac.py 文件，只需要设置好 PYTHONPATH 以及 PATH 环境变量，然后直接运行 ``./lilac.py``\ 。
+2. 本地调试 lilac.py 文件，只需要设置好 ``PYTHONPATH`` 以及 ``PATH`` 环境变量，然后直接运行 ``./lilac.py``\ 。
 
 3. 如果需要在本地调试 lilac 时，请\ **务必**\ 注意以下几点：
 
@@ -78,7 +78,7 @@ lilac 是由百合仙子（a.k.a. `依云 <https://github.com/lilydjwg>`_\ ）�
   if __name__ == '__main__'
     single_main()
 
-保存并运行 ``lilac.py``\\ ： ::
+保存并运行 ``lilac.py``\ ： ::
 
   ./lilac.py
 
@@ -86,7 +86,7 @@ lilac 是由百合仙子（a.k.a. `依云 <https://github.com/lilydjwg>`_\ ）�
 ------------------
 要使 lilac 正确工作，还需要将软件包的信息添加到社区源仓库中的 ``nvchecker.ini`` 中。
 
-详细信息请参看\ `关于 nvchecker 的使用 <https://github.com/archlinuxcn/repo/wiki/%E5%85%B3%E4%BA%8Envchecker%E7%9A%84%E4%BD%BF%E7%94%A8>`_\ 。
+详细信息请参看\ `用 nvchecker 检查新版本 <https://github.com/archlinuxcn/repo/wiki/%E7%94%A8-nvchecker-%E6%A3%80%E6%9F%A5%E6%96%B0%E7%89%88%E6%9C%AC>`_\ 。
 
 使用模板
 --------
