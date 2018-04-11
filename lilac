@@ -9,6 +9,7 @@ import configparser
 import fcntl
 import time
 import smtplib
+from copy import copy
 from collections import defaultdict
 from subprocess import CalledProcessError
 
@@ -137,8 +138,8 @@ def read_dependencies(packages):
             ds = [Dependency.get(REPODIR, x) for x in depends]
             dep_to_install[package][:0] = ds
             not_built = {x.pkgbase for x in ds if not x.resolve()}
-            packages.update(not_built - examined)
             deps = {x.pkgbase for x in ds}
+            packages.update((not_built - examined) | deps)
           else:
             deps = set()
           package_and_deps_to_build[package] = deps
@@ -346,8 +347,9 @@ def start_build(*, dont_build_deps=False):
     packages = building_packages
     failed = set()
   else:
-    package_and_deps_to_build, dep_to_install, failed = read_dependencies(building_packages)
+    package_and_deps_to_build, dep_to_install, failed = read_dependencies(copy(building_packages))
     packages = toposort_flatten(package_and_deps_to_build)
+    packages = [package for package in packages if package in (building_packages - failed)]
 
     # used to decide what to install when building
     DEPENDS = dep_to_install
@@ -394,6 +396,7 @@ def start_build(*, dont_build_deps=False):
 
   except KeyboardInterrupt:
     logger.info('keyboard interrupted, bye~')
+    sys.exit()
 
   return failed
 
