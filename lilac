@@ -62,6 +62,7 @@ building_packages = set()
 nvdata = {}
 nv_unchanged = {}
 DEPENDS = {}
+mods = {}
 
 from toposort import toposort_flatten
 
@@ -131,6 +132,7 @@ def read_dependencies(packages):
     with at_dir(path):
       try:
         with load_lilac() as mod:
+          mods[package] = mod
           depends = getattr(mod, 'depends', ())
           if depends:
             check_depends(package, depends)
@@ -175,6 +177,7 @@ def build_package(package):
           oldver = n[0], newver = n[1],
           depends = DEPENDS.get(package, ()),
           bindmounts = BIND_MOUNTS,
+          mod = mods[package]
         )
     except TimeoutError:
       kill_child_processes()
