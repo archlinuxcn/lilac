@@ -18,7 +18,6 @@
 * gpg (batch)
 * Local MTA (batch)
 * devtools (batch)
-* pkgbuild-introspection (batch, for updating AUR)
 * pid_children (batch) (a program to find out descendant processes by pid)
 
 Python 库

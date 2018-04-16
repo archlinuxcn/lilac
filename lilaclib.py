@@ -587,7 +587,12 @@ def _update_aur_repo_real(pkgname):
     shutil.copy(f, aurpath)
 
   with at_dir(aurpath):
-    run_cmd(['mksrcinfo'])
+    with open('.SRCINFO', 'wb') as srcinfo:
+      subprocess.run(
+        ['makepkg', '--printsrcinfo'],
+        stdout = srcinfo,
+        check = True,
+      )
     run_cmd(['git', 'add', '.'])
     run_cmd(['git', 'commit', '-m', 'update by lilac'])
     run_cmd(['git', 'push'])
