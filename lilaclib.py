@@ -23,6 +23,8 @@ from myutils import at_dir
 from mailutils import assemble_mail
 import archpkg
 
+from lilac2 import lilacpy
+
 UserAgent = 'lilac/0.1 (package auto-build bot, by lilydjwg)'
 
 s = requests.Session()
@@ -399,7 +401,7 @@ def pypi_post_build():
   git_commit()
 
 def lilac_build(repodir, build_prefix=None, oldver=None, newver=None, accept_noupdate=False, depends=(), bindmounts=()):
-  with load_lilac() as mod:
+  with lilacpy.load_lilac() as mod:
     run_cmd(["sh", "-c", "rm -f -- *.pkg.tar.xz *.pkg.tar.xz.sig *.src.tar.gz"])
     success = False
 
@@ -554,18 +556,6 @@ def edit_file(filename):
 
 def recv_gpg_keys():
   run_cmd(['recv_gpg_keys'])
-
-@contextlib.contextmanager
-def load_lilac():
-  try:
-    spec = importlib.util.spec_from_file_location('lilac.py', 'lilac.py')
-    mod = spec.loader.load_module()
-    yield mod
-  finally:
-    try:
-      del sys.modules['lilac.py']
-    except KeyError:
-      pass
 
 def _update_aur_repo_real(pkgname):
   aurpath = os.path.join(AUR_REPO_DIR, pkgname)

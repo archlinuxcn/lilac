@@ -70,8 +70,9 @@ from serializer import PickledData
 from nicelogger import enable_pretty_logging
 
 import lilaclib
-from lilaclib import load_lilac, Dependency
+from lilaclib import Dependency
 from lilaclib import *
+from lilac2 import lilacpy
 
 logger = logging.getLogger(__name__)
 build_logger = logging.getLogger('build')
@@ -130,7 +131,7 @@ def read_dependencies(packages):
     path = os.path.join(REPODIR, package)
     with at_dir(path):
       try:
-        with load_lilac() as mod:
+        with lilacpy.load_lilac() as mod:
           depends = getattr(mod, 'depends', ())
           if depends:
             check_depends(package, depends)
