@@ -21,8 +21,8 @@ def load_all(repodir):
       try:
         with load_lilac() as mod:
           mods[x.name] = mod
-      except Exception as e:
-        errors[x.name] = e
+      except Exception:
+        errors[x.name] = sys.exc_info()
 
   return mods, errors
 

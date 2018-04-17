@@ -72,7 +72,9 @@ from nicelogger import enable_pretty_logging
 import lilaclib
 from lilaclib import *
 from lilac2 import lilacpy
-from lilac2.packages import Dependency, DependencyManager
+from lilac2.packages import (
+  DependencyManager, get_dependency_map,
+)
 
 logger = logging.getLogger(__name__)
 build_logger = logging.getLogger('build')
@@ -117,40 +119,6 @@ def check_depends(name, depends):
   if failed:
     logger.error('%s has non-existent depends: %r', name, failed)
     raise FileNotFoundError('%s 的以下依赖不存在：%r' % (name, failed))
-
-def read_dependencies(depman, packages):
-  # package should be built before which
-  package_and_deps_to_build = {}
-  # package should be built with which installed
-  dep_to_install = defaultdict(list)
-  failed = set()
-  examined = set()
-  while packages:
-    package = packages.pop()
-    examined.add(package)
-    path = os.path.join(REPODIR, package)
-    with at_dir(path):
-      try:
-        with lilacpy.load_lilac() as mod:
-          depends = getattr(mod, 'depends', ())
-          if depends:
-            check_depends(package, depends)
-            ds = [depman.get(x) for x in depends]
-            dep_to_install[package][:0] = ds
-            not_built = {x.pkgbase for x in ds if not x.resolve()}
-            packages.update(not_built - examined)
-            deps = {x.pkgbase for x in ds}
-          else:
-            deps = set()
-          package_and_deps_to_build[package] = deps
-      except Exception as e:
-        tb = traceback.format_exc()
-        logger.exception('error while loading lilac.py for %s', package)
-        send_error_report(package, exc=(e, tb),
-                          subject='为软件包 %s 载入 lilac.py 时失败')
-        build_logger.error('%s failed', package)
-        failed.add(package)
-  return package_and_deps_to_build, dep_to_install, failed
 
 def build_package(package):
   logger.info('building %s', package)
@@ -348,11 +316,32 @@ def start_build(*, dont_build_deps=False):
     packages = building_packages
     failed = set()
   else:
-    package_and_deps_to_build, dep_to_install, failed = read_dependencies(depman, building_packages)
-    packages = toposort_flatten(package_and_deps_to_build)
+    # TODO: report errors
+    mods, errors = lilacpy.load_all()
+    failed = set(errors)
+    for name, exc_info in errors.items():
+      tb = traceback.format_exception(*exc_info)
+      logger.exception('error while loading lilac.py for %s', name)
+      send_error_report(name, exc=(exc_info[1], tb),
+                        subject='为软件包 %s 载入 lilac.py 时失败')
+      build_logger.error('%s failed', name)
+
+    depmap = get_dependency_map(depman, mods)
+
+    building_depmap = defaultdict(set)
+    for p in building_packages:
+      building_depmap[p] = depmap[p]
+
+    dep_building_map = {}
+    for name, ds in building_depmap.items():
+      not_resolved = [d for d in ds if not d.resolve()]
+      if not_resolved:
+        dep_building_map[name] = {x.pkgname for x in not_resolved}
+
+    packages = toposort_flatten(dep_building_map)
 
     # used to decide what to install when building
-    DEPENDS = dep_to_install
+    DEPENDS = building_depmap
 
   built = set()
   try:

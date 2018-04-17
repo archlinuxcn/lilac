@@ -3,21 +3,41 @@ import pathlib
 
 import archpkg
 
-def get_dependency_map(mods):
-  ret = defaultdict(set)
+def get_dependency_map(depman, mods):
+  map = defaultdict(set)
+  rmap = defaultdict(set)
 
   for name, mod in mods.items():
     depends = getattr(mod, 'depends', ())
+
+    ds = [depman.get(d) for d in depends]
+    for d in ds:
+      rmap[d.pkgname].add(name)
+
+  for name, ds in map.items():
+    dependers = rmap[name]
+    for dd in dependers:
+      map[dd].update(ds)
+
+  return map
 
 _DependencyTuple = namedtuple(
   '_DependencyTuple', 'pkgdir pkgname')
 
 class Dependency(_DependencyTuple):
+  _has_resolved = False
+
   def resolve(self):
+    if self._has_resolved:
+      return self._resolved
+
     try:
-      return self._find_local_package()
+      r = self._find_local_package()
     except FileNotFoundError:
-      return None
+      r = None
+    self._has_resolved = True
+    self._resolved = r
+    return r
 
   def _find_local_package(self):
     files = [x for x in self.pkgdir.iterdir()
