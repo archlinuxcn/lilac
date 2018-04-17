@@ -1,6 +1,6 @@
 import sys
 import contextlib
-import importlib
+import importlib.util
 import pathlib
 
 from myutils import at_dir

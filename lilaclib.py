@@ -7,7 +7,6 @@ import sys
 import smtplib
 import signal
 from types import SimpleNamespace
-import importlib.util
 import re
 import fileinput
 from io import BytesIO
