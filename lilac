@@ -72,7 +72,7 @@ from nicelogger import enable_pretty_logging
 import lilaclib
 from lilaclib import *
 from lilac2 import lilacpy
-from lilac2.packages import Dependency
+from lilac2.packages import Dependency, DependencyManager
 
 logger = logging.getLogger(__name__)
 build_logger = logging.getLogger('build')
@@ -118,7 +118,7 @@ def check_depends(name, depends):
     logger.error('%s has non-existent depends: %r', name, failed)
     raise FileNotFoundError('%s 的以下依赖不存在：%r' % (name, failed))
 
-def read_dependencies(packages):
+def read_dependencies(depman, packages):
   # package should be built before which
   package_and_deps_to_build = {}
   # package should be built with which installed
@@ -135,7 +135,7 @@ def read_dependencies(packages):
           depends = getattr(mod, 'depends', ())
           if depends:
             check_depends(package, depends)
-            ds = [Dependency.get(REPODIR, x) for x in depends]
+            ds = [depman.get(x) for x in depends]
             dep_to_install[package][:0] = ds
             not_built = {x.pkgbase for x in ds if not x.resolve()}
             packages.update(not_built - examined)
@@ -343,11 +343,12 @@ def all_packages_I_manage():
 
 def start_build(*, dont_build_deps=False):
   global DEPENDS
+  depman = DependencyManager(REPODIR)
   if dont_build_deps:
     packages = building_packages
     failed = set()
   else:
-    package_and_deps_to_build, dep_to_install, failed = read_dependencies(building_packages)
+    package_and_deps_to_build, dep_to_install, failed = read_dependencies(depman, building_packages)
     packages = toposort_flatten(package_and_deps_to_build)
 
     # used to decide what to install when building

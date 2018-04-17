@@ -10,7 +10,6 @@ from types import SimpleNamespace
 import importlib.util
 import re
 import fileinput
-import contextlib
 from io import BytesIO
 import tarfile
 import shutil
@@ -21,10 +20,8 @@ from nicelogger import enable_pretty_logging
 from htmlutils import parse_document_from_requests
 from myutils import at_dir
 from mailutils import assemble_mail
-import archpkg
 
 from lilac2 import lilacpy
-from lilac2.packages import Dependency
 
 UserAgent = 'lilac/0.1 (package auto-build bot, by lilydjwg)'
 

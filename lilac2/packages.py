@@ -1,8 +1,7 @@
-from collections import defaultdict
-import os
+from collections import defaultdict, namedtuple
+import pathlib
 
 import archpkg
-from myutils import at_dir
 
 def get_dependency_map(mods):
   ret = defaultdict(set)
@@ -10,26 +9,10 @@ def get_dependency_map(mods):
   for name, mod in mods.items():
     depends = getattr(mod, 'depends', ())
 
-class Dependency:
-  _CACHE = {}
+_DependencyTuple = namedtuple(
+  '_DependencyTuple', 'pkgdir pkgname')
 
-  @classmethod
-  def get(cls, topdir, what):
-    if isinstance(what, tuple):
-      pkgbase, pkgname = what
-    else:
-      pkgbase = pkgname = what
-
-    key = pkgbase, pkgname
-    if key not in cls._CACHE:
-      cls._CACHE[key] = cls(topdir, pkgbase, pkgname)
-    return cls._CACHE[key]
-
-  def __init__(self, topdir, pkgbase, pkgname):
-    self.pkgbase = pkgbase
-    self.pkgname = pkgname
-    self.directory = os.path.join(topdir, pkgbase)
-
+class Dependency(_DependencyTuple):
   def resolve(self):
     try:
       return self._find_local_package()
@@ -37,20 +20,37 @@ class Dependency:
       return None
 
   def _find_local_package(self):
-    with at_dir(self.directory):
-      fnames = [x for x in os.listdir() if x.endswith('.pkg.tar.xz')]
-      pkgs = []
-      for x in fnames:
-        info = archpkg.PkgNameInfo.parseFilename(x)
-        if info.name == self.pkgname:
-          pkgs.append(x)
+    files = [x for x in self.pkgdir.iterdir()
+              if x.name.endswith('.pkg.tar.xz')]
+    pkgs = []
+    for x in files:
+      info = archpkg.PkgNameInfo.parseFilename(x.name)
+      if info.name == self.pkgname:
+        pkgs.append(x)
 
-      if len(pkgs) == 1:
-        return os.path.abspath(pkgs[0])
-      elif not pkgs:
-        raise FileNotFoundError
-      else:
-        ret = sorted(
-          pkgs, reverse=True, key=lambda n: os.stat(n).st_mtime)[0]
-        return os.path.abspath(ret)
+    if len(pkgs) == 1:
+      return pkgs[0]
+    elif not pkgs:
+      raise FileNotFoundError
+    else:
+      ret = sorted(
+        pkgs, reverse=True, key=lambda x: x.stat().st_mtime)[0]
+      return ret
+
+class DependencyManager:
+  _CACHE = {}
+
+  def __init__(self, repodir):
+    self.repodir = pathlib.Path(repodir)
+
+  def get(self, what):
+    if isinstance(what, tuple):
+      pkgbase, pkgname = what
+    else:
+      pkgbase = pkgname = what
+
+    if pkgname not in self._CACHE:
+      self._CACHE[pkgname] = Dependency(
+        self.repodir / pkgbase, pkgname)
+    return self._CACHE[pkgname]
 
