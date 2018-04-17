@@ -70,9 +70,9 @@ from serializer import PickledData
 from nicelogger import enable_pretty_logging
 
 import lilaclib
-from lilaclib import Dependency
 from lilaclib import *
 from lilac2 import lilacpy
+from lilac2.packages import Dependency
 
 logger = logging.getLogger(__name__)
 build_logger = logging.getLogger('build')
