@@ -353,7 +353,7 @@ def pypi_post_build():
   git_add_files('PKGBUILD')
   git_commit()
 
-def lilac_build(repodir, build_prefix=None, oldver=None, newver=None, accept_noupdate=False, depends=(), bindmounts=()):
+def lilac_build(build_prefix=None, oldver=None, newver=None, accept_noupdate=False, depends=(), bindmounts=()):
   with lilacpy.load_lilac() as mod:
     run_cmd(["sh", "-c", "rm -f -- *.pkg.tar.xz *.pkg.tar.xz.sig *.src.tar.gz"])
     success = False
@@ -432,8 +432,6 @@ def single_main(build_prefix='makepkg'):
   enable_pretty_logging('DEBUG')
   lilac_build(
     build_prefix = build_prefix,
-    repodir = os.path.dirname(
-      os.path.dirname(sys.modules['__main__'].__file__)),
     accept_noupdate = True,
   )
 

@@ -140,7 +140,6 @@ def build_package(package):
     try:
       with execution_timeout(time_limit * 3600):
         lilac_build(
-          REPODIR,
           oldver = n[0], newver = n[1],
           depends = DEPENDS.get(package, ()),
           bindmounts = BIND_MOUNTS,
@@ -316,7 +315,6 @@ def start_build(*, dont_build_deps=False):
     packages = building_packages
     failed = set()
   else:
-    # TODO: report errors
     mods, errors = lilacpy.load_all()
     failed = set(errors)
     for name, exc_info in errors.items():
