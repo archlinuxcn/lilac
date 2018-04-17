@@ -25,5 +25,5 @@ Python 库
 
 * requests
 * lxml
-* winterpy
+* winterpy (will auto download if not available)
 * toposort
