@@ -319,6 +319,7 @@ def start_build(*, dont_build_deps=False):
     failed = set(errors)
     for name, exc_info in errors.items():
       tb = traceback.format_exception(*exc_info)
+      tb = ''.join(tb)
       logger.exception('error while loading lilac.py for %s', name)
       send_error_report(name, exc=(exc_info[1], tb),
                         subject='为软件包 %s 载入 lilac.py 时失败')
