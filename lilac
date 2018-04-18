@@ -74,8 +74,8 @@ import lilaclib
 from lilaclib import (
   git_pull, git_reset_hard, git_push, git_last_commit,
   EMPTY_COMMIT, pkgrel_changed, sendmail,
-  find_maintainer, is_nodejs_thing, lilac_build,
-  kill_child_processes, MissingDependencies, BuildPrefixError,
+  find_maintainer, lilac_build,
+  MissingDependencies, BuildPrefixError,
   AurDownloadError,
 )
 from lilac2 import lilacpy
@@ -83,6 +83,7 @@ from lilac2.packages import (
   DependencyManager, get_dependency_map, get_changed_packages,
 )
 from lilac2.api import run_cmd
+from lilac2.tools import kill_child_processes, is_nodejs_thing
 
 logger = logging.getLogger(__name__)
 build_logger = logging.getLogger('build')
