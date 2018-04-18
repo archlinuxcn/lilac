@@ -337,6 +337,8 @@ def start_build(*, dont_build_deps=False):
       not_resolved = [d for d in ds if not d.resolve()]
       if not_resolved:
         dep_building_map[name] = {x.pkgname for x in not_resolved}
+      elif not ds:
+        dep_building_map[name] = set()
 
     packages = toposort_flatten(dep_building_map)
 
