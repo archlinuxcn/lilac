@@ -35,6 +35,7 @@ def may_download_winterpy_libs():
 if __name__ == '__main__':
   may_download_winterpy_libs()
 
+sys.path.append(topdir)
 sys.path.append(topdir+'/pylib')
 
 config = configparser.ConfigParser()
