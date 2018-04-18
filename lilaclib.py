@@ -3,7 +3,6 @@ import traceback
 from subprocess import CalledProcessError
 import os
 import logging
-import sys
 import smtplib
 import signal
 from types import SimpleNamespace
@@ -21,6 +20,7 @@ from myutils import at_dir
 from mailutils import assemble_mail
 
 from lilac2 import lilacpy
+from lilac2.api import run_cmd
 
 UserAgent = 'lilac/0.1 (package auto-build bot, by lilydjwg)'
 
@@ -439,66 +439,6 @@ def prepend_self_path():
   mydir = os.path.realpath(os.path.dirname(__file__))
   path = os.environ['PATH']
   os.environ['PATH'] = mydir + os.pathsep + path
-
-def run_cmd(cmd, *, use_pty=False, silent=False):
-  logger.debug('running %r, %susing pty,%s showing output', cmd,
-               '' if use_pty else 'not ',
-               ' not' if silent else '')
-  if use_pty:
-    rfd, stdout = os.openpty()
-    stdin = stdout
-    # for fd leakage
-    logger.debug('pty master fd=%d, slave fd=%d.', rfd, stdout)
-  else:
-    stdin = subprocess.DEVNULL
-    stdout = subprocess.PIPE
-
-  exited = False
-  def child_exited(signum, sigframe):
-    nonlocal exited
-    exited = True
-  old_hdl = signal.signal(signal.SIGCHLD, child_exited)
-
-  p = subprocess.Popen(cmd, stdin = stdin, stdout = stdout, stderr = subprocess.STDOUT)
-  if use_pty:
-    os.close(stdout)
-  else:
-    rfd = p.stdout.fileno()
-  out = []
-
-  while True:
-    try:
-      r = os.read(rfd, 4096)
-      if not r:
-        if exited:
-          break
-        else:
-          continue
-    except InterruptedError:
-      continue
-    except OSError as e:
-      if e.errno == 5: # Input/output error: no clients run
-        break
-      else:
-        raise
-    r = r.replace(b'\x0f', b'') # ^O
-    if not silent:
-      sys.stderr.buffer.write(r)
-    out.append(r)
-
-  code = p.wait()
-  if use_pty:
-    os.close(rfd)
-  if old_hdl is not None:
-    signal.signal(signal.SIGCHLD, old_hdl)
-
-  out = b''.join(out)
-  out = out.decode('utf-8', errors='replace')
-  out = out.replace('\r\n', '\n')
-  out = re.sub(r'.*\r', '', out)
-  if code != 0:
-      raise CalledProcessError(code, cmd, out)
-  return out
 
 def edit_file(filename):
   with fileinput.input(files=(filename,), inplace=True) as f:
