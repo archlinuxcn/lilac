@@ -3,6 +3,8 @@ import pathlib
 
 import archpkg
 
+from .api import run_cmd
+
 def get_dependency_map(depman, mods):
   map = defaultdict(set)
   rmap = defaultdict(set)
@@ -73,4 +75,10 @@ class DependencyManager:
       self._CACHE[pkgname] = Dependency(
         self.repodir / pkgbase, pkgname)
     return self._CACHE[pkgname]
+
+def get_changed_packages(revisions):
+  cmd = ["git", "diff", "--name-only", revisions]
+  r = run_cmd(cmd).splitlines()
+  ret = {x.split('/', 1)[0] for x in r}
+  return ret
 
