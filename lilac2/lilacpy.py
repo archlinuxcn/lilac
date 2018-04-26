@@ -21,7 +21,7 @@ def load_all(repodir):
       try:
         with load_lilac() as mod:
           mods[x.name] = mod
-      except FileNotFoundError:
+      except (FileNotFoundError, ModuleNotFoundError):
         pass
       except Exception:
         errors[x.name] = sys.exc_info()
