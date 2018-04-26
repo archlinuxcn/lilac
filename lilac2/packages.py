@@ -15,6 +15,7 @@ def get_dependency_map(depman, mods):
     ds = [depman.get(d) for d in depends]
     for d in ds:
       rmap[d.pkgname].add(name)
+    map[name].update(ds)
 
   for name, ds in map.items():
     dependers = rmap[name]
