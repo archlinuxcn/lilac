@@ -322,13 +322,15 @@ def start_build(*, dont_build_deps=False):
 
     dep_building_map = {}
     for name, ds in building_depmap.items():
-      not_resolved = [d for d in ds if not d.resolve()]
-      if not_resolved:
-        dep_building_map[name] = {x.pkgname for x in not_resolved}
-      elif not ds:
-        dep_building_map[name] = set()
+      for d in ds:
+        if not d.resolve():
+          # we need build this too
+          build_package.add(d.pkgname)
+      dep_building_map[name] = {x.pkgname for x in ds}
 
     packages = toposort_flatten(dep_building_map)
+    # filter out already built packages
+    packages = [x for x in packages if x in building_packages]
 
     # used to decide what to install when building
     DEPENDS = building_depmap
