@@ -17,9 +17,13 @@ from htmlutils import parse_document_from_requests
 from myutils import at_dir
 
 from lilac2 import lilacpy
-from lilac2.api import run_cmd
+from lilac2.api import (
+  run_cmd, vcs_update,
+  git_push, git_pull,
+)
+assert git_push
 
-UserAgent = 'lilac/0.1 (package auto-build bot, by lilydjwg)'
+UserAgent = 'lilac/0.2a (package auto-build bot, by lilydjwg)'
 
 s = requests.Session()
 s.headers['User-Agent'] = UserAgent
@@ -195,23 +199,8 @@ def git_commit(*, check_status=True):
   run_cmd(['git', 'commit', '-m', 'auto update for package %s' % (
     os.path.split(os.getcwd())[1])])
 
-def git_pull():
-  output = run_cmd(['git', 'pull', '--no-edit'])
-  return 'up-to-date' not in output
-
 def git_reset_hard():
   run_cmd(['git', 'reset', '--hard'])
-
-def git_push():
-  while True:
-    try:
-      run_cmd(['git', 'push'])
-      break
-    except CalledProcessError as e:
-      if 'non-fast-forward' in e.output or 'fetch first' in e.output:
-        run_cmd(["git", "pull", "--rebase"])
-      else:
-        raise
 
 def git_last_commit(ref=None):
   cmd = ['git', 'log', '-1', '--format=%H']
@@ -241,11 +230,6 @@ def aur_pre_build(name=None, *, do_vcs_update=True):
     new_pkgver, new_pkgrel = get_pkgver_and_pkgrel()
     if pkgver and pkgver == new_pkgver:
       update_pkgrel(max(pkgrel, new_pkgrel))
-
-def vcs_update():
-  # clean up the old source tree
-  shutil.rmtree('src', ignore_errors=True)
-  run_cmd(['makepkg', '-od'], use_pty=True)
 
 def aur_post_build():
   git_rm_files(_g.aur_pre_files)
