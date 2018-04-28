@@ -83,7 +83,7 @@ from lilac2.repo import Repo
 logger = logging.getLogger(__name__)
 build_logger = logging.getLogger('build')
 sendmail = MailService(config).sendmail
-find_maintainer = Repo(config).find_maintainer
+REPO = Repo(config)
 
 def setup_build_logger():
   handler = logging.FileHandler(os.path.join(mydir, 'build.log'))
@@ -106,7 +106,7 @@ def build_package(package):
   try:
     built_successfully = False
     n = nvdata.get(package, (nv_unchanged.get(package),) * 2)
-    maintainer = find_maintainer()
+    maintainer = REPO.find_maintainer()
     name, email = maintainer.split('<', 1)
     name = name.strip('" ')
     email = email.rstrip('>')
@@ -153,7 +153,7 @@ def find_maintainer_or_admin(package=None):
 
   with at_dir(path):
     try:
-      who = find_maintainer()
+      who = REPO.find_maintainer()
       more = ''
     except:
       who = MYMASTER
@@ -220,7 +220,7 @@ def packages_need_update(U):
   except:
     tb = traceback.format_exc()
     try:
-      who = find_maintainer(file='nvchecker.ini')
+      who = REPO.find_maintainer(file='nvchecker.ini')
       more = ''
     except:
       who = MYMASTER
