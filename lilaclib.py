@@ -138,21 +138,6 @@ def update_pkgrel(rel=None):
     f.write(pkgbuild)
   logger.info('pkgrel updated to %s', rel)
 
-def find_maintainer(me, file='*'):
-  cmd = [
-    "git", "log", "--format=%H %an <%ae>", "--", file,
-  ]
-  p = subprocess.Popen(cmd, stdout=subprocess.PIPE, universal_newlines=True)
-
-  try:
-    while True:
-      line = p.stdout.readline()
-      commit, author = line.rstrip().split(None, 1)
-      if me not in author:
-        return author
-  finally:
-    p.terminate()
-
 def pkgrel_changed(revisions, pkgname):
   cmd = ["git", "diff", "-p", revisions, '--', pkgname + '/PKGBUILD']
   r = run_cmd(cmd, silent=True).splitlines()
