@@ -1,5 +1,8 @@
 import subprocess
 import os
+import traceback
+
+from myutils import at_dir
 
 from .mail import MailService
 
@@ -31,6 +34,22 @@ class Repo:
           return author
     finally:
       p.terminate()
+
+  def find_maintainer_or_admin(self, package=None):
+    if package is not None:
+      path = os.path.join(self.repodir, package)
+    else:
+      path = '.'
+
+    with at_dir(path):
+      try:
+        who = self.find_maintainer()
+        more = ''
+      except:
+        who = self.mymaster
+        more = traceback.format_exc()
+
+    return who, more
 
   def report_error(self, subject, msg):
     self.ms.sendmail(self.mymaster, subject, msg)

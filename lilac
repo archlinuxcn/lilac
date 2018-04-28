@@ -130,27 +130,11 @@ def build_package(package):
   lilaclib.build_output = None
   return built_successfully
 
-def find_maintainer_or_admin(package=None):
-  if package is not None:
-    path = os.path.join(REPO.repodir, package)
-  else:
-    path = '.'
-
-  with at_dir(path):
-    try:
-      who = REPO.find_maintainer()
-      more = ''
-    except:
-      who = MYMASTER
-      more = traceback.format_exc()
-
-  return who, more
-
 def send_error_report(name, *, msg=None, exc=None, subject=None):
   if msg is None and exc is None:
     raise TypeError('send_error_report received inefficient args')
 
-  who, tb_find = find_maintainer_or_admin()
+  who, tb_find = REPO.find_maintainer_or_admin()
 
   msgs = []
   if msg is not None:
