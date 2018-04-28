@@ -3,7 +3,6 @@
 import os
 import sys
 import traceback
-import glob
 import logging
 import configparser
 import fcntl
@@ -293,27 +292,13 @@ def packages_need_update(U):
   updated = set(nvdata.keys())
   return updated, unknown
 
-def all_packages_I_manage():
-  r = glob.glob('*/lilac.py')
-  return {x.split('/', 1)[0] for x in r}
-
-def start_build(*, dont_build_deps=False):
+def start_build(mods, failed, *, dont_build_deps=False):
   global DEPENDS
   depman = DependencyManager(REPODIR)
   if dont_build_deps:
     packages = building_packages
     failed = set()
   else:
-    mods, errors = lilacpy.load_all(REPODIR)
-    failed = set(errors)
-    for name, exc_info in errors.items():
-      tb = traceback.format_exception(*exc_info)
-      tb = ''.join(tb)
-      logger.exception('error while loading lilac.py for %s', name)
-      send_error_report(name, exc=(exc_info[1], tb),
-                        subject='为软件包 %s 载入 lilac.py 时失败')
-      build_logger.error('%s failed', name)
-
     depmap = get_dependency_map(depman, mods)
 
     building_depmap = defaultdict(set)
@@ -380,7 +365,22 @@ def start_build(*, dont_build_deps=False):
 
   return failed
 
+def load_all_lilac_and_report(REPODIR):
+  mods, errors = lilacpy.load_all(REPODIR)
+  failed = set(errors)
+  for name, exc_info in errors.items():
+    tb = traceback.format_exception(*exc_info)
+    tb = ''.join(tb)
+    logger.exception('error while loading lilac.py for %s', name)
+    send_error_report(name, exc=(exc_info[1], tb),
+                      subject='为软件包 %s 载入 lilac.py 时失败')
+    build_logger.error('%s failed', name)
+
+  return mods, failed
+
 def main(packages=None):
+  mods, failed = load_all_lilac_and_report(REPODIR)
+
   store = os.path.join(mydir, 'store')
   with PickledData(store, default={}) as D:
     try:
@@ -390,7 +390,7 @@ def main(packages=None):
         git_reset_hard()
         git_pull()
 
-        U = all_packages_I_manage()
+        U = set(mods)
         last_commit = D.get('last_commit', EMPTY_COMMIT)
         revisions = last_commit + '..HEAD'
         changed = get_changed_packages(revisions) & U
@@ -425,7 +425,8 @@ def main(packages=None):
       dont_build_deps = bool(packages)
 
       building_packages.update(all_building)
-      failed = start_build(dont_build_deps=dont_build_deps)
+      failed = start_build(mods, failed,
+                           dont_build_deps=dont_build_deps)
 
       if packages is None:
         D['last_commit'] = git_last_commit()
