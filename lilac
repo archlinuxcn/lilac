@@ -65,7 +65,7 @@ from nicelogger import enable_pretty_logging
 
 import lilaclib
 from lilaclib import (
-  git_pull, git_reset_hard, git_push, git_last_commit,
+  git_reset_hard, git_last_commit,
   EMPTY_COMMIT, pkgrel_changed, lilac_build,
   MissingDependencies, BuildPrefixError,
   AurDownloadError,
@@ -74,7 +74,7 @@ from lilac2 import lilacpy
 from lilac2.packages import (
   DependencyManager, get_dependency_map, get_changed_packages,
 )
-from lilac2.api import run_cmd
+from lilac2.cmd import run_cmd, git_pull, git_push
 from lilac2.tools import kill_child_processes, is_nodejs_thing
 from lilac2.mail import MailService
 from lilac2.repo import Repo
