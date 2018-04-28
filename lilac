@@ -90,17 +90,6 @@ def setup_build_logger():
   handler.setFormatter(logging.Formatter('[%(asctime)s] %(message)s', '%Y-%m-%d %H:%M:%S'))
   build_logger.addHandler(handler)
 
-def _check_dir(d):
-  if isinstance(d, tuple):
-    d = d[0]
-  return os.path.isdir(os.path.join(REPODIR, d))
-
-def check_depends(name, depends):
-  failed = [d for d in depends if not _check_dir(d)]
-  if failed:
-    logger.error('%s has non-existent depends: %r', name, failed)
-    raise FileNotFoundError('%s 的以下依赖不存在：%r' % (name, failed))
-
 def build_package(package):
   logger.info('building %s', package)
   try:
