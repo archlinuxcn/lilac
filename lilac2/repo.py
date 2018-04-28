@@ -1,8 +1,11 @@
 import subprocess
+import os
 
 class Repo:
   def __init__(self, config):
     self.myaddress = config.get('lilac', 'email')
+    self.repodir = os.path.expanduser(
+      config.get('repository', 'repodir'))
 
   def find_maintainer(self, file='*'):
     me = self.myaddress

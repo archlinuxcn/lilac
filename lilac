@@ -43,7 +43,6 @@ config.read(topdir+'/config.ini')
 os.environ.update(config.items('enviroment variables'))
 os.environ['PATH'] = topdir + ':' + os.environ['PATH']
 
-REPODIR = os.path.expanduser(config.get('repository', 'repodir'))
 DESTDIR = os.path.expanduser(config.get('repository', 'destdir'))
 REPOMAIL = config.get('repository', 'email')
 MYNAME = config.get('lilac', 'name')
@@ -136,7 +135,7 @@ def build_package(package):
 
 def find_maintainer_or_admin(package=None):
   if package is not None:
-    path = os.path.join(REPODIR, package)
+    path = os.path.join(REPO.repodir, package)
   else:
     path = '.'
 
@@ -203,7 +202,7 @@ def sign_and_copy():
 
 def packages_need_update(U):
   full = configparser.ConfigParser(dict_type=dict, allow_no_value=True)
-  nvchecker_full = os.path.expanduser(os.path.join(REPODIR, 'nvchecker.ini'))
+  nvchecker_full = os.path.expanduser(os.path.join(REPO.repodir, 'nvchecker.ini'))
   try:
     full.read([nvchecker_full])
   except:
@@ -273,7 +272,7 @@ def packages_need_update(U):
 
 def start_build(mods, failed, *, dont_build_deps=False):
   global DEPENDS
-  depman = DependencyManager(REPODIR)
+  depman = DependencyManager(REPO.repodir)
   if dont_build_deps:
     packages = building_packages
     failed = set()
@@ -307,7 +306,7 @@ def start_build(mods, failed, *, dont_build_deps=False):
         # marked as failed, skip
         continue
 
-      path = os.path.join(REPODIR, pkg)
+      path = os.path.join(REPO.repodir, pkg)
       with at_dir(path):
         try:
           if build_package(pkg):
@@ -344,8 +343,8 @@ def start_build(mods, failed, *, dont_build_deps=False):
 
   return failed
 
-def load_all_lilac_and_report(REPODIR):
-  mods, errors = lilacpy.load_all(REPODIR)
+def load_all_lilac_and_report(repodir):
+  mods, errors = lilacpy.load_all(repodir)
   failed = set(errors)
   for name, exc_info in errors.items():
     tb = traceback.format_exception(*exc_info)
@@ -358,7 +357,7 @@ def load_all_lilac_and_report(REPODIR):
   return mods, failed
 
 def main(packages=None):
-  mods, failed = load_all_lilac_and_report(REPODIR)
+  mods, failed = load_all_lilac_and_report(REPO.repodir)
 
   store = os.path.join(mydir, 'store')
   with PickledData(store, default={}) as D:
@@ -459,7 +458,7 @@ def setup():
   lilaclib.AUR_REPO_DIR = aur_repo_dir
 
   setup_build_logger()
-  os.chdir(REPODIR)
+  os.chdir(REPO.repodir)
   lilaclib.send_error_report = send_error_report
 
 if __name__ == '__main__':
