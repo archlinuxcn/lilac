@@ -1,11 +1,18 @@
 import subprocess
 import os
 
+from .mail import MailService
+
 class Repo:
   def __init__(self, config):
     self.myaddress = config.get('lilac', 'email')
+    self.mymaster = config.get('lilac', 'master')
+    self.repomail = config.get('repository', 'email')
+
     self.repodir = os.path.expanduser(
       config.get('repository', 'repodir'))
+
+    self.ms = MailService(config)
 
   def find_maintainer(self, file='*'):
     me = self.myaddress
@@ -24,3 +31,13 @@ class Repo:
           return author
     finally:
       p.terminate()
+
+  def report_error(self, subject, msg):
+    self.ms.sendmail(self.mymaster, subject, msg)
+
+  def sendmail(self, who, subject, msg):
+    self.ms.sendmail(who, subject, msg)
+
+  def send_repo_mail(self, subject, msg):
+    self.ms.sendmail(self.repomail, subject, msg)
+
