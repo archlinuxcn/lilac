@@ -8,6 +8,10 @@ class MailService:
     self.mailtag = config.get('lilac', 'name')
     self.send_email = config.getboolean('lilac', 'send_email')
 
+    myname = config.get('lilac', 'name')
+    myaddress = config.get('lilac', 'email')
+    self.from_ = f'{myname} <{myaddress}>'
+
   def smtp_connect(self):
     config = self.config
     host = config.get('smtp', 'host', fallback='')
@@ -26,7 +30,7 @@ class MailService:
       connection.login(username, password)
     return connection
 
-  def sendmail(self, to, from_, subject, msg):
+  def sendmail(self, to, subject, msg):
     if not self.send_email:
       return
 
@@ -35,7 +39,7 @@ class MailService:
       msg = msg[:1024 ** 2] + '\n\n日志过长，省略ing……\n\n' + \
           msg[-1024 ** 2:]
     msg = assemble_mail('[%s] %s' % (
-      self.mailtag, subject), to, from_, text=msg)
+      self.mailtag, subject), to, self.from_, text=msg)
     s.send_message(msg)
     s.quit()
 
