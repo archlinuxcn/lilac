@@ -20,6 +20,8 @@ from lilac2 import lilacpy
 from lilac2.api import (
   run_cmd, vcs_update,
   git_push, git_pull,
+  add_into_array,
+  add_depends, add_makedepends,
 )
 assert git_push
 
