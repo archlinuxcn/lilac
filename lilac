@@ -269,7 +269,7 @@ def start_build(mods, failed, *, dont_build_deps=False):
       for d in ds:
         if not d.resolve():
           # we need build this too
-          build_package.add(d.pkgname)
+          building_packages.add(d.pkgname)
       dep_building_map[name] = {x.pkgname for x in ds}
 
     packages = toposort_flatten(dep_building_map)
