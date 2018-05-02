@@ -332,6 +332,7 @@ def lilac_build(build_prefix=None, oldver=None, newver=None, accept_noupdate=Fal
           depend_packages.append(p)
       if need_build_first:
         raise MissingDependencies(need_build_first)
+      logger.info('depends: %s', depend_packages)
 
       makechrootpkg_args = []
       if hasattr(mod, 'makechrootpkg_args'):

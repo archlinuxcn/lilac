@@ -6,7 +6,6 @@ import traceback
 import logging
 import configparser
 import time
-from collections import defaultdict
 from subprocess import CalledProcessError
 
 topdir = os.path.dirname(os.path.abspath(__file__))
@@ -260,7 +259,7 @@ def start_build(mods, failed, *, dont_build_deps=False):
   else:
     depmap = get_dependency_map(depman, mods)
 
-    building_depmap = defaultdict(set)
+    building_depmap = {}
     for p in building_packages:
       building_depmap[p] = depmap[p]
 
