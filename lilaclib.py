@@ -23,7 +23,7 @@ from lilac2.api import (
   add_into_array,
   add_depends, add_makedepends,
 )
-assert git_push
+git_push, add_into_array, add_depends, add_makedepends
 
 UserAgent = 'lilac/0.2a (package auto-build bot, by lilydjwg)'
 
@@ -327,7 +327,7 @@ def lilac_build(build_prefix=None, oldver=None, newver=None, accept_noupdate=Fal
       for x in depends:
         p = x.resolve()
         if p is None:
-          need_build_first.add(x.pkgbase)
+          need_build_first.add(x.pkgname)
         else:
           depend_packages.append(p)
       if need_build_first:
