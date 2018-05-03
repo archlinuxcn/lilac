@@ -2,6 +2,7 @@ import configparser
 import os
 import traceback
 import logging
+from collections import namedtuple
 
 from .cmd import run_cmd
 from .const import mydir
@@ -11,6 +12,8 @@ logger = logging.getLogger(__name__)
 NVCHECKER_FILE = mydir / 'nvchecker.ini'
 OLDVER_FILE = mydir / 'oldver'
 NEWVER_FILE = mydir / 'newver'
+
+NvResult = namedtuple('NvResult', 'oldver newver')
 
 def packages_need_update(repo, U):
   full = configparser.ConfigParser(dict_type=dict, allow_no_value=True)
@@ -79,12 +82,15 @@ def packages_need_update(repo, U):
     pkg, oldver = oldver.split(' ', 1)
     if oldver == 'None':
       oldver = None
-    nvdata[pkg] = oldver, newver
-  nv_unchanged = {}
-  with open(NEWVER_FILE) as f:
-    nv_unchanged.update(x.rstrip().split(None, 1) for x in f)
+    nvdata[pkg] = NvResult(oldver, newver)
 
-  return nvdata, nv_unchanged, unknown
+  with open(NEWVER_FILE) as f:
+    for x in f:
+      name, version = x.rstrip().split(None, 1)
+      if name not in nvdata:
+        nvdata[name] = NvResult(None, version)
+
+  return nvdata, unknown
 
 def nvtake(L):
   run_cmd(['nvtake', NVCHECKER_FILE] + L)

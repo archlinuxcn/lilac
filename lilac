@@ -47,7 +47,6 @@ MYNAME = config.get('lilac', 'name')
 
 building_packages = set()
 nvdata = {}
-nv_unchanged = {}
 DEPENDS = {}
 
 from toposort import toposort_flatten
@@ -86,7 +85,7 @@ def build_package(package):
   logger.info('building %s', package)
   try:
     built_successfully = False
-    n = nvdata.get(package, (nv_unchanged.get(package),) * 2)
+    n = nvdata[package]
     maintainer = REPO.find_maintainer()
     name, email = maintainer.split('<', 1)
     name = name.strip('" ')
@@ -303,11 +302,10 @@ def main(packages=None):
                     need_update or None)
       else:
         all_building = set(packages)
-        _nvdata, _nv_unchanged, unknown = \
-            packages_need_update(all_building)
+        _nvdata, unknown = packages_need_update(all_building)
         nvdata.update(_nvdata)
-        nv_unchanged.update(_nv_unchanged)
-        updated = set(nvdata.keys())
+        updated = {x for x, y in nvdata.items()
+                   if y.oldver is not None}
 
         need_update = updated
         logger.info('these packages are manually specified: %r', all_building)
