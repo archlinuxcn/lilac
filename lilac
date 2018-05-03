@@ -279,6 +279,7 @@ def main(packages=None):
         revisions = last_commit + '..HEAD'
         changed = get_changed_packages(revisions) & U
         _nvdata, unknown = packages_need_update(REPO, U)
+        nvdata.update(_nvdata)
         updated = {x for x, y in nvdata.items()
                    if y.oldver is not None}
 
