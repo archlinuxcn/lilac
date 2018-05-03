@@ -5,7 +5,6 @@ import os
 import logging
 from types import SimpleNamespace
 import re
-import fileinput
 from io import BytesIO
 import tarfile
 import shutil
