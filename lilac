@@ -44,12 +44,7 @@ os.environ['PATH'] = topdir + ':' + os.environ['PATH']
 
 DESTDIR = os.path.expanduser(config.get('repository', 'destdir'))
 MYNAME = config.get('lilac', 'name')
-MYMASTER = config.get('lilac', 'master')
 
-mydir = os.path.expanduser('~/.lilac')
-nvchecker_file = os.path.join(mydir, 'nvchecker.ini')
-oldver_file = os.path.join(mydir, 'oldver')
-newver_file = os.path.join(mydir, 'newver')
 building_packages = set()
 nvdata = {}
 nv_unchanged = {}
@@ -75,6 +70,8 @@ from lilac2.packages import (
 from lilac2.cmd import run_cmd, git_pull, git_push
 from lilac2.tools import kill_child_processes, is_nodejs_thing
 from lilac2.repo import Repo
+from lilac2.const import mydir
+from lilac2.nvchecker import packages_need_update, nvtake
 
 logger = logging.getLogger(__name__)
 build_logger = logging.getLogger('build')
@@ -180,76 +177,6 @@ def sign_and_copy():
     except FileExistsError:
       pass
 
-def packages_need_update(U):
-  full = configparser.ConfigParser(dict_type=dict, allow_no_value=True)
-  nvchecker_full = os.path.expanduser(os.path.join(REPO.repodir, 'nvchecker.ini'))
-  try:
-    full.read([nvchecker_full])
-  except:
-    tb = traceback.format_exc()
-    try:
-      who = REPO.find_maintainer(file='nvchecker.ini')
-      more = ''
-    except:
-      who = MYMASTER
-      more = traceback.format_exc()
-
-    subject = 'nvchecker 配置文件错误'
-    msg = '调用栈如下：\n\n' + tb
-    if more:
-      msg += '\n获取维护者信息也失败了！调用栈如下：\n\n' + more
-    REPO.sendmail(who, subject, msg)
-    raise
-
-  all_known = set(full.sections())
-  unknown = U - all_known
-  if unknown:
-    logger.warn('unknown packages: %r', unknown)
-
-  newconfig = {k: full[k] for k in U & all_known}
-  newconfig['__config__'] = {
-    'oldver': oldver_file,
-    'newver': newver_file,
-  }
-  new = configparser.ConfigParser(dict_type=dict, allow_no_value=True)
-  new.read_dict(newconfig)
-  with open(nvchecker_file, 'w') as f:
-    new.write(f)
-  output = run_cmd(['nvchecker', nvchecker_file])
-
-  error = False
-  errorlines = []
-  for l in output.splitlines():
-    if l.startswith('[E'):
-      error = True
-    elif l.startswith('['):
-      error = False
-    if error:
-      errorlines.append(l)
-
-  if unknown or errorlines:
-    subject = 'nvchecker 问题'
-    msg = ''
-    if unknown:
-      msg += '以下软件包没有相应的更新配置信息：\n\n' + ''.join(
-        x + '\n' for x in sorted(unknown)) + '\n'
-    if errorlines:
-      msg += '以下软件包在更新检查时出错了：\n\n' + '\n'.join(
-        errorlines) + '\n'
-    REPO.send_repo_mail(subject, msg)
-
-  for x in run_cmd(['nvcmp', nvchecker_file]).splitlines():
-    oldver, newver = x.split(' -> ')
-    pkg, oldver = oldver.split(' ', 1)
-    if oldver == 'None':
-      oldver = None
-    nvdata[pkg] = oldver, newver
-  with open(newver_file) as f:
-    nv_unchanged.update(x.rstrip().split(None, 1) for x in f)
-
-  updated = set(nvdata.keys())
-  return updated, unknown
-
 def start_build(mods, failed, *, dont_build_deps=False):
   global DEPENDS
   depman = DependencyManager(REPO.repodir)
@@ -352,7 +279,7 @@ def main(packages=None):
         last_commit = D.get('last_commit', EMPTY_COMMIT)
         revisions = last_commit + '..HEAD'
         changed = get_changed_packages(revisions) & U
-        updated, unknown = packages_need_update(U)
+        updated, unknown = packages_need_update(REPO, U)
 
         failed_prev = set(failed_info.keys())
         failed_updated = {k for k, v in failed_info.items()
@@ -376,7 +303,12 @@ def main(packages=None):
                     need_update or None)
       else:
         all_building = set(packages)
-        updated, unknown = packages_need_update(all_building)
+        _nvdata, _nv_unchanged, unknown = \
+            packages_need_update(all_building)
+        nvdata.update(_nvdata)
+        nv_unchanged.update(_nv_unchanged)
+        updated = set(nvdata.keys())
+
         need_update = updated
         logger.info('these packages are manually specified: %r', all_building)
 
@@ -397,10 +329,10 @@ def main(packages=None):
 
       if config.getboolean('lilac', 'rebuild_failed_pkgs'):
         if update_succeeded:
-          run_cmd(['nvtake', nvchecker_file] + list(update_succeeded))
+          nvtake(list(update_succeeded))
       else:
         if need_update:
-          run_cmd(['nvtake', nvchecker_file] + list(need_update))
+          nvtake(list(need_update))
 
       if packages is None:
         git_reset_hard()
@@ -429,9 +361,6 @@ def setup():
       os.environ['MAKEFLAGS'] = '-j{0} -l{0}'.format(cores)
 
   lock_file(os.path.join(mydir, '.lock'))
-
-  if not os.path.exists(oldver_file):
-    open(oldver_file, 'a').close()
 
   aur_repo_dir = os.path.join(mydir, 'aur')
   os.makedirs(aur_repo_dir, exist_ok=True)
