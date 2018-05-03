@@ -278,7 +278,9 @@ def main(packages=None):
         last_commit = D.get('last_commit', EMPTY_COMMIT)
         revisions = last_commit + '..HEAD'
         changed = get_changed_packages(revisions) & U
-        updated, unknown = packages_need_update(REPO, U)
+        _nvdata, unknown = packages_need_update(REPO, U)
+        updated = {x for x, y in nvdata.items()
+                   if y.oldver is not None}
 
         failed_prev = set(failed_info.keys())
         failed_updated = {k for k, v in failed_info.items()
@@ -302,7 +304,7 @@ def main(packages=None):
                     need_update or None)
       else:
         all_building = set(packages)
-        _nvdata, unknown = packages_need_update(all_building)
+        _nvdata, unknown = packages_need_update(REPO, all_building)
         nvdata.update(_nvdata)
         updated = {x for x, y in nvdata.items()
                    if y.oldver is not None}
