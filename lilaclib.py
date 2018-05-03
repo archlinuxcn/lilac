@@ -20,7 +20,7 @@ from lilac2 import lilacpy
 from lilac2.api import (
   run_cmd, vcs_update,
   git_push, git_pull,
-  add_into_array,
+  add_into_array, edit_file,
   add_depends, add_makedepends,
 )
 git_push, add_into_array, add_depends, add_makedepends
@@ -386,11 +386,6 @@ def prepend_self_path():
   mydir = os.path.realpath(os.path.dirname(__file__))
   path = os.environ['PATH']
   os.environ['PATH'] = mydir + os.pathsep + path
-
-def edit_file(filename):
-  with fileinput.input(files=(filename,), inplace=True) as f:
-    for line in f:
-      yield line.rstrip('\n')
 
 def recv_gpg_keys():
   run_cmd(['recv_gpg_keys'])

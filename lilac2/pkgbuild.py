@@ -1,5 +1,5 @@
 import re
-import lilaclib
+import fileinput
 
 def unquote_item(s):
     m = re.search(r'''[ \t'"]*([^ '"]+)[ \t'"]*''', s)
@@ -25,7 +25,7 @@ def _add_deps(which, extra_deps):
     '''
     Add more values into the dependency array
     '''
-    for line in lilaclib.edit_file('PKGBUILD'):
+    for line in edit_file('PKGBUILD'):
         if line.strip().startswith(which):
             line = add_into_array(line, extra_deps)
         print(line)
@@ -35,3 +35,9 @@ def add_depends(extra_deps):
 
 def add_makedepends(extra_deps):
     _add_deps('makedepends', extra_deps)
+
+def edit_file(filename):
+  with fileinput.input(files=(filename,), inplace=True) as f:
+    for line in f:
+      yield line.rstrip('\n')
+
