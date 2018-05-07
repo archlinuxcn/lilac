@@ -28,18 +28,11 @@ _DependencyTuple = namedtuple(
   '_DependencyTuple', 'pkgdir pkgname')
 
 class Dependency(_DependencyTuple):
-  _has_resolved = False
-
   def resolve(self):
-    if self._has_resolved:
-      return self._resolved
-
     try:
       r = self._find_local_package()
     except FileNotFoundError:
       r = None
-    self._has_resolved = True
-    self._resolved = r
     return r
 
   def _find_local_package(self):
