@@ -129,7 +129,7 @@ def send_error_report(name, *, msg=None, exc=None, subject=None):
   if msg is None and exc is None:
     raise TypeError('send_error_report received inefficient args')
 
-  who, tb_find = REPO.find_maintainer_or_admin()
+  who, tb_find = REPO.find_maintainer_or_admin(package=name)
 
   msgs = []
   if msg is not None:
