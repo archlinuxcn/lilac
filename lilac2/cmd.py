@@ -23,7 +23,7 @@ def git_push():
       else:
         raise
 
-def run_cmd(cmd, *, use_pty=False, silent=False):
+def run_cmd(cmd, *, use_pty=False, silent=False, cwd=None):
   logger.debug('running %r, %susing pty,%s showing output', cmd,
                '' if use_pty else 'not ',
                ' not' if silent else '')
@@ -42,7 +42,10 @@ def run_cmd(cmd, *, use_pty=False, silent=False):
     exited = True
   old_hdl = signal.signal(signal.SIGCHLD, child_exited)
 
-  p = subprocess.Popen(cmd, stdin = stdin, stdout = stdout, stderr = subprocess.STDOUT)
+  p = subprocess.Popen(
+    cmd, stdin = stdin, stdout = stdout, stderr = subprocess.STDOUT,
+    cwd = cwd,
+  )
   if use_pty:
     os.close(stdout)
   else:

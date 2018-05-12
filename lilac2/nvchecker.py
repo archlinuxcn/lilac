@@ -53,7 +53,8 @@ def packages_need_update(repo, U):
   new.read_dict(newconfig)
   with open(NVCHECKER_FILE, 'w') as f:
     new.write(f)
-  output = run_cmd(['nvchecker', NVCHECKER_FILE])
+  # vcs source needs to be run in the repo
+  output = run_cmd(['nvchecker', NVCHECKER_FILE], cwd=repo.repodir)
 
   error = False
   errorlines = []
