@@ -89,7 +89,8 @@ def packages_need_update(repo, U):
     for x in f:
       name, version = x.rstrip().split(None, 1)
       if name not in nvdata:
-        nvdata[name] = NvResult(None, version)
+        # unchanged
+        nvdata[name] = NvResult(version, version)
 
   return nvdata, unknown
 

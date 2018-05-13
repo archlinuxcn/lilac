@@ -281,7 +281,7 @@ def main(packages=None):
         _nvdata, unknown = packages_need_update(REPO, U)
         nvdata.update(_nvdata)
         updated = {x for x, y in nvdata.items()
-                   if y.oldver is not None}
+                   if y.oldver != y.newver}
 
         failed_prev = set(failed_info.keys())
         failed_updated = {k for k, v in failed_info.items()
@@ -308,7 +308,7 @@ def main(packages=None):
         _nvdata, unknown = packages_need_update(REPO, all_building)
         nvdata.update(_nvdata)
         updated = {x for x, y in nvdata.items()
-                   if y.oldver is not None}
+                   if y.oldver != y.newver}
 
         need_update = updated
         logger.info('these packages are manually specified: %r', all_building)
