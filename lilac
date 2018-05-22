@@ -250,9 +250,9 @@ def start_build(mods, failed, *, dont_build_deps=False):
 
           send_error_report(pkg, subject='%s 出现依赖问题',
                             msg = '''\
-  在成功地编译打包 {built} 之后，{pkg} 依旧依赖 {deps}。
+在成功地编译打包 {built} 之后，{pkg} 依旧依赖 {deps}。
 
-  {reason}'''.format(
+{reason}'''.format(
     built = built, deps = e.deps, pkg = pkg, reason = reason,
   ))
           failed.add(pkg)
