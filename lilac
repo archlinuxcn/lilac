@@ -276,8 +276,6 @@ def load_all_lilac_and_report(repodir):
   return mods, failed
 
 def main(packages=None):
-  mods, failed = load_all_lilac_and_report(REPO.repodir)
-
   store = os.path.join(mydir, 'store')
   with PickledData(store, default={}) as D:
     try:
@@ -286,6 +284,7 @@ def main(packages=None):
       if packages is None:
         git_reset_hard()
         git_pull()
+        mods, failed = load_all_lilac_and_report(REPO.repodir)
 
         U = set(mods)
         last_commit = D.get('last_commit', EMPTY_COMMIT)
@@ -317,6 +316,7 @@ def main(packages=None):
         logger.info('these packages are updated as detected by nvchecker: %r',
                     need_update or None)
       else:
+        mods, failed = load_all_lilac_and_report(REPO.repodir)
         all_building = set(packages)
         _nvdata, unknown = packages_need_update(REPO, all_building)
         nvdata.update(_nvdata)
