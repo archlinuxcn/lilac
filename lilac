@@ -205,7 +205,7 @@ def start_build(mods, failed, *, dont_build_deps=False):
 
     for name, ds in nonexistent.items():
       send_error_report(
-        name, subject='lilac.py 指定了不存在的依赖',
+        name, subject='软件包 %s 的 lilac.py 指定了不存在的依赖',
         msg = f'''软件包 {name} 的 lilac.py 指定了 depends，然而其中的 {ds!r} 并不在本仓库中。
 ''')
 
