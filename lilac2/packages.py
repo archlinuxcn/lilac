@@ -35,6 +35,9 @@ class Dependency(_DependencyTuple):
       r = None
     return r
 
+  def in_repo(self):
+    return self.pkgdir.is_dir()
+
   def _find_local_package(self):
     files = [x for x in self.pkgdir.iterdir()
               if x.name.endswith('.pkg.tar.xz')]
