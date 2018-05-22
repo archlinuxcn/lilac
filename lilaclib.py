@@ -46,10 +46,6 @@ class MissingDependencies(Exception):
   def __init__(self, pkgs):
     self.deps = pkgs
 
-class BuildPrefixError(Exception):
-  def __init__(self, build_prefix):
-    self.build_prefix = build_prefix
-
 class AurDownloadError(Exception):
   def __init__(self, pkgname):
     self.pkgname = pkgname
@@ -317,12 +313,9 @@ def lilac_build(build_prefix=None, oldver=None, newver=None, accept_noupdate=Fal
       recv_gpg_keys()
 
       need_build_first = set()
-
       build_prefix = build_prefix or mod.build_prefix
-      if not isinstance(build_prefix, str) or 'i686' in build_prefix:
-        raise BuildPrefixError(build_prefix)
-
       depend_packages = []
+
       for x in depends:
         p = x.resolve()
         if p is None:

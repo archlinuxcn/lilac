@@ -60,8 +60,7 @@ import lilaclib
 from lilaclib import (
   git_reset_hard, git_last_commit,
   EMPTY_COMMIT, pkgrel_changed, lilac_build,
-  MissingDependencies, BuildPrefixError,
-  AurDownloadError,
+  MissingDependencies, AurDownloadError,
 )
 from lilac2 import lilacpy
 from lilac2.packages import (
@@ -112,7 +111,7 @@ def build_package(package):
     sign_and_copy()
     built_successfully = True
     build_logger.info('%s %s successful', package, n[1])
-  except (MissingDependencies, BuildPrefixError):
+  except MissingDependencies:
     build_logger.error('%s %s failed', package, n[1])
     raise
   except Exception as e:
@@ -232,14 +231,6 @@ def start_build(mods, failed, *, dont_build_deps=False):
             built.add(pkg)
           else:
             failed.add(pkg)
-
-        except BuildPrefixError as e:
-          send_error_report(pkg, subject='lilac.py 脚本不被支持',
-                            msg = '''\
-软件包 {pkg} 的 build_prefix {bp!r} 不再被支持。
-注意：32位软件包的支持已经被放弃。如有需要，请自行编译后上传。'''.format(
-            pkg = pkg, bp = e.build_prefix))
-          failed.add(pkg)
 
         except MissingDependencies as e:
           reason = ''
