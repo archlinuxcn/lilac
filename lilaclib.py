@@ -319,7 +319,7 @@ def lilac_build(build_prefix=None, oldver=None, newver=None, accept_noupdate=Fal
       for x in depends:
         p = x.resolve()
         if p is None:
-          if not p.in_repo():
+          if not x.in_repo():
             # ignore depends that are not in repo
             continue
           need_build_first.add(x.pkgname)
