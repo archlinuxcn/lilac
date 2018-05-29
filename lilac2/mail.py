@@ -5,7 +5,7 @@ from mailutils import assemble_mail
 def clean(str):
     tmp = ''
     for i in str:
-        if 33 <= ord(i) <= 127 or ord(i) in [10]:  # add more ascii value
+        if 33 <= ord(i) <= 127:
             tmp += i
     return tmp
 
