@@ -2,13 +2,6 @@ import smtplib
 
 from mailutils import assemble_mail
 
-def clean(str):
-    tmp = ''
-    for i in str:
-        if 33 <= ord(i) <= 127:
-            tmp += i
-    return tmp
-
 class MailService:
   def __init__(self, config):
     self.config = config
@@ -42,7 +35,6 @@ class MailService:
       return
 
     s = self.smtp_connect()
-    msg = clean(msg)
     if len(msg) > 5 * 1024 ** 2:
       msg = msg[:1024 ** 2] + '\n\n日志过长，省略ing……\n\n' + \
           msg[-1024 ** 2:]
