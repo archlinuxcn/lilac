@@ -201,7 +201,7 @@ def start_build(mods, failed, *, dont_build_deps=False):
             continue
           # we need build this too
           building_packages.add(d.pkgname)
-      dep_building_map[name] = {x.pkgname for x in ds}
+      dep_building_map[name] = {x.pkgdir for x in ds}
 
     for name, ds in nonexistent.items():
       send_error_report(
