@@ -92,6 +92,12 @@ def packages_need_update(repo, U):
         # unchanged
         nvdata[name] = NvResult(version, version)
 
+  for name in U:
+    if name not in nvdata:
+      # we know nothing about these versions
+      # maybe nvchecker has failed
+      nvdata[name] = NvResult(None, None)
+
   return nvdata, unknown
 
 def nvtake(L):
