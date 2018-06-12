@@ -176,12 +176,12 @@ def sign_and_copy():
     except FileExistsError:
       pass
 
-def start_build(mods, failed, *, dont_build_deps=False):
+def start_build(mods, failed, built, *, dont_build_deps=False):
+  # built is used to collect built package names
   global DEPENDS
   depman = DependencyManager(REPO.repodir)
   if dont_build_deps:
     packages = building_packages
-    failed = set()
   else:
     depmap = get_dependency_map(depman, mods)
 
@@ -216,7 +216,6 @@ def start_build(mods, failed, *, dont_build_deps=False):
     # used to decide what to install when building
     DEPENDS = building_depmap
 
-  built = set()
   try:
     logger.info('building these packages: %r', packages)
     for pkg in packages:
@@ -250,8 +249,6 @@ def start_build(mods, failed, *, dont_build_deps=False):
 
   except KeyboardInterrupt:
     logger.info('keyboard interrupted, bye~')
-
-  return failed
 
 def load_all_lilac_and_report(repodir):
   mods, errors = lilacpy.load_all(repodir)
@@ -320,30 +317,35 @@ def main(packages=None):
       dont_build_deps = bool(packages)
 
       building_packages.update(all_building)
-      failed = start_build(mods, failed,
-                           dont_build_deps=dont_build_deps)
+      update_succeeded = set()
 
-      if packages is None:
-        D['last_commit'] = git_last_commit()
-      update_succeeded = all_building - failed
-      failed_info.update({k: nvdata[k][1] for k in failed if k in nvdata})
-      for x in update_succeeded:
-        if x in failed_info:
-          del failed_info[x]
-      D['failed'] = failed_info
+      try:
+        start_build(mods, failed, update_succeeded,
+                    dont_build_deps=dont_build_deps)
+        if packages is None:
+          D['last_commit'] = git_last_commit()
+      finally:
+        # handle what has been processed even on exception
+        failed_info.update({k: nvdata[k][1] for k in failed if k in nvdata})
 
-      if config.getboolean('lilac', 'rebuild_failed_pkgs'):
-        if update_succeeded:
-          nvtake(list(update_succeeded))
-      else:
-        if need_update:
-          nvtake(list(need_update))
+        for x in update_succeeded:
+          if x in failed_info:
+            del failed_info[x]
+        D['failed'] = failed_info
 
-      if packages is None:
-        git_reset_hard()
-        if config.getboolean('lilac', 'git_push'):
-          git_push()
-    except Exception as e:
+        if config.getboolean('lilac', 'rebuild_failed_pkgs'):
+          if update_succeeded:
+            nvtake(list(update_succeeded))
+        else:
+          if need_update:
+            nvtake(list(need_update))
+
+        if packages is None:
+          git_reset_hard()
+          if config.getboolean('lilac', 'git_push'):
+            git_push()
+
+    except Exception:
       tb = traceback.format_exc()
       logger.exception('unexpected error')
       subject = '运行时错误'
