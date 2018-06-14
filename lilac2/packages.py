@@ -35,8 +35,8 @@ class Dependency(_DependencyTuple):
       r = None
     return r
 
-  def in_repo(self):
-    return self.pkgdir.is_dir()
+  def managed(self):
+    return (self.pkgdir / 'lilac.py').exists()
 
   def _find_local_package(self):
     files = [x for x in self.pkgdir.iterdir()

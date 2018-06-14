@@ -194,8 +194,8 @@ def start_build(mods, failed, built, *, dont_build_deps=False):
     for name, ds in building_depmap.items():
       for d in ds:
         if not d.resolve():
-          if not d.in_repo():
-            logger.warn('%s depends on %s, but it\'s not in repo.',
+          if not d.managed():
+            logger.warn('%s depends on %s, but it\'s not managed.',
                         name, d)
             nonexistent[name].append(d)
             continue
