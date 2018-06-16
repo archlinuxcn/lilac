@@ -3,5 +3,6 @@
 . ./PKGBUILD
 for key in ${validpgpkeys[@]}; do
   echo "Receiving key ${key}..."
-  gpg --recv-keys $key
+  # try twice
+  gpg --recv-keys $key || gpg --recv-keys $key
 done
