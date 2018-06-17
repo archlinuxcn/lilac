@@ -213,6 +213,10 @@ def start_build(mods, failed, built, *, dont_build_deps=False):
     # filter out already built packages
     packages = [x for x in packages if x in building_packages]
 
+    # ensure all packages including dependents are included
+    for p in packages:
+      building_depmap[p] = depmap[p]
+
     # used to decide what to install when building
     DEPENDS = building_depmap
 
