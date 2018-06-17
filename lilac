@@ -176,49 +176,46 @@ def sign_and_copy():
     except FileExistsError:
       pass
 
-def start_build(mods, failed, built, *, dont_build_deps=False):
+def start_build(mods, failed, built):
   # built is used to collect built package names
   global DEPENDS
   depman = DependencyManager(REPO.repodir)
-  if dont_build_deps:
-    packages = building_packages
-  else:
-    depmap = get_dependency_map(depman, mods)
+  depmap = get_dependency_map(depman, mods)
 
-    building_depmap = {}
-    for p in building_packages:
-      building_depmap[p] = depmap[p]
+  building_depmap = {}
+  for p in building_packages:
+    building_depmap[p] = depmap[p]
 
-    dep_building_map = {}
-    nonexistent = defaultdict(list)
-    for name, ds in building_depmap.items():
-      for d in ds:
-        if not d.resolve():
-          if not d.managed():
-            logger.warn('%s depends on %s, but it\'s not managed.',
-                        name, d)
-            nonexistent[name].append(d)
-            continue
-          # we need build this too
-          building_packages.add(d.pkgname)
-      dep_building_map[name] = {x.pkgdir.name for x in ds}
+  dep_building_map = {}
+  nonexistent = defaultdict(list)
+  for name, ds in building_depmap.items():
+    for d in ds:
+      if not d.resolve():
+        if not d.managed():
+          logger.warn('%s depends on %s, but it\'s not managed.',
+                      name, d)
+          nonexistent[name].append(d)
+          continue
+        # we need build this too
+        building_packages.add(d.pkgname)
+    dep_building_map[name] = {x.pkgdir.name for x in ds}
 
-    for name, ds in nonexistent.items():
-      send_error_report(
-        name, subject='软件包 %s 的 lilac.py 指定了不存在的依赖',
-        msg = f'''软件包 {name} 的 lilac.py 指定了 depends，然而其中的 {ds!r} 并不在本仓库中。
+  for name, ds in nonexistent.items():
+    send_error_report(
+      name, subject='软件包 %s 的 lilac.py 指定了不存在的依赖',
+      msg = f'''软件包 {name} 的 lilac.py 指定了 depends，然而其中的 {ds!r} 并不在本仓库中。
 ''')
 
-    packages = toposort_flatten(dep_building_map)
-    # filter out already built packages
-    packages = [x for x in packages if x in building_packages]
+  packages = toposort_flatten(dep_building_map)
+  # filter out already built packages
+  packages = [x for x in packages if x in building_packages]
 
-    # ensure all packages including dependents are included
-    for p in packages:
-      building_depmap[p] = depmap[p]
+  # ensure all packages including dependents are included
+  for p in packages:
+    building_depmap[p] = depmap[p]
 
-    # used to decide what to install when building
-    DEPENDS = building_depmap
+  # used to decide what to install when building
+  DEPENDS = building_depmap
 
   try:
     logger.info('building these packages: %r', packages)
@@ -267,67 +264,52 @@ def load_all_lilac_and_report(repodir):
 
   return mods, failed
 
-def main(packages=None):
+def main():
   store = os.path.join(mydir, 'store')
   with PickledData(store, default={}) as D:
     try:
       failed_info = D.get('failed', {})
 
-      if packages is None:
-        git_reset_hard()
-        git_pull()
-        mods, failed = load_all_lilac_and_report(REPO.repodir)
+      git_reset_hard()
+      git_pull()
+      mods, failed = load_all_lilac_and_report(REPO.repodir)
 
-        U = set(mods)
-        last_commit = D.get('last_commit', EMPTY_COMMIT)
-        revisions = last_commit + '..HEAD'
-        changed = get_changed_packages(revisions) & U
-        _nvdata, unknown = packages_need_update(REPO, U)
-        nvdata.update(_nvdata)
-        updated = {x for x, y in nvdata.items()
-                   if y.oldver != y.newver}
+      U = set(mods)
+      last_commit = D.get('last_commit', EMPTY_COMMIT)
+      revisions = last_commit + '..HEAD'
+      changed = get_changed_packages(revisions) & U
+      _nvdata, unknown = packages_need_update(REPO, U)
+      nvdata.update(_nvdata)
+      updated = {x for x, y in nvdata.items()
+                  if y.oldver != y.newver}
 
-        failed_prev = set(failed_info.keys())
-        failed_updated = {k for k, v in failed_info.items()
-                          if k in nvdata and nvdata[k][1] != v}
-        # build updated; if last build failed but it gets updated once more,
-        # build it again
-        need_update = updated | failed_updated
-        # no update from upstream, but build instructions have changed; rebuild
-        # failed ones
-        need_rebuild_failed = failed_prev & changed
-        # if pkgrel is updated, build a new release
-        need_rebuild_pkgrel = {x for x in changed
-                              if pkgrel_changed(revisions, x)} - unknown
-        all_building = need_update | need_rebuild_failed | need_rebuild_pkgrel
+      failed_prev = set(failed_info.keys())
+      failed_updated = {k for k, v in failed_info.items()
+                        if k in nvdata and nvdata[k][1] != v}
+      # build updated; if last build failed but it gets updated once more,
+      # build it again
+      need_update = updated | failed_updated
+      # no update from upstream, but build instructions have changed; rebuild
+      # failed ones
+      need_rebuild_failed = failed_prev & changed
+      # if pkgrel is updated, build a new release
+      need_rebuild_pkgrel = {x for x in changed
+                            if pkgrel_changed(revisions, x)} - unknown
+      all_building = need_update | need_rebuild_failed | need_rebuild_pkgrel
 
-        logger.info('these updated (pkgrel) packages should be rebuilt: %r',
-                    need_rebuild_pkgrel or None)
-        logger.info('these previously-failed packages should be rebuilt: %r',
-                    need_rebuild_failed or None)
-        logger.info('these packages are updated as detected by nvchecker: %r',
-                    need_update or None)
-      else:
-        mods, failed = load_all_lilac_and_report(REPO.repodir)
-        all_building = set(packages)
-        _nvdata, unknown = packages_need_update(REPO, all_building)
-        nvdata.update(_nvdata)
-        updated = {x for x, y in nvdata.items()
-                   if y.oldver != y.newver}
-
-        need_update = updated
-        logger.info('these packages are manually specified: %r', all_building)
-
-      dont_build_deps = bool(packages)
+      logger.info('these updated (pkgrel) packages should be rebuilt: %r',
+                  need_rebuild_pkgrel or None)
+      logger.info('these previously-failed packages should be rebuilt: %r',
+                  need_rebuild_failed or None)
+      logger.info('these packages are updated as detected by nvchecker: %r',
+                  need_update or None)
 
       building_packages.update(all_building)
       update_succeeded = set()
 
       try:
-        start_build(mods, failed, update_succeeded,
-                    dont_build_deps=dont_build_deps)
-        if packages is None:
-          D['last_commit'] = git_last_commit()
+        start_build(mods, failed, update_succeeded)
+        D['last_commit'] = git_last_commit()
       finally:
         # handle what has been processed even on exception
         failed_info.update({k: nvdata[k][1] for k in failed if k in nvdata})
@@ -344,10 +326,9 @@ def main(packages=None):
           if need_update:
             nvtake(list(need_update))
 
-        if packages is None:
-          git_reset_hard()
-          if config.getboolean('lilac', 'git_push'):
-            git_push()
+        git_reset_hard()
+        if config.getboolean('lilac', 'git_push'):
+          git_push()
 
     except Exception:
       tb = traceback.format_exc()
@@ -388,6 +369,6 @@ if __name__ == '__main__':
     if len(sys.argv) == 1:
       main()
     else:
-      main(sys.argv[1:])
+      sys.exit('no argument should be given')
   except Exception:
     logger.exception('unexpected error')
