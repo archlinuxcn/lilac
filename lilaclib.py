@@ -294,56 +294,55 @@ def pypi_post_build():
   git_add_files('PKGBUILD')
   git_commit()
 
-def lilac_build(build_prefix=None, oldver=None, newver=None, accept_noupdate=False, depends=(), bindmounts=()):
-  with lilacpy.load_lilac() as mod:
-    run_cmd(["sh", "-c", "rm -f -- *.pkg.tar.xz *.pkg.tar.xz.sig *.src.tar.gz"])
-    success = False
+def lilac_build(mod, build_prefix=None, oldver=None, newver=None, accept_noupdate=False, depends=(), bindmounts=()):
+  run_cmd(["sh", "-c", "rm -f -- *.pkg.tar.xz *.pkg.tar.xz.sig *.src.tar.gz"])
+  success = False
 
-    global build_output
-    # reset in case no one cleans it up
-    build_output = None
+  global build_output
+  # reset in case no one cleans it up
+  build_output = None
 
-    try:
-      if not hasattr(mod, '_G'):
-        # fill nvchecker result unless already filled (e.g. by hand)
-        mod._G = SimpleNamespace(oldver = oldver, newver = newver)
-      if hasattr(mod, 'pre_build'):
-        logger.debug('accept_noupdate=%r, oldver=%r, newver=%r', accept_noupdate, oldver, newver)
-        mod.pre_build()
-      recv_gpg_keys()
+  try:
+    if not hasattr(mod, '_G'):
+      # fill nvchecker result unless already filled (e.g. by hand)
+      mod._G = SimpleNamespace(oldver = oldver, newver = newver)
+    if hasattr(mod, 'pre_build'):
+      logger.debug('accept_noupdate=%r, oldver=%r, newver=%r', accept_noupdate, oldver, newver)
+      mod.pre_build()
+    recv_gpg_keys()
 
-      need_build_first = set()
-      build_prefix = build_prefix or mod.build_prefix
-      depend_packages = []
+    need_build_first = set()
+    build_prefix = build_prefix or mod.build_prefix
+    depend_packages = []
 
-      for x in depends:
-        p = x.resolve()
-        if p is None:
-          if not x.managed():
-            # ignore depends that are not in repo
-            continue
-          need_build_first.add(x.pkgname)
-        else:
-          depend_packages.append(p)
+    for x in depends:
+      p = x.resolve()
+      if p is None:
+        if not x.managed():
+          # ignore depends that are not in repo
+          continue
+        need_build_first.add(x.pkgname)
+      else:
+        depend_packages.append(p)
 
-      if need_build_first:
-        raise MissingDependencies(need_build_first)
-      logger.info('depends: %s, resolved: %s', depends, depend_packages)
+    if need_build_first:
+      raise MissingDependencies(need_build_first)
+    logger.info('depends: %s, resolved: %s', depends, depend_packages)
 
-      makechrootpkg_args = []
-      if hasattr(mod, 'makechrootpkg_args'):
-          makechrootpkg_args = mod.makechrootpkg_args
+    makechrootpkg_args = []
+    if hasattr(mod, 'makechrootpkg_args'):
+        makechrootpkg_args = mod.makechrootpkg_args
 
-      call_build_cmd(build_prefix, depend_packages, bindmounts, makechrootpkg_args)
-      pkgs = [x for x in os.listdir() if x.endswith('.pkg.tar.xz')]
-      if not pkgs:
-        raise Exception('no package built')
-      if hasattr(mod, 'post_build'):
-        mod.post_build()
-      success = True
-    finally:
-      if hasattr(mod, 'post_build_always'):
-        mod.post_build_always(success=success)
+    call_build_cmd(build_prefix, depend_packages, bindmounts, makechrootpkg_args)
+    pkgs = [x for x in os.listdir() if x.endswith('.pkg.tar.xz')]
+    if not pkgs:
+      raise Exception('no package built')
+    if hasattr(mod, 'post_build'):
+      mod.post_build()
+    success = True
+  finally:
+    if hasattr(mod, 'post_build_always'):
+      mod.post_build_always(success=success)
 
 def call_build_cmd(tag, depends, bindmounts=(), makechrootpkg_args=[]):
   global build_output
@@ -373,10 +372,12 @@ def call_build_cmd(tag, depends, bindmounts=(), makechrootpkg_args=[]):
 def single_main(build_prefix='makepkg'):
   prepend_self_path()
   enable_pretty_logging('DEBUG')
-  lilac_build(
-    build_prefix = build_prefix,
-    accept_noupdate = True,
-  )
+  with lilacpy.load_lilac() as mod:
+    lilac_build(
+      mod,
+      build_prefix = build_prefix,
+      accept_noupdate = True,
+    )
 
 def prepend_self_path():
   mydir = os.path.realpath(os.path.dirname(__file__))

@@ -81,7 +81,7 @@ def setup_build_logger():
   handler.setFormatter(logging.Formatter('[%(asctime)s] %(message)s', '%Y-%m-%d %H:%M:%S'))
   build_logger.addHandler(handler)
 
-def build_package(package):
+def build_package(package, mod):
   logger.info('building %s', package)
   try:
     built_successfully = False
@@ -101,6 +101,7 @@ def build_package(package):
     try:
       with execution_timeout(time_limit * 3600):
         lilac_build(
+          mod,
           oldver = n[0], newver = n[1],
           depends = DEPENDS.get(package, ()),
           bindmounts = BIND_MOUNTS,
@@ -227,7 +228,7 @@ def start_build(mods, failed, built):
       path = os.path.join(REPO.repodir, pkg)
       with at_dir(path):
         try:
-          if build_package(pkg):
+          if build_package(pkg, mods[pkg]):
             built.add(pkg)
           else:
             failed.add(pkg)
