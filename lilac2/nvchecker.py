@@ -2,7 +2,11 @@ import configparser
 import os
 import traceback
 import logging
-from collections import namedtuple
+from collections import namedtuple, defaultdict
+import subprocess
+import json
+
+from myutils import at_dir
 
 from .cmd import run_cmd
 from .const import mydir
@@ -53,44 +57,63 @@ def packages_need_update(repo, U):
   new.read_dict(newconfig)
   with open(NVCHECKER_FILE, 'w') as f:
     new.write(f)
-  # vcs source needs to be run in the repo
-  output = run_cmd(['nvchecker', NVCHECKER_FILE], cwd=repo.repodir)
 
-  error = False
-  errorlines = []
+  # vcs source needs to be run in the repo, so cwd=...
+  rfd, wfd = os.pipe()
+  output = subprocess.Popen(
+    ['nvchecker', '--logger', 'both', '--json-log-fd', str(wfd),
+     NVCHECKER_FILE],
+    cwd=repo.repodir, pass_fds=(wfd,))
+  os.close(wfd)
+
+  output = os.fdopen(rfd)
+  nvdata = {}
+  errors = defaultdict(list)
   for l in output.splitlines():
-    if l.startswith('[E'):
-      error = True
-    elif l.startswith('['):
-      error = False
-    if error:
-      errorlines.append(l)
+    j = json.loads(l)
+    pkg = j.get('name')
+    event = j['event']
+    if event == 'updated':
+      nvdata[pkg] = NvResult(j['old_version'], j['version'])
+    elif event == 'up-to-date':
+      nvdata[pkg] = NvResult(j['version'], j['version'])
+    elif j['level'] in ['warn', 'error', 'exception', 'critical']:
+      errors[pkg].append(j)
 
-  if unknown or errorlines:
+  missing = []
+  error_owners = defaultdict(list)
+  for pkg, pkgerrs in errors.items():
+    if pkg is None:
+      continue
+
+    dir = repo.repodir / pkg
+    if not dir.is_dir():
+      missing.append(pkg)
+      continue
+
+    with at_dir(dir):
+      who = repo.find_maintainer()
+    error_owners[who].extend(pkgerrs)
+
+  for who, errors in error_owners.items():
+    logger.info('send nvchecker report for %r packages to %s',
+                {x['name'] for x in errors}, who)
+    repo.sendmail(who, '[lilac] nvchecker 错误报告',
+                  '\n'.join(_format_error(e) for e in errors))
+
+  if unknown or None in errors or missing:
     subject = 'nvchecker 问题'
     msg = ''
     if unknown:
       msg += '以下软件包没有相应的更新配置信息：\n\n' + ''.join(
         x + '\n' for x in sorted(unknown)) + '\n'
-    if errorlines:
-      msg += '以下软件包在更新检查时出错了：\n\n' + '\n'.join(
-        errorlines) + '\n'
+    if None in errors:
+      msg += '在更新检查时出现了一些错误：\n\n' + '\n'.join(
+        _format_error(e) for e in errors[None]) + '\n'
+    if missing:
+      msg += '以下软件包没有所对应的目录：\n\n' + \
+          '\n'.join( missing) + '\n'
     repo.send_repo_mail(subject, msg)
-
-  nvdata = {}
-  for x in run_cmd(['nvcmp', NVCHECKER_FILE]).splitlines():
-    oldver, newver = x.split(' -> ')
-    pkg, oldver = oldver.split(' ', 1)
-    if oldver == 'None':
-      oldver = None
-    nvdata[pkg] = NvResult(oldver, newver)
-
-  with open(NEWVER_FILE) as f:
-    for x in f:
-      name, version = x.rstrip().split(None, 1)
-      if name not in nvdata:
-        # unchanged
-        nvdata[name] = NvResult(version, version)
 
   for name in U:
     if name not in nvdata:
@@ -99,6 +122,19 @@ def packages_need_update(repo, U):
       nvdata[name] = NvResult(None, None)
 
   return nvdata, unknown
+
+def _format_error(error) -> str:
+  if 'exception' in error:
+    exception = error['exception']
+    error = error.copy()
+    del error['exception']
+  else:
+    exception = None
+
+  ret = json.dumps(error, ensure_ascii=False)
+  if exception:
+    ret += '\n' + exception + '\n'
+  return ret
 
 def nvtake(L):
   run_cmd(['nvtake', NVCHECKER_FILE] + L)

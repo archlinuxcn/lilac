@@ -45,7 +45,7 @@ class Repo:
       try:
         who = self.find_maintainer()
         more = ''
-      except:
+      except Exception:
         who = self.mymaster
         more = traceback.format_exc()
 
