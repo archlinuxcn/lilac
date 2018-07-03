@@ -69,7 +69,7 @@ def packages_need_update(repo, U):
   output = os.fdopen(rfd)
   nvdata = {}
   errors = defaultdict(list)
-  for l in output.splitlines():
+  for l in output:
     j = json.loads(l)
     pkg = j.get('name')
     event = j['event']
