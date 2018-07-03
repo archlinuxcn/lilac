@@ -225,7 +225,7 @@ def start_build(mods, failed, built):
         # marked as failed, skip
         continue
 
-      path = os.path.join(REPO.repodir, pkg)
+      path = REPO.repodir / pkg
       with at_dir(path):
         try:
           if build_package(pkg, mods[pkg]):

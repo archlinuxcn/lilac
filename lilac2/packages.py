@@ -1,5 +1,4 @@
 from collections import defaultdict, namedtuple
-import pathlib
 
 import archpkg
 
@@ -60,7 +59,7 @@ class DependencyManager:
   _CACHE = {}
 
   def __init__(self, repodir):
-    self.repodir = pathlib.Path(repodir)
+    self.repodir = repodir
 
   def get(self, what):
     if isinstance(what, tuple):

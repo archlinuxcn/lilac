@@ -1,6 +1,6 @@
 import subprocess
-import os
 import traceback
+import pathlib
 
 from myutils import at_dir
 
@@ -12,8 +12,8 @@ class Repo:
     self.mymaster = config.get('lilac', 'master')
     self.repomail = config.get('repository', 'email')
 
-    self.repodir = os.path.expanduser(
-      config.get('repository', 'repodir'))
+    self.repodir = pathlib.Path(
+      config.get('repository', 'repodir')).expanduser()
 
     self.ms = MailService(config)
 
@@ -37,7 +37,7 @@ class Repo:
 
   def find_maintainer_or_admin(self, package=None):
     if package is not None:
-      path = os.path.join(self.repodir, package)
+      path = self.repodir / package
     else:
       path = '.'
 

@@ -21,7 +21,7 @@ NvResult = namedtuple('NvResult', 'oldver newver')
 
 def packages_need_update(repo, U):
   full = configparser.ConfigParser(dict_type=dict, allow_no_value=True)
-  nvchecker_full = os.path.join(repo.repodir, 'nvchecker.ini')
+  nvchecker_full = repo.repodir / 'nvchecker.ini'
   try:
     full.read([nvchecker_full])
   except Exception:
