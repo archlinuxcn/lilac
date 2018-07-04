@@ -261,7 +261,7 @@ def load_all_lilac_and_report(repodir):
   for name, exc_info in errors.items():
     tb = traceback.format_exception(*exc_info)
     tb = ''.join(tb)
-    logger.exception('error while loading lilac.py for %s', name)
+    logger.error('error while loading lilac.py for %s', name, exc_info=exc_info)
     send_error_report(name, exc=(exc_info[1], tb),
                       subject='为软件包 %s 载入 lilac.py 时失败')
     build_logger.error('%s failed', name)
