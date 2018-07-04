@@ -83,6 +83,7 @@ def setup_build_logger():
 
 def build_package(package, mod):
   logger.info('building %s', package)
+  start_time = time.time()
   try:
     built_successfully = False
     n = nvdata[package]
@@ -111,9 +112,11 @@ def build_package(package, mod):
       raise
     sign_and_copy()
     built_successfully = True
-    build_logger.info('%s %s successful', package, n[1])
+    build_logger.info('%s %s successful after %ds',
+                      package, n[1], time.time() - start_time)
   except MissingDependencies:
-    build_logger.error('%s %s failed', package, n[1])
+    build_logger.error('%s %s failed after %ds',
+                      package, n[1], time.time() - start_time)
     raise
   except Exception as e:
     tb = traceback.format_exc()
