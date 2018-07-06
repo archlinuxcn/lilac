@@ -160,11 +160,14 @@ def git_rm_files(files):
   if files:
     run_cmd(['git', 'rm', '--cached', '--'] + files)
 
-def git_add_files(files):
+def git_add_files(files, *, force=False):
   if isinstance(files, str):
     files = [files]
   try:
-    run_cmd(['git', 'add', '--'] + files)
+    if force:
+      run_cmd(['git', 'add', '-f', '--'] + files)
+    else:
+      run_cmd(['git', 'add', '--'] + files)
   except CalledProcessError:
     # on error, there may be a partial add, e.g. some files are ignored
     run_cmd(['git', 'reset', '--'] + files)
@@ -215,7 +218,7 @@ def aur_pre_build(name=None, *, do_vcs_update=True):
 
 def aur_post_build():
   git_rm_files(_g.aur_pre_files)
-  git_add_files(_g.aur_building_files)
+  git_add_files(_g.aur_building_files, force=True)
   output = run_cmd(["git", "status", "-s", "."]).strip()
   if output:
     git_commit()
