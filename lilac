@@ -122,7 +122,8 @@ def build_package(package, mod):
     tb = traceback.format_exc()
     logger.exception('packaging error')
     send_error_report(package, exc=(e, tb))
-    build_logger.error('%s %s failed', package, n[1])
+    build_logger.error('%s %s failed after %ds',
+                       package, n[1], time.time() - start_time)
   if config.getboolean('lilac', 'save_buildlog'):
     with open('lilac-%s.log' % n[1].replace('/', '-'), 'w') as log:
       log.write(lilaclib.build_output)
