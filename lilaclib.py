@@ -360,6 +360,13 @@ def call_build_cmd(tag, depends, bindmounts=(), makechrootpkg_args=[]):
 
     if bindmounts:
       for x in bindmounts:
+        # Skipping non-existent source paths
+        # See --bind in systemd-nspawn(1) for bindmount spec details
+        # Note that this check does not consider all possible formats
+        source_dir = x.split(':')[0]
+        if not os.path.exists(source_dir):
+          logger.warn('Invalid bindmount spec %s: source dir does not exist', x)
+          continue
         cmd += ['-d', x]
 
     cmd.extend(makechrootpkg_args)
