@@ -60,10 +60,10 @@ def packages_need_update(repo, U):
 
   # vcs source needs to be run in the repo, so cwd=...
   rfd, wfd = os.pipe()
-  output = subprocess.Popen(
-    ['nvchecker', '--logger', 'both', '--json-log-fd', str(wfd),
-     NVCHECKER_FILE],
-    cwd=repo.repodir, pass_fds=(wfd,))
+  cmd = ['nvchecker', '--logger', 'both', '--json-log-fd', str(wfd),
+         NVCHECKER_FILE]
+  process = subprocess.Popen(
+    cmd, cwd=repo.repodir, pass_fds=(wfd,))
   os.close(wfd)
 
   output = os.fdopen(rfd)
@@ -79,6 +79,10 @@ def packages_need_update(repo, U):
       nvdata[pkg] = NvResult(j['version'], j['version'])
     elif j['level'] in ['warn', 'error', 'exception', 'critical']:
       errors[pkg].append(j)
+
+  ret = process.wait()
+  if ret != 0:
+    raise subprocess.CalledProcessError(ret, cmd)
 
   missing = []
   error_owners = defaultdict(list)
