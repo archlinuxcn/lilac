@@ -19,6 +19,8 @@ def load_all(repodir):
       try:
         with load_lilac() as mod:
           mods[x.name] = mod
+        if hasattr(mod, 'time_limit_hours') and mod.time_limit_hours < 0:
+          raise ValueError('time_limit_hours should be positive.')
       except FileNotFoundError:
         pass
       except Exception:

@@ -67,7 +67,7 @@ from lilac2.packages import (
   DependencyManager, get_dependency_map, get_changed_packages,
 )
 from lilac2.cmd import run_cmd, git_pull, git_push
-from lilac2.tools import kill_child_processes, is_nodejs_thing
+from lilac2.tools import kill_child_processes
 from lilac2.repo import Repo
 from lilac2.const import mydir
 from lilac2.nvchecker import packages_need_update, nvtake
@@ -91,16 +91,10 @@ def build_package(package, mod):
     name, email = maintainer.split('<', 1)
     name = name.strip('" ')
     email = email.rstrip('>')
+    time_limit_hours = getattr(mod, 'time_limit_hours', 1)
     os.environ['PACKAGER'] = '%s (on behalf of %s) <%s>' % (MYNAME, name, email)
-    if is_nodejs_thing():
-      # nodejs things have bad error handling. If they go mad, allow them to
-      # be mad only one hour.
-      time_limit = 1
-    else:
-      # wait at most 6 hours
-      time_limit = 6
     try:
-      with execution_timeout(time_limit * 3600):
+      with execution_timeout(time_limit_hours * 3600):
         lilac_build(
           mod,
           oldver = n[0], newver = n[1],

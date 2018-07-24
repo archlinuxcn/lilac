@@ -11,9 +11,3 @@ def kill_child_processes():
       os.kill(int(pid), signal.SIGKILL)
     except OSError:
       pass
-
-def is_nodejs_thing():
-  with open('PKGBUILD') as f:
-    data = f.read()
-    return 'nodejs' in data and 'npm' in data
-
