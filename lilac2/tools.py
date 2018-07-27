@@ -1,6 +1,9 @@
 import os
+import re
 import subprocess
 import signal
+
+ansi_escape_re = re.compile(r'\x1B\[[0-?]*[ -/]*[@-~]')
 
 def kill_child_processes():
   pids = subprocess.check_output(
