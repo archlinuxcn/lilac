@@ -67,7 +67,7 @@ from lilac2.packages import (
   DependencyManager, get_dependency_map, get_changed_packages,
 )
 from lilac2.cmd import run_cmd, git_pull, git_push
-from lilac2.tools import kill_child_processes
+from lilac2.tools import ansi_escape_re, kill_child_processes
 from lilac2.repo import Repo
 from lilac2.const import mydir
 from lilac2.nvchecker import packages_need_update, nvtake
@@ -155,7 +155,10 @@ def send_error_report(name, *, msg=None, exc=None, subject=None):
 
   if tb_find:
     msgs.append('获取维护者信息也失败了！调用栈如下：\n\n' + tb_find)
+
   if lilaclib.build_output:
+    if config.getboolean('smtp', 'use_ansi', fallback=False):
+      lilaclib.build_output = ansi_escape_re.sub('', lilaclib.build_output)
     msgs.append('编译命令输出如下：\n\n' + lilaclib.build_output)
 
   msg = '\n'.join(msgs)

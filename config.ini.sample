@@ -29,5 +29,7 @@ save_buildlog = no
 #use_ssl = no
 #username =
 #password =
+# Set to yes to allow ANSI characters in content
+#use_ansi = no
 
 # vim: se ft=dosini:
