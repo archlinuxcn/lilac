@@ -18,9 +18,7 @@ lilac.py-aur_complex
 #. 通过 sourceforge 等其他网站直接检查版本更新，但希望通过修改 AUR 中的 ``PKGBUILD`` 来构建软件包时。
 
 * See also:
- + `repo/ruby-sass <https://github.com/archlinuxcn/repo/blob/master/ruby-sass/lilac.py>`_
- + `repo/aufs3-util-lily-git <https://github.com/archlinuxcn/repo/blob/master/aufs3-util-lily-git/lilac.py>`_
- + `repo/ocatve-general <https://github.com/archlinuxcn/repo/blob/master/octave-general/lilac.py>`_
+ + `repo/chrome-remote-desktop <https://github.com/archlinuxcn/repo/blob/master/chrome-remote-desktop/lilac.py>`_
 
 lilac.py-pypi
 -------------
