@@ -20,7 +20,7 @@ lilac.py-aur_complex
 * See also:
  + `repo/chrome-remote-desktop <https://github.com/archlinuxcn/repo/blob/master/chrome-remote-desktop/lilac.py>`_
 
- lilac.py-pypi
+lilac.py-pypi
 -------------
 从 PyPI 直接构建软件包时使用，除了依赖，几乎不需要进行修改。
 
