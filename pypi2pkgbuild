@@ -44,7 +44,7 @@ def get_pkgbuild(j):
   return s
 
 def get_json(name):
-  url = 'https://pypi.python.org/pypi/%s/json' % name
+  url = 'https://pypi.org/pypi/%s/json' % name
   res = urllib.request.urlopen(url)
   data = res.read().decode('utf-8')
   j = json.loads(data)
