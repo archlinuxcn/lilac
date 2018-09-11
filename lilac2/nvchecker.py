@@ -102,7 +102,7 @@ def packages_need_update(repo, U):
   for who, errors in error_owners.items():
     logger.info('send nvchecker report for %r packages to %s',
                 {x['name'] for x in errors}, who)
-    repo.sendmail(who, '[lilac] nvchecker 错误报告',
+    repo.sendmail(who, 'nvchecker 错误报告',
                   '\n'.join(_format_error(e) for e in errors))
 
   if unknown or None in errors or missing:
