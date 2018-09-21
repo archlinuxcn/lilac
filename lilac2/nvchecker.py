@@ -96,7 +96,7 @@ def packages_need_update(repo, mods):
   for l in output:
     j = json.loads(l)
     pkg = j.get('name')
-    if ':' in pkg:
+    if pkg and ':' in pkg:
       pkg, i = pkg.split(':', 1)
       i = int(i)
     else:
