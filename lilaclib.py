@@ -21,8 +21,11 @@ from lilac2.api import (
   git_push, git_pull,
   add_into_array, edit_file,
   add_depends, add_makedepends,
+  get_pkgver_and_pkgrel,
+  update_pkgver_and_pkgrel,
 )
 git_push, add_into_array, add_depends, add_makedepends
+edit_file, update_pkgver_and_pkgrel
 
 UserAgent = 'lilac/0.2a (package auto-build bot, by lilydjwg)'
 
@@ -106,19 +109,6 @@ def download_aur_pkgbuild(name):
 
 def get_pypi_info(name):
   return s.get(PYPI_URL % name).json()
-
-def get_pkgver_and_pkgrel():
-  pkgrel = None
-  pkgver = None
-  with open('PKGBUILD') as f:
-    for l in f:
-      if l.startswith('pkgrel='):
-        pkgrel = float(l.rstrip().split('=', 1)[-1].strip('\'"'))
-        if int(pkgrel) == pkgrel:
-            pkgrel = int(pkgrel)
-      elif l.startswith('pkgver='):
-        pkgver = l.rstrip().split('=', 1)[-1]
-  return pkgver, pkgrel
 
 def update_pkgrel(rel=None):
   with open('PKGBUILD') as f:
@@ -439,18 +429,3 @@ def update_aur_repo():
       subject = '[lilac] 提交软件包 %s 到 AUR 时出错',
     )
 
-def update_pkgver_and_pkgrel(newver):
-  pkgver, pkgrel = get_pkgver_and_pkgrel()
-
-  for line in edit_file('PKGBUILD'):
-    if line.startswith('pkgver=') and pkgver != newver:
-        line = f'pkgver={newver}'
-    elif line.startswith('pkgrel='):
-      if pkgver != newver:
-        line = 'pkgrel=1'
-      else:
-        line = f'pkgrel={int(pkgrel)+1}'
-
-    print(line)
-
-  run_cmd(["updpkgsums"])
