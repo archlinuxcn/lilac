@@ -98,12 +98,15 @@ def packages_need_update(repo, mods):
     pkg = j.get('name')
     if ':' in pkg:
       pkg, i = pkg.split(':', 1)
+      i = int(i)
+    else:
+      i = 0
     event = j['event']
     if event == 'updated':
-      if i == '0':
+      if i == 0:
         nvdata[pkg] = NvResult(j['old_version'], j['version'])
     elif event == 'up-to-date':
-      if i == '0':
+      if i == 0:
         nvdata[pkg] = NvResult(j['version'], j['version'])
     elif j['level'] in ['warn', 'error', 'exception', 'critical']:
       errors[pkg].append(j)
