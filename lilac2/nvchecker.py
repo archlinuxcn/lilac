@@ -19,7 +19,7 @@ NEWVER_FILE = mydir / 'newver'
 
 NvResult = namedtuple('NvResult', 'oldver newver')
 
-def packages_need_update(repo, U):
+def _gen_config_from_ini(repo, U):
   full = configparser.ConfigParser(dict_type=dict, allow_no_value=True)
   nvchecker_full = repo.repodir / 'nvchecker.ini'
   try:
@@ -53,6 +53,12 @@ def packages_need_update(repo, U):
     'oldver': OLDVER_FILE,
     'newver': NEWVER_FILE,
   }
+
+  return newconfig, unknown
+
+def packages_need_update(repo, U):
+  newconfig, unknown = _gen_config_from_ini(repo, U)
+
   new = configparser.ConfigParser(dict_type=dict, allow_no_value=True)
   new.read_dict(newconfig)
   with open(NVCHECKER_FILE, 'w') as f:
