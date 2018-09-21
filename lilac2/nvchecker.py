@@ -45,19 +45,37 @@ def _gen_config_from_ini(repo, U):
   if unknown:
     logger.warn('unknown packages: %r', unknown)
 
+  newconfig = {k: full[k] for k in U & all_known}
+
+  return newconfig, unknown
+
+def _gen_config_from_mods(repo, mods):
+  unknown = set()
+  newconfig = {}
+  for name, mod in mods.items():
+    confs = getattr(mod, 'update_on')
+    if not confs:
+      unknown.add(name)
+      continue
+
+    for i, conf in enumerate(confs):
+      newconfig[f'{name}:{i}'] = conf
+
+  return newconfig, unknown
+
+def packages_need_update(repo, mods):
+  newconfig, left = _gen_config_from_mods(repo, mods)
+  newconfig2, unknown = _gen_config_from_ini(repo, left)
+  newconfig.update(newconfig2)
+  del newconfig2, left
+
   if not OLDVER_FILE.exists():
     open(OLDVER_FILE, 'a').close()
 
-  newconfig = {k: full[k] for k in U & all_known}
   newconfig['__config__'] = {
     'oldver': OLDVER_FILE,
     'newver': NEWVER_FILE,
   }
-
-  return newconfig, unknown
-
-def packages_need_update(repo, U):
-  newconfig, unknown = _gen_config_from_ini(repo, U)
 
   new = configparser.ConfigParser(dict_type=dict, allow_no_value=True)
   new.read_dict(newconfig)
@@ -78,11 +96,15 @@ def packages_need_update(repo, U):
   for l in output:
     j = json.loads(l)
     pkg = j.get('name')
+    if ':' in pkg:
+      pkg, i = pkg.split(':', 1)
     event = j['event']
     if event == 'updated':
-      nvdata[pkg] = NvResult(j['old_version'], j['version'])
+      if i == '0':
+        nvdata[pkg] = NvResult(j['old_version'], j['version'])
     elif event == 'up-to-date':
-      nvdata[pkg] = NvResult(j['version'], j['version'])
+      if i == '0':
+        nvdata[pkg] = NvResult(j['version'], j['version'])
     elif j['level'] in ['warn', 'error', 'exception', 'critical']:
       errors[pkg].append(j)
 
@@ -95,6 +117,7 @@ def packages_need_update(repo, U):
   for pkg, pkgerrs in errors.items():
     if pkg is None:
       continue
+    pkg = pkg.split(':', 1)[0]
 
     dir = repo.repodir / pkg
     if not dir.is_dir():
@@ -125,7 +148,7 @@ def packages_need_update(repo, U):
           '\n'.join( missing) + '\n'
     repo.send_repo_mail(subject, msg)
 
-  for name in U:
+  for name in mods:
     if name not in nvdata:
       # we know nothing about these versions
       # maybe nvchecker has failed

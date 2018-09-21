@@ -277,7 +277,7 @@ def main_may_raise(D):
   last_commit = D.get('last_commit', EMPTY_COMMIT)
   revisions = last_commit + '..HEAD'
   changed = get_changed_packages(revisions) & U
-  _nvdata, unknown = packages_need_update(REPO, U)
+  _nvdata, unknown = packages_need_update(REPO, mods)
   nvdata.update(_nvdata)
   updated = {x for x, y in nvdata.items()
               if y.oldver != y.newver}
