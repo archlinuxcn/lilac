@@ -53,7 +53,7 @@ def _gen_config_from_mods(repo, mods):
   unknown = set()
   newconfig = {}
   for name, mod in mods.items():
-    confs = getattr(mod, 'update_on')
+    confs = getattr(mod, 'update_on', None)
     if not confs:
       unknown.add(name)
       continue
