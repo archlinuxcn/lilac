@@ -124,7 +124,7 @@ def packages_need_update(repo, mods):
       pkg, i = name.split(':', 1)
       i = int(i)
     else:
-      pkg = None
+      pkg = name
       i = 0
     on_result(pkg, i, j)
 
