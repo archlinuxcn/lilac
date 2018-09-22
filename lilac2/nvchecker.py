@@ -93,6 +93,7 @@ def packages_need_update(repo, mods):
   output = os.fdopen(rfd)
   nvdata = {}
   errors = defaultdict(list)
+  rebuild = set()
   for l in output:
     j = json.loads(l)
     pkg = j.get('name')
@@ -105,6 +106,8 @@ def packages_need_update(repo, mods):
     if event == 'updated':
       if i == 0:
         nvdata[pkg] = NvResult(j['old_version'], j['version'])
+      else:
+        rebuild.add(pkg)
     elif event == 'up-to-date':
       if i == 0:
         nvdata[pkg] = NvResult(j['version'], j['version'])
@@ -157,7 +160,7 @@ def packages_need_update(repo, mods):
       # maybe nvchecker has failed
       nvdata[name] = NvResult(None, None)
 
-  return nvdata, unknown
+  return nvdata, unknown, rebuild
 
 def _format_error(error) -> str:
   if 'exception' in error:

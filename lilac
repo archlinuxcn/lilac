@@ -277,7 +277,7 @@ def main_may_raise(D):
   last_commit = D.get('last_commit', EMPTY_COMMIT)
   revisions = last_commit + '..HEAD'
   changed = get_changed_packages(revisions) & U
-  _nvdata, unknown = packages_need_update(REPO, mods)
+  _nvdata, unknown, rebuild = packages_need_update(REPO, mods)
   nvdata.update(_nvdata)
   updated = {x for x, y in nvdata.items()
               if y.oldver != y.newver}
@@ -294,7 +294,8 @@ def main_may_raise(D):
   # if pkgrel is updated, build a new release
   need_rebuild_pkgrel = {x for x in changed
                         if pkgrel_changed(revisions, x)} - unknown
-  all_building = need_update | need_rebuild_failed | need_rebuild_pkgrel
+  all_building = need_update | need_rebuild_failed | need_rebuild_pkgrel \
+      | rebuild
 
   logger.info('these updated (pkgrel) packages should be rebuilt: %r',
               need_rebuild_pkgrel or None)
@@ -302,6 +303,9 @@ def main_may_raise(D):
               need_rebuild_failed or None)
   logger.info('these packages are updated as detected by nvchecker: %r',
               need_update or None)
+  logger.info('these packages need rebuilding'
+              ' as detected by nvchecker: %r',
+              rebuild or None)
 
   building_packages.update(all_building)
   update_succeeded = set()
