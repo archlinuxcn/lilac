@@ -324,10 +324,10 @@ def main_may_raise(D):
 
     if config.getboolean('lilac', 'rebuild_failed_pkgs'):
       if update_succeeded:
-        nvtake(list(update_succeeded))
+        nvtake(update_succeeded, mods)
     else:
       if need_update:
-        nvtake(list(need_update))
+        nvtake(need_update, mods)
 
     git_reset_hard()
     if config.getboolean('lilac', 'git_push'):

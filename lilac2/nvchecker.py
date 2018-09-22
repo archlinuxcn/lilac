@@ -194,5 +194,13 @@ def _format_error(error) -> str:
     ret += '\n' + exception + '\n'
   return ret
 
-def nvtake(L):
-  run_cmd(['nvtake', NVCHECKER_FILE] + L)
+def nvtake(L, mods):
+  names = []
+  for name in L:
+    confs = getattr(mods[name], 'update_on', None)
+    if confs:
+      names += [f'{name}:{i}' for i in range(len(confs))]
+    else:
+      names.append(name)
+
+  run_cmd(['nvtake', NVCHECKER_FILE] + names)
