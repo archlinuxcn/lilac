@@ -52,6 +52,9 @@ def _gen_config_from_ini(repo, U):
 def _gen_config_from_mods(repo, mods):
   unknown = set()
   newconfig = {}
+  dedup_map = {}
+  dedup_ref = defaultdict(list)
+
   for name, mod in mods.items():
     confs = getattr(mod, 'update_on', None)
     if not confs:
@@ -59,12 +62,18 @@ def _gen_config_from_mods(repo, mods):
       continue
 
     for i, conf in enumerate(confs):
-      newconfig[f'{name}:{i}'] = conf
+      nv_name = f'{name}:{i}'
+      key = tuple(sorted(conf.items()))
+      if key not in dedup_map:
+        newconfig[nv_name] = conf
+        dedup_map[key] = nv_name
+      else:
+        dedup_ref[dedup_map[key]].append(nv_name)
 
-  return newconfig, unknown
+  return newconfig, unknown, dedup_ref
 
 def packages_need_update(repo, mods):
-  newconfig, left = _gen_config_from_mods(repo, mods)
+  newconfig, left, dedup_ref = _gen_config_from_mods(repo, mods)
   newconfig2, unknown = _gen_config_from_ini(repo, left)
   newconfig.update(newconfig2)
   del newconfig2, left
@@ -94,14 +103,8 @@ def packages_need_update(repo, mods):
   nvdata = {}
   errors = defaultdict(list)
   rebuild = set()
-  for l in output:
-    j = json.loads(l)
-    pkg = j.get('name')
-    if pkg and ':' in pkg:
-      pkg, i = pkg.split(':', 1)
-      i = int(i)
-    else:
-      i = 0
+
+  def on_result(pkg, i, j):
     event = j['event']
     if event == 'updated':
       if i == 0:
@@ -113,6 +116,22 @@ def packages_need_update(repo, mods):
         nvdata[pkg] = NvResult(j['version'], j['version'])
     elif j['level'] in ['warn', 'error', 'exception', 'critical']:
       errors[pkg].append(j)
+
+  for l in output:
+    j = json.loads(l)
+    name = j.get('name')
+    if name and ':' in name:
+      pkg, i = name.split(':', 1)
+      i = int(i)
+    else:
+      pkg = None
+      i = 0
+    on_result(pkg, i, j)
+
+    for name2 in dedup_ref.get(name, ()):
+      logger.debug('%s duplicates %s, and gets updated too.', name2, name)
+      pkg, i = name2.split(':', 1)
+      on_result(pkg, i, j)
 
   ret = process.wait()
   if ret != 0:
