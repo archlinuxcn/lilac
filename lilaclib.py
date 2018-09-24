@@ -414,7 +414,7 @@ def _update_aur_repo_real(pkgname):
         check = True,
       )
     run_cmd(['git', 'add', '.'])
-    run_cmd(['git', 'commit', '-m', 'update by lilac'])
+    run_cmd(['bash', '-c', 'git diff-index --quiet HEAD || git commit -m "update by lilac"'])
     run_cmd(['git', 'push'])
 
 def update_aur_repo():
