@@ -1,10 +1,11 @@
 import sys
 import contextlib
 import importlib.util
+from pathlib import Path
 
 from myutils import at_dir
 
-def load_all(repodir):
+def load_all(repodir: Path):
   mods = {}
   errors = {}
 

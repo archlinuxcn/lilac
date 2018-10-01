@@ -1,4 +1,5 @@
 from collections import defaultdict, namedtuple
+from typing import Dict
 
 import archpkg
 
@@ -56,7 +57,7 @@ class Dependency(_DependencyTuple):
       return ret
 
 class DependencyManager:
-  _CACHE = {}
+  _CACHE: Dict[str, Dependency] = {}
 
   def __init__(self, repodir):
     self.repodir = repodir
