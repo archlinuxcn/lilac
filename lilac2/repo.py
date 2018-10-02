@@ -1,10 +1,12 @@
 import subprocess
 import traceback
 import pathlib
+from typing import Optional, Tuple
 
 from myutils import at_dir
 
 from .mail import MailService
+from .typing import PathLike
 
 class Repo:
   def __init__(self, config):
@@ -17,7 +19,7 @@ class Repo:
 
     self.ms = MailService(config)
 
-  def find_maintainer(self, file='*'):
+  def find_maintainer(self, file: str = '*') -> str:
     me = self.myaddress
 
     cmd = [
@@ -35,7 +37,9 @@ class Repo:
     finally:
       p.terminate()
 
-  def find_maintainer_or_admin(self, package=None):
+  def find_maintainer_or_admin(self, package: Optional[str] = None
+                              ) -> Tuple[str, str]:
+    path: PathLike
     if package is not None:
       path = self.repodir / package
     else:
@@ -57,6 +61,6 @@ class Repo:
   def sendmail(self, who, subject, msg):
     self.ms.sendmail(who, subject, msg)
 
-  def send_repo_mail(self, subject, msg):
+  def send_repo_mail(self, subject: str, msg) -> None:
     self.ms.sendmail(self.repomail, subject, msg)
 

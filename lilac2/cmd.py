@@ -5,14 +5,18 @@ import signal
 import sys
 import re
 from subprocess import CalledProcessError
+from typing import Optional
+import types
+
+from .typing import Cmd
 
 logger = logging.getLogger(__name__)
 
-def git_pull():
+def git_pull() -> bool:
   output = run_cmd(['git', 'pull', '--no-edit'])
   return 'up-to-date' not in output
 
-def git_push():
+def git_push() -> None:
   while True:
     try:
       run_cmd(['git', 'push'])
@@ -23,7 +27,8 @@ def git_push():
       else:
         raise
 
-def run_cmd(cmd, *, use_pty=False, silent=False, cwd=None):
+def run_cmd(cmd: Cmd, *, use_pty: bool = False, silent: bool = False,
+            cwd: Optional[os.PathLike] = None) -> str:
   logger.debug('running %r, %susing pty,%s showing output', cmd,
                '' if use_pty else 'not ',
                ' not' if silent else '')
@@ -37,7 +42,7 @@ def run_cmd(cmd, *, use_pty=False, silent=False, cwd=None):
     stdout = subprocess.PIPE
 
   exited = False
-  def child_exited(signum, sigframe):
+  def child_exited(signum: int, sigframe: types.FrameType) -> None:
     nonlocal exited
     exited = True
   old_hdl = signal.signal(signal.SIGCHLD, child_exited)
@@ -78,11 +83,11 @@ def run_cmd(cmd, *, use_pty=False, silent=False, cwd=None):
   if old_hdl is not None:
     signal.signal(signal.SIGCHLD, old_hdl)
 
-  out = b''.join(out)
-  out = out.decode('utf-8', errors='replace')
-  out = out.replace('\r\n', '\n')
-  out = re.sub(r'.*\r', '', out)
+  outb = b''.join(out)
+  outs = outb.decode('utf-8', errors='replace')
+  outs = outs.replace('\r\n', '\n')
+  outs = re.sub(r'.*\r', '', outs)
   if code != 0:
-      raise subprocess.CalledProcessError(code, cmd, out)
-  return out
+      raise subprocess.CalledProcessError(code, cmd, outs)
+  return outs
 
