@@ -5,15 +5,18 @@ import logging
 from collections import namedtuple, defaultdict
 import subprocess
 import json
+from pathlib import Path
+from typing import List
 
 from myutils import at_dir
 
 from .cmd import run_cmd
 from .const import mydir
+from .typing import LilacMods
 
 logger = logging.getLogger(__name__)
 
-NVCHECKER_FILE = mydir / 'nvchecker.ini'
+NVCHECKER_FILE: Path = mydir / 'nvchecker.ini'
 OLDVER_FILE = mydir / 'oldver'
 NEWVER_FILE = mydir / 'newver'
 
@@ -175,8 +178,8 @@ def _format_error(error) -> str:
     ret += '\n' + exception + '\n'
   return ret
 
-def nvtake(L, mods):
-  names = []
+def nvtake(L: List[str], mods: LilacMods):
+  names: List[str] = []
   for name in L:
     confs = getattr(mods[name], 'update_on', None)
     if confs:
@@ -184,4 +187,7 @@ def nvtake(L, mods):
     else:
       names.append(name)
 
-  run_cmd(['nvtake', NVCHECKER_FILE] + names)
+  run_cmd(['nvtake', '--ignore-nonexistent', NVCHECKER_FILE] # type: ignore
+          + names)
+  # mypy can't infer List[Union[str, Path]]
+  # and can't understand List[str] is a subtype of it
