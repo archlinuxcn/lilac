@@ -2,10 +2,13 @@ import sys
 import contextlib
 import importlib.util
 from pathlib import Path
+from typing import Generator, cast, Dict, Tuple
 
 from myutils import at_dir
 
-def load_all(repodir: Path):
+from .typing import LilacMod, LilacMods, ExcInfo
+
+def load_all(repodir: Path) -> Tuple[LilacMods, Dict[str, ExcInfo]]:
   mods = {}
   errors = {}
 
@@ -25,21 +28,20 @@ def load_all(repodir: Path):
       except FileNotFoundError:
         pass
       except Exception:
-        errors[x.name] = sys.exc_info()
+        errors[x.name] = cast(ExcInfo, sys.exc_info())
 
   return mods, errors
 
 @contextlib.contextmanager
-def load_lilac():
+def load_lilac() -> Generator[LilacMod, None, None]:
   try:
     spec = importlib.util.spec_from_file_location(
       'lilac.py', 'lilac.py')
-    mod = spec.loader.load_module()
-    yield mod
+    mod = spec.loader.load_module() # type: ignore
+    yield cast(LilacMod, mod)
   finally:
     try:
       del sys.modules['lilac.py']
     except KeyError:
       pass
-
 

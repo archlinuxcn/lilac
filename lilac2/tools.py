@@ -5,7 +5,7 @@ import signal
 
 ansi_escape_re = re.compile(r'\x1B\[[0-?]*[ -/]*[@-~]')
 
-def kill_child_processes():
+def kill_child_processes() -> None:
   pids = subprocess.check_output(
     ['pid_children', str(os.getpid())]
   ).decode().split()

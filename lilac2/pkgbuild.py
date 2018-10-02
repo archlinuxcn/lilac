@@ -1,14 +1,15 @@
 import re
 import fileinput
+from typing import Optional, Iterator, Generator
 
-def unquote_item(s):
+def unquote_item(s: str) -> Optional[str]:
   m = re.search(r'''[ \t'"]*([^ '"]+)[ \t'"]*''', s)
-  if m != None:
+  if m is not None:
     return m.group(1)
   else:
     return None
 
-def add_into_array(line, values):
+def add_into_array(line: str, values: Iterator[str]) -> str:
   l = line.find('(')
   r = line.rfind(')')
   arr_str = line[l+1:r].strip()
@@ -36,7 +37,7 @@ def add_depends(extra_deps):
 def add_makedepends(extra_deps):
   _add_deps('makedepends', extra_deps)
 
-def edit_file(filename):
+def edit_file(filename: str) -> Generator[str, None, None]:
   with fileinput.input(files=(filename,), inplace=True) as f:
     for line in f:
       yield line.rstrip('\n')

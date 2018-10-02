@@ -1,22 +1,25 @@
 import logging
 import shutil
+from typing import Tuple
 
 from .cmd import run_cmd, git_pull, git_push
 from .pkgbuild import (
   add_into_array, add_depends, add_makedepends,
   edit_file,
 )
+from .typing import Floatlike
+
 git_push, git_pull, add_into_array, add_depends, add_makedepends
 edit_file
 
 logger = logging.getLogger(__name__)
 
-def vcs_update():
+def vcs_update() -> None:
   # clean up the old source tree
   shutil.rmtree('src', ignore_errors=True)
   run_cmd(['makepkg', '-od'], use_pty=True)
 
-def get_pkgver_and_pkgrel():
+def get_pkgver_and_pkgrel() -> Tuple[str, Floatlike]:
   pkgrel = None
   pkgver = None
   with open('PKGBUILD') as f:
@@ -27,9 +30,14 @@ def get_pkgver_and_pkgrel():
             pkgrel = int(pkgrel)
       elif l.startswith('pkgver='):
         pkgver = l.rstrip().split('=', 1)[-1]
+
+  assert pkgver is not None and pkgrel is not None
+
   return pkgver, pkgrel
 
-def update_pkgver_and_pkgrel(newver, updpkgsums=True):
+def update_pkgver_and_pkgrel(
+  newver: str, *, updpkgsums: bool = True) -> None:
+
   pkgver, pkgrel = get_pkgver_and_pkgrel()
 
   for line in edit_file('PKGBUILD'):
