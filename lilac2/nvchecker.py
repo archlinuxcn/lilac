@@ -62,7 +62,10 @@ def _gen_config_from_mods(repo, mods):
       continue
 
     for i, conf in enumerate(confs):
-      newconfig[f'{name}:{i}'] = conf
+      if i == 0:
+        newconfig[f'{name}'] = conf
+      else:
+        newconfig[f'{name}:{i}'] = conf
 
   return newconfig, unknown
 
@@ -184,6 +187,7 @@ def nvtake(L: List[str], mods: LilacMods):
     confs = getattr(mods[name], 'update_on', None)
     if confs:
       names += [f'{name}:{i}' for i in range(len(confs))]
+      names[-len(confs)] = name
     else:
       names.append(name)
 
