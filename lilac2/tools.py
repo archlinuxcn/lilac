@@ -3,7 +3,7 @@ import re
 import subprocess
 import signal
 
-ansi_escape_re = re.compile(r'\x1B\[[0-?]*[ -/]*[@-~]')
+ansi_escape_re = re.compile(r'\x1B(\[[0-?]*[ -/]*[@-~]|\(B)')
 
 def kill_child_processes() -> None:
   pids = subprocess.check_output(

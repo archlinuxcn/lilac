@@ -162,11 +162,11 @@ def send_error_report(name, *, msg=None, exc=None, subject=None):
     msgs.append('获取维护者信息也失败了！调用栈如下：\n\n' + tb_find)
 
   if lilaclib.build_output:
-    if config.getboolean('smtp', 'use_ansi', fallback=False):
-      lilaclib.build_output = ansi_escape_re.sub('', lilaclib.build_output)
     msgs.append('编译命令输出如下：\n\n' + lilaclib.build_output)
 
   msg = '\n'.join(msgs)
+  if not config.getboolean('smtp', 'use_ansi', fallback=False):
+    msg = ansi_escape_re.sub('', msg)
   logger.debug('mail to %s:\nsubject: %s\nbody: %s', who, subject, msg[:200])
   REPO.sendmail(who, subject, msg)
 
