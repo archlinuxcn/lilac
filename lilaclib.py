@@ -4,7 +4,6 @@ from subprocess import CalledProcessError
 import os
 import logging
 from types import SimpleNamespace
-import re
 from io import BytesIO
 import tarfile
 import shutil
@@ -23,9 +22,13 @@ from lilac2.api import (
   add_depends, add_makedepends,
   get_pkgver_and_pkgrel,
   update_pkgver_and_pkgrel,
+  update_pkgrel,
+  pypi_pre_build, pypi_post_build,
+  git_add_files, git_commit,
 )
 git_push, add_into_array, add_depends, add_makedepends
 edit_file, update_pkgver_and_pkgrel
+pypi_pre_build, pypi_post_build
 
 UserAgent = 'lilac/0.2a (package auto-build bot, by lilydjwg)'
 
@@ -110,21 +113,6 @@ def download_aur_pkgbuild(name):
 def get_pypi_info(name):
   return s.get(PYPI_URL % name).json()
 
-def update_pkgrel(rel=None):
-  with open('PKGBUILD') as f:
-    pkgbuild = f.read()
-
-  def replacer(m):
-    nonlocal rel
-    if rel is None:
-      rel = int(float(m.group(1))) + 1
-    return str(rel)
-
-  pkgbuild = re.sub(r'''(?<=^pkgrel=)['"]?([\d.]+)['"]?''', replacer, pkgbuild, count=1, flags=re.MULTILINE)
-  with open('PKGBUILD', 'w') as f:
-    f.write(pkgbuild)
-  logger.info('pkgrel updated to %s', rel)
-
 def pkgrel_changed(revisions, pkgname):
   cmd = ["git", "diff", "-p", revisions, '--', pkgname + '/PKGBUILD']
   r = run_cmd(cmd, silent=True).splitlines()
@@ -149,30 +137,6 @@ def clean_directory():
 def git_rm_files(files):
   if files:
     run_cmd(['git', 'rm', '--cached', '--'] + files)
-
-def git_add_files(files, *, force=False):
-  if isinstance(files, str):
-    files = [files]
-  try:
-    if force:
-      run_cmd(['git', 'add', '-f', '--'] + files)
-    else:
-      run_cmd(['git', 'add', '--'] + files)
-  except CalledProcessError:
-    # on error, there may be a partial add, e.g. some files are ignored
-    run_cmd(['git', 'reset', '--'] + files)
-    raise
-
-def git_commit(*, check_status=True):
-  if check_status:
-    ret = [x for x in
-           run_cmd(["git", "status", "-s", "."]).splitlines()
-           if x.split(None, 1)[0] != '??']
-    if not ret:
-      return
-
-  run_cmd(['git', 'commit', '-m', 'auto update for package %s' % (
-    os.path.split(os.getcwd())[1])])
 
 def git_reset_hard():
   run_cmd(['git', 'reset', '--hard'])
@@ -213,79 +177,6 @@ def aur_post_build():
   if output:
     git_commit()
   del _g.aur_pre_files, _g.aur_building_files
-
-def pypi_pre_build(depends=None, python2=False, pypi_name=None, arch=None,
-                   makedepends=None, depends_setuptools=True,
-                   provides=None,
-                   optdepends=None, license=None,
-                  ):
-  if os.path.exists('PKGBUILD'):
-    pkgver, pkgrel = get_pkgver_and_pkgrel()
-  else:
-    pkgver = None
-
-  pkgname = os.path.basename(os.getcwd())
-  if pypi_name is None:
-    pypi_name = pkgname.split('-', 1)[-1]
-  pkgbuild = run_cmd(['pypi2pkgbuild', pypi_name], silent=True)
-
-  if depends_setuptools:
-    if depends is None:
-      depends = ['python-setuptools']
-    else:
-      depends.append('python-setuptools')
-  elif makedepends is None:
-    makedepends = ['python-setuptools']
-  elif makedepends:
-    makedepends.append('python-setuptools')
-
-  pkgbuild = re.sub(r'^pkgname=.*', f'pkgname={pkgname}',
-                    pkgbuild, flags=re.MULTILINE)
-
-  if license:
-    pkgbuild = re.sub(r'^license=.*', f'license=({license})',
-                      pkgbuild, flags=re.MULTILINE)
-
-  if depends:
-    pkgbuild = pkgbuild.replace(
-      "depends=('python')",
-      "depends=('python' %s)" % ' '.join(f"'{x}'" for x in depends))
-
-  if makedepends:
-    pkgbuild = pkgbuild.replace(
-      '\nsource=',
-      '\nmakedepends=(%s)\nsource=' %
-      ' '.join("'%s'" % x for x in makedepends))
-
-  if optdepends:
-    pkgbuild = pkgbuild.replace(
-      '\nsource=',
-      '\noptdepends=(%s)\nsource=' %
-      ' '.join("'%s'" % x for x in optdepends))
-
-  if provides:
-    pkgbuild = pkgbuild.replace(
-      '\nsource=',
-      '\nprovides=(%s)\nsource=' %
-      ' '.join("'%s'" % x for x in provides))
-
-  if python2:
-    pkgbuild = re.sub(r'\bpython3?(?!\.)', 'python2', pkgbuild)
-  if arch is not None:
-    pkgbuild = pkgbuild.replace(
-      "arch=('any')",
-      "arch=(%s)" % ' '.join("'%s'" % x for x in arch))
-  with open('PKGBUILD', 'w') as f:
-    f.write(pkgbuild)
-
-  new_pkgver = get_pkgver_and_pkgrel()[0]
-  if pkgver and pkgver == new_pkgver:
-    # change pkgrel to what specified in PKGBUILD
-    update_pkgrel(pkgrel)
-
-def pypi_post_build():
-  git_add_files('PKGBUILD')
-  git_commit()
 
 def lilac_build(mod, build_prefix=None, oldver=None, newver=None, accept_noupdate=False, depends=(), bindmounts=()):
   run_cmd(["sh", "-c", "rm -f -- *.pkg.tar.xz *.pkg.tar.xz.sig *.src.tar.gz"])
