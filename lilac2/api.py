@@ -74,7 +74,7 @@ def update_pkgrel(rel=None):
 
 def pypi_pre_build(depends=None, python2=False, pypi_name=None, arch=None,
                    makedepends=None, depends_setuptools=True,
-                   provides=None,
+                   provides=None, check=None,
                    optdepends=None, license=None,
                   ):
   if os.path.exists('PKGBUILD'):
@@ -108,6 +108,25 @@ def pypi_pre_build(depends=None, python2=False, pypi_name=None, arch=None,
     pkgbuild = pkgbuild.replace(
       "depends=('python')",
       "depends=('python' %s)" % ' '.join(f"'{x}'" for x in depends))
+
+  if check is not None:
+    if check == 'nose':
+      pkgbuild = pkgbuild.replace(
+        '\nsource=',
+        "\ncheckdepends=('python-nose')\nsource=",
+      )
+    else:
+      raise ValueError(f'check={check} not recognized')
+
+    pkgbuild = pkgbuild.replace(
+      '# vim:set sw=2 et:',
+      '''\
+check() {
+  cd $pkgname-$pkgver
+  python -m unittest discover tests
+}
+
+# vim:set sw=2 et:''')
 
   if makedepends:
     pkgbuild = pkgbuild.replace(
