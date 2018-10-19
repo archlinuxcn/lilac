@@ -1,3 +1,5 @@
+![lilac.png](https://github.com/archlinuxcn/artworks/raw/master/lilac-logo/blue-purple.png)
+
 依赖
 ====
 
