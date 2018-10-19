@@ -71,6 +71,7 @@ from lilac2.tools import ansi_escape_re, kill_child_processes
 from lilac2.repo import Repo
 from lilac2.const import mydir
 from lilac2.nvchecker import packages_need_update, nvtake
+from lilac2.api import get_pkgver_and_pkgrel
 
 logger = logging.getLogger(__name__)
 build_logger = logging.getLogger('build')
@@ -106,8 +107,10 @@ def build_package(package, mod):
       raise
     sign_and_copy()
     built_successfully = True
-    build_logger.info('%s %s successful after %ds',
-                      package, n[1], time.time() - start_time)
+    pkgver, pkgrel = get_pkgver_and_pkgrel()
+    build_logger.info('%s %s [%s-%s] successful after %ds',
+                      package, n[1], pkgver, pkgrel,
+                      time.time() - start_time)
   except MissingDependencies:
     build_logger.error('%s %s failed after %ds',
                       package, n[1], time.time() - start_time)
@@ -116,8 +119,10 @@ def build_package(package, mod):
     tb = traceback.format_exc()
     logger.exception('packaging error')
     send_error_report(package, exc=(e, tb))
-    build_logger.error('%s %s failed after %ds',
-                       package, n[1], time.time() - start_time)
+    pkgver, pkgrel = get_pkgver_and_pkgrel()
+    build_logger.error('%s %s [%s-%s] failed after %ds',
+                       package, n[1], pkgver, pkgrel,
+                       time.time() - start_time)
   if config.getboolean('lilac', 'save_buildlog'):
     with open('lilac-%s.log' % n[1].replace('/', '-'), 'w') as log:
       log.write(lilaclib.build_output)
