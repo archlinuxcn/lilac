@@ -1,4 +1,4 @@
-![lilac.png](https://github.com/archlinuxcn/artworks/raw/master/lilac-logo/blue-purple.png)
+![lilac.png](https://github.com/archlinuxcn/artworks/raw/master/lilac-logo/example%20banners/banner-small.png)
 
 依赖
 ====
