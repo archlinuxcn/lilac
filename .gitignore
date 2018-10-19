@@ -3,3 +3,10 @@ __pycache__/
 *.sw*
 .pytest_cache/
 config.ini
+
+# Distribution / packaging
+build/
+dist/
+.eggs/
+sdist/
+*.egg-info/
