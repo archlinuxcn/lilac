@@ -14,7 +14,8 @@ arch=('any')
 url="{home_page}"
 license=('{license}')
 depends=('python')
-source=('{url}')
+_name=${pkgname#python-}
+source=("https://files.pythonhosted.org/packages/source/${_name::1}/${_name}/${_name}-${pkgver}.tar.gz")
 md5sums=('{md5_digest}')
 
 build() {{
