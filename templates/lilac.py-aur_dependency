@@ -1,0 +1,43 @@
+#!/usr/bin/env python3
+#
+# This is a complex version of lilac.py for building
+# a package from AUR with missing depends.
+#
+# This file is based on the lilac.py-aur_complex template.
+#
+# The use case is usually when the upstream forgot to add
+# some dependencies, but wasn't aware of this (e.g. when
+# the dependency is widely installed). Writing a hotfix
+# in lilac.py can make things easier, and does not affect
+# further builds even after upstream fixes this.
+# p.s. Please also report to upstream.
+#
+# `add_depends()` and `add_makedepends()` are provided in
+# `lilac2/pkgbuild.py`, based upon `edit_file`
+#
+
+from lilaclib import *
+
+build_prefix = 'extra-x86_64'
+# depends = []
+
+def pre_build():
+  # obtain base PKGBUILD, e.g.
+  aur_pre_build()
+
+  # add the missing makedepends, e.g.
+  add_makedepends(['git', 'new-makedepend2'])
+
+  # add the missing depends (less usual), e.g.
+  # add_depends(['fancy-depend1', 'fancy-depend2])
+
+def post_build():
+  # do something after the package has successfully been built
+  aur_post_build()
+
+# do some cleanup here after building the package, regardless of result
+# def post_build_always(success):
+#   pass
+
+if __name__ == '__main__':
+  single_main()
