@@ -7,6 +7,7 @@ from typing import Generator, cast, Dict, Tuple
 from myutils import at_dir
 
 from .typing import LilacMod, LilacMods, ExcInfo
+from .lilacyaml import load_lilac_yaml
 
 def load_all(repodir: Path) -> Tuple[LilacMods, Dict[str, ExcInfo]]:
   mods = {}
@@ -38,6 +39,11 @@ def load_lilac() -> Generator[LilacMod, None, None]:
     spec = importlib.util.spec_from_file_location(
       'lilac.py', 'lilac.py')
     mod = spec.loader.load_module() # type: ignore
+
+    yamlconf = load_lilac_yaml()
+    for k, v in yamlconf:
+      setattr(mod, k, v)
+
     yield cast(LilacMod, mod)
   finally:
     try:

@@ -18,7 +18,7 @@ def may_download_winterpy_libs():
   import requests
   os.makedirs(topdir+'/pylib', exist_ok=True)
   libs = ['archpkg', 'htmlutils', 'mailutils', 'myutils',
-            'nicelogger', 'serializer']
+          'nicelogger', 'serializer', 'yamlutils']
   s = requests.Session()
   for name in libs:
     name += '.py'
