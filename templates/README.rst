@@ -18,6 +18,7 @@ lilac.py-aur_complex
 #. 通过 sourceforge 等其他网站直接检查版本更新，但希望通过修改 AUR 中的 ``PKGBUILD`` 来构建软件包时。
 
 * See also:
+
  + `repo/chrome-remote-desktop <https://github.com/archlinuxcn/repo/blob/master/chrome-remote-desktop/lilac.py>`_
 
 lilac.py-pypi
@@ -29,4 +30,5 @@ lilac.py-custom
 自定义 ``lilac.py`` ，复杂情况下使用。
 
 * See also:
+
  + `repo/vim-lily <https://github.com/archlinuxcn/repo/blob/master/vim-lily/lilac.py>`_
