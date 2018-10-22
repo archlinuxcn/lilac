@@ -29,3 +29,4 @@ Python 库
 * lxml
 * winterpy (will auto download if not available)
 * toposort
+* pyyaml
