@@ -257,7 +257,7 @@ def call_build_cmd(tag, depends, bindmounts=(), makechrootpkg_args=[]):
   try:
       build_output = run_cmd(cmd, use_pty=True)
   except CalledProcessError as e:
-      build_output = e.output
+      build_output = None
       raise
 
 def single_main(build_prefix='makepkg'):
