@@ -41,7 +41,7 @@ def load_lilac() -> Generator[LilacMod, None, None]:
     mod = spec.loader.load_module() # type: ignore
 
     yamlconf = load_lilac_yaml()
-    for k, v in yamlconf:
+    for k, v in yamlconf.items():
       setattr(mod, k, v)
 
     yield cast(LilacMod, mod)
