@@ -6,13 +6,13 @@ from collections import defaultdict
 import subprocess
 import json
 from pathlib import Path
-from typing import List, NamedTuple
-
-from myutils import at_dir
+from typing import List, NamedTuple, Tuple, Set, Dict
+from typing import Optional, Any, Union
 
 from .cmd import run_cmd
 from .const import mydir
-from .typing import LilacMods
+from .typing import LilacMods, PathLike
+from .repo import Repo, Maintainer
 
 logger = logging.getLogger(__name__)
 
@@ -21,8 +21,8 @@ OLDVER_FILE = mydir / 'oldver'
 NEWVER_FILE = mydir / 'newver'
 
 class NvResult(NamedTuple):
-  oldver: str
-  newver: str
+  oldver: Optional[str]
+  newver: Optional[str]
 
 def _gen_config_from_ini(repo, U):
   full = configparser.ConfigParser(dict_type=dict, allow_no_value=True)
@@ -54,7 +54,9 @@ def _gen_config_from_ini(repo, U):
 
   return newconfig, unknown
 
-def _gen_config_from_mods(repo, mods):
+def _gen_config_from_mods(
+  repo: Repo, mods: LilacMods,
+) -> Tuple[Dict[str, Any], Set[str]]:
   unknown = set()
   newconfig = {}
   for name, mod in mods.items():
@@ -71,7 +73,9 @@ def _gen_config_from_mods(repo, mods):
 
   return newconfig, unknown
 
-def packages_need_update(repo, mods):
+def packages_need_update(
+  repo: Repo, mods: LilacMods,
+) -> Tuple[Dict[str, NvResult], Set[str], Set[str]]:
   newconfig, left = _gen_config_from_mods(repo, mods)
   newconfig2, unknown = _gen_config_from_ini(repo, left)
   newconfig.update(newconfig2)
@@ -85,22 +89,24 @@ def packages_need_update(repo, mods):
     'newver': NEWVER_FILE,
   }
 
-  new = configparser.ConfigParser(dict_type=dict, allow_no_value=True)
+  new = configparser.ConfigParser( # type: ignore
+    dict_type=dict, allow_no_value=True)
   new.read_dict(newconfig)
   with open(NVCHECKER_FILE, 'w') as f:
     new.write(f)
 
   # vcs source needs to be run in the repo, so cwd=...
   rfd, wfd = os.pipe()
-  cmd = ['nvchecker', '--logger', 'both', '--json-log-fd', str(wfd),
-         NVCHECKER_FILE]
+  cmd: List[Union[str, PathLike]] = [
+    'nvchecker', '--logger', 'both', '--json-log-fd', str(wfd),
+    NVCHECKER_FILE]
   process = subprocess.Popen(
     cmd, cwd=repo.repodir, pass_fds=(wfd,))
   os.close(wfd)
 
   output = os.fdopen(rfd)
   nvdata = {}
-  errors = defaultdict(list)
+  errors: Dict[Optional[str], List[Dict[str, Any]]] = defaultdict(list)
   rebuild = set()
   for l in output:
     j = json.loads(l)
@@ -127,7 +133,7 @@ def packages_need_update(repo, mods):
     raise subprocess.CalledProcessError(ret, cmd)
 
   missing = []
-  error_owners = defaultdict(list)
+  error_owners: Dict[Maintainer, List[Dict[str, Any]]] = defaultdict(list)
   for pkg, pkgerrs in errors.items():
     if pkg is None:
       continue
@@ -138,15 +144,15 @@ def packages_need_update(repo, mods):
       missing.append(pkg)
       continue
 
-    with at_dir(dir):
-      who = repo.find_maintainer()
-    error_owners[who].extend(pkgerrs)
+    maintainers = repo.find_maintainers(mods[pkg])
+    for maintainer in maintainers:
+      error_owners[maintainer].extend(pkgerrs)
 
-  for who, errors in error_owners.items():
+  for who, their_errors in error_owners.items():
     logger.info('send nvchecker report for %r packages to %s',
-                {x['name'] for x in errors}, who)
+                {x['name'] for x in their_errors}, who)
     repo.sendmail(who, 'nvchecker 错误报告',
-                  '\n'.join(_format_error(e) for e in errors))
+                  '\n'.join(_format_error(e) for e in their_errors))
 
   if unknown or None in errors or missing:
     subject = 'nvchecker 问题'

@@ -7,6 +7,7 @@ Floatlike = Union[int, float]
 
 class LilacMod(types.ModuleType):
   time_limit_hours: Floatlike
+  pkgbase: str
 
 LilacMods = Dict[str, LilacMod]
 

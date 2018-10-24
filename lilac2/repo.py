@@ -1,7 +1,7 @@
 import subprocess
 import traceback
 import pathlib
-from typing import Optional, Tuple, List
+from typing import Optional, Tuple, List, Union
 
 from myutils import at_dir
 
@@ -20,7 +20,8 @@ class Repo:
     self.ms = MailService(config)
 
   def find_maintainers(self, mod: LilacMod) -> List[Maintainer]:
-    maintainer = self.find_maintainer()
+    with at_dir(self.repodir / mod.pkgbase):
+      maintainer = self.find_maintainer()
     name, email = maintainer.split('<', 1)
     name = name.strip('" ')
     email = email.rstrip('>')
@@ -65,7 +66,8 @@ class Repo:
   def report_error(self, subject, msg):
     self.ms.sendmail(self.mymaster, subject, msg)
 
-  def sendmail(self, who, subject, msg):
+  def sendmail(self, who: Union[str, Maintainer], subject: str,
+               msg: str) -> None:
     self.ms.sendmail(who, subject, msg)
 
   def send_repo_mail(self, subject: str, msg) -> None:

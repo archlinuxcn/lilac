@@ -125,7 +125,7 @@ def build_package(package: str, mod: LilacMod) -> bool:
                        package, n[1], pkgver, pkgrel,
                        time.time() - start_time)
   if config.getboolean('lilac', 'save_buildlog'):
-    with open('lilac-%s.log' % n[1].replace('/', '-'), 'w') as log:
+    with open('lilac-%s.log' % (n[1] or 'none').replace('/', '-'), 'w') as log:
       log.write(lilaclib.build_output) # type: ignore
   lilaclib.build_output = None
   return built_successfully
