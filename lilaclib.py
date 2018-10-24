@@ -25,6 +25,7 @@ from lilac2.api import (
   update_pkgrel,
   pypi_pre_build, pypi_post_build,
   git_add_files, git_commit,
+  AurDownloadError,
 )
 git_push, add_into_array, add_depends, add_makedepends
 edit_file, update_pkgver_and_pkgrel
@@ -51,10 +52,6 @@ def send_error_report(name, *, msg=None, exc=None, subject=None):
 class MissingDependencies(Exception):
   def __init__(self, pkgs):
     self.deps = pkgs
-
-class AurDownloadError(Exception):
-  def __init__(self, pkgname):
-    self.pkgname = pkgname
 
 def download_official_pkgbuild(name):
   url = 'https://www.archlinux.org/packages/search/json/?name=' + name
@@ -255,10 +252,10 @@ def call_build_cmd(tag, depends, bindmounts=(), makechrootpkg_args=[]):
 
   # NOTE that Ctrl-C here may not succeed
   try:
-      build_output = run_cmd(cmd, use_pty=True)
-  except CalledProcessError as e:
-      build_output = None
-      raise
+    build_output = run_cmd(cmd, use_pty=True)
+  except CalledProcessError:
+    build_output = None
+    raise
 
 def single_main(build_prefix='makepkg'):
   prepend_self_path()

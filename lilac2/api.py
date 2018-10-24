@@ -188,3 +188,7 @@ def git_commit(*, check_status=True):
   run_cmd(['git', 'commit', '-m', 'auto update for package %s' % (
     os.path.split(os.getcwd())[1])])
 
+class AurDownloadError(Exception):
+  def __init__(self, pkgname):
+    self.pkgname = pkgname
+
