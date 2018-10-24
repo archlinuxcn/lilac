@@ -1,12 +1,12 @@
 import subprocess
 import traceback
 import pathlib
-from typing import Optional, Tuple
+from typing import Optional, Tuple, List
 
 from myutils import at_dir
 
 from .mail import MailService
-from .typing import PathLike
+from .typing import PathLike, LilacMod, Maintainer
 
 class Repo:
   def __init__(self, config):
@@ -18,6 +18,13 @@ class Repo:
       config.get('repository', 'repodir')).expanduser()
 
     self.ms = MailService(config)
+
+  def find_maintainers(self, mod: LilacMod) -> List[Maintainer]:
+    maintainer = self.find_maintainer()
+    name, email = maintainer.split('<', 1)
+    name = name.strip('" ')
+    email = email.rstrip('>')
+    return [Maintainer(name, email)]
 
   def find_maintainer(self, file: str = '*') -> str:
     me = self.myaddress

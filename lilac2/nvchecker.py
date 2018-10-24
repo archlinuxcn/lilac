@@ -2,11 +2,11 @@ import configparser
 import os
 import traceback
 import logging
-from collections import namedtuple, defaultdict
+from collections import defaultdict
 import subprocess
 import json
 from pathlib import Path
-from typing import List
+from typing import List, NamedTuple
 
 from myutils import at_dir
 
@@ -20,7 +20,9 @@ NVCHECKER_FILE: Path = mydir / 'nvchecker.ini'
 OLDVER_FILE = mydir / 'oldver'
 NEWVER_FILE = mydir / 'newver'
 
-NvResult = namedtuple('NvResult', 'oldver newver')
+class NvResult(NamedTuple):
+  oldver: str
+  newver: str
 
 def _gen_config_from_ini(repo, U):
   full = configparser.ConfigParser(dict_type=dict, allow_no_value=True)
