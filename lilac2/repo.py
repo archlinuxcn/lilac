@@ -52,24 +52,6 @@ class Repo:
     finally:
       p.terminate()
 
-  def find_maintainer_or_admin(self, package: Optional[str] = None
-                              ) -> Tuple[str, str]:
-    path: PathLike
-    if package is not None:
-      path = self.repodir / package
-    else:
-      path = '.'
-
-    with at_dir(path):
-      try:
-        who = str(self.find_maintainer_by_git())
-        more = ''
-      except Exception:
-        who = self.mymaster
-        more = traceback.format_exc()
-
-    return who, more
-
   def report_error(self, subject: str, msg: str) -> None:
     self.ms.sendmail(self.mymaster, subject, msg)
 
