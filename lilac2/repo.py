@@ -1,5 +1,4 @@
 import subprocess
-import traceback
 import pathlib
 from typing import Optional, Tuple, List, Union
 import logging
@@ -7,7 +6,7 @@ import logging
 from myutils import at_dir
 
 from .mail import MailService
-from .typing import PathLike, LilacMod, Maintainer
+from .typing import LilacMod, Maintainer
 from .tools import ansi_escape_re
 from . import api
 

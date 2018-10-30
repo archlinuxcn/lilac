@@ -7,28 +7,14 @@ import logging
 import configparser
 import time
 from collections import defaultdict
-from typing import Set, Dict, List
-
-topdir = os.path.dirname(os.path.abspath(__file__))
-BIND_MOUNTS = [
-  os.path.expanduser('~/.cargo') + ':' + '/build/.cargo',
-]
-
-sys.path.append(topdir)
-sys.path.append(topdir+'/vendor')
-
-config = configparser.ConfigParser()
-config.optionxform = lambda option: option # type: ignore
-config.read(topdir+'/config.ini')
-
-# Setting up enviroment variables
-os.environ.update(config.items('enviroment variables'))
-os.environ['PATH'] = topdir + ':' + os.environ['PATH']
-
-DESTDIR = os.path.expanduser(config.get('repository', 'destdir'))
-MYNAME = config.get('lilac', 'name')
+import pathlib
+from typing import Set, Dict, List, Tuple, Any
 
 from toposort import toposort_flatten
+
+topdir = os.path.dirname(os.path.abspath(__file__))
+sys.path.append(topdir)
+sys.path.append(topdir+'/vendor')
 
 from myutils import at_dir, execution_timeout, lock_file
 from serializer import PickledData
@@ -51,7 +37,22 @@ from lilac2.repo import Repo
 from lilac2.const import mydir, _G
 from lilac2.nvchecker import packages_need_update, nvtake, NvResult
 from lilac2.api import get_pkgver_and_pkgrel
-from lilac2.typing import LilacMod
+from lilac2.typing import LilacMod, LilacMods
+
+BIND_MOUNTS = [
+  os.path.expanduser('~/.cargo') + ':' + '/build/.cargo',
+]
+
+config = configparser.ConfigParser()
+config.optionxform = lambda option: option # type: ignore
+config.read(topdir+'/config.ini')
+
+# Setting up enviroment variables
+os.environ.update(config.items('enviroment variables'))
+os.environ['PATH'] = topdir + ':' + os.environ['PATH']
+
+DESTDIR = os.path.expanduser(config.get('repository', 'destdir'))
+MYNAME = config.get('lilac', 'name')
 
 building_packages: Set[str] = set()
 nvdata: Dict[str, NvResult] = {}
@@ -61,7 +62,7 @@ logger = logging.getLogger(__name__)
 build_logger = logging.getLogger('build')
 REPO = _G.repo = Repo(config)
 
-def setup_build_logger():
+def setup_build_logger() -> None:
   handler = logging.FileHandler(os.path.join(mydir, 'build.log'))
   handler.setFormatter(logging.Formatter('[%(asctime)s] %(message)s', '%Y-%m-%d %H:%M:%S'))
   build_logger.addHandler(handler)
@@ -199,20 +200,25 @@ def start_build(mods, failed, built):
   except KeyboardInterrupt:
     logger.info('keyboard interrupted, bye~')
 
-def load_all_lilac_and_report(repodir):
+def load_all_lilac_and_report(
+  repodir: pathlib.Path,
+) -> Tuple[LilacMods, Set[str]]:
   mods, errors = lilacpy.load_all(repodir)
   failed = set(errors)
   for name, exc_info in errors.items():
-    tb = traceback.format_exception(*exc_info)
-    tb = ''.join(tb)
+    tb_lines = traceback.format_exception(*exc_info)
+    tb = ''.join(tb_lines)
     logger.error('error while loading lilac.py for %s', name, exc_info=exc_info)
-    REPO.send_error_report(name, exc=(exc_info[1], tb),
-                      subject='为软件包 %s 载入 lilac.py 时失败')
+    exc = exc_info[1]
+    if not isinstance(exc, Exception):
+      raise
+    REPO.send_error_report(name, exc=(exc, tb),
+                           subject='为软件包 %s 载入 lilac.py 时失败')
     build_logger.error('%s failed', name)
 
   return mods, failed
 
-def main_may_raise(D):
+def main_may_raise(D: Dict[str, Any]) -> None:
   failed_info = D.get('failed', {})
 
   git_reset_hard()
@@ -254,7 +260,7 @@ def main_may_raise(D):
               rebuild or None)
 
   building_packages.update(all_building)
-  update_succeeded = set()
+  update_succeeded: Set[str] = set()
 
   try:
     start_build(mods, failed, update_succeeded)

@@ -7,7 +7,7 @@ import subprocess
 import json
 from pathlib import Path
 from typing import List, NamedTuple, Tuple, Set, Dict
-from typing import Optional, Any, Union
+from typing import Optional, Any, Union, Iterable
 
 from .cmd import run_cmd
 from .const import mydir
@@ -189,7 +189,7 @@ def _format_error(error) -> str:
     ret += '\n' + exception + '\n'
   return ret
 
-def nvtake(L: List[str], mods: LilacMods):
+def nvtake(L: Iterable[str], mods: LilacMods):
   names: List[str] = []
   for name in L:
     confs = getattr(mods[name], 'update_on', None)
