@@ -189,7 +189,7 @@ def _format_error(error) -> str:
     ret += '\n' + exception + '\n'
   return ret
 
-def nvtake(L: Iterable[str], mods: LilacMods):
+def nvtake(L: Iterable[str], mods: LilacMods) -> None:
   names: List[str] = []
   for name in L:
     confs = getattr(mods[name], 'update_on', None)
