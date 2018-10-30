@@ -71,6 +71,7 @@ def build_package(package: str, mod: LilacMod) -> bool:
   logger.info('building %s', package)
   start_time = time.time()
   try:
+    _G.mod = mod
     built_successfully = False
     n = nvdata[package]
     maintainer = REPO.find_maintainers(mod)[0]
@@ -106,6 +107,9 @@ def build_package(package: str, mod: LilacMod) -> bool:
     build_logger.error('%s %s [%s-%s] failed after %ds',
                        package, n[1], pkgver, pkgrel,
                        time.time() - start_time)
+  finally:
+    del _G.mod
+
   if config.getboolean('lilac', 'save_buildlog'):
     with open('lilac-%s.log' % (n[1] or 'none').replace('/', '-'), 'w') as log:
       log.write(lilaclib.build_output) # type: ignore

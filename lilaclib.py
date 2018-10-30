@@ -24,7 +24,7 @@ from lilac2.api import (
   git_add_files, git_commit,
   AurDownloadError,
 )
-from lilac2.const import SPECIAL_FILES, _G
+from lilac2.const import SPECIAL_FILES
 git_push, add_into_array, add_depends, add_makedepends
 git_pull, git_reset_hard
 edit_file, update_pkgver_and_pkgrel
@@ -173,7 +173,6 @@ def lilac_build(mod, build_prefix=None, oldver=None, newver=None, accept_noupdat
   build_output = None
 
   try:
-    _G.mod = mod
     if not hasattr(mod, '_G'):
       # fill nvchecker result unless already filled (e.g. by hand)
       mod._G = SimpleNamespace(oldver = oldver, newver = newver)
@@ -214,7 +213,6 @@ def lilac_build(mod, build_prefix=None, oldver=None, newver=None, accept_noupdat
   finally:
     if hasattr(mod, 'post_build_always'):
       mod.post_build_always(success=success)
-    del _G.mod
 
 def call_build_cmd(tag, depends, bindmounts=(), makechrootpkg_args=[]):
   global build_output
