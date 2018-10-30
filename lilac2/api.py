@@ -4,6 +4,9 @@ from typing import Tuple
 import re
 import os
 import subprocess
+import traceback
+
+from myutils import at_dir
 
 from .cmd import run_cmd, git_pull, git_push
 from .pkgbuild import (
@@ -11,9 +14,10 @@ from .pkgbuild import (
   edit_file,
 )
 from .typing import Floatlike
+from . import const
+from .const import _G
 
-git_push, git_pull, add_into_array, add_depends, add_makedepends
-edit_file
+git_push, add_into_array, add_depends, add_makedepends
 
 logger = logging.getLogger(__name__)
 
@@ -188,7 +192,52 @@ def git_commit(*, check_status=True):
   run_cmd(['git', 'commit', '-m', 'auto update for package %s' % (
     os.path.split(os.getcwd())[1])])
 
+def git_reset_hard():
+  run_cmd(['git', 'reset', '--hard'])
+
 class AurDownloadError(Exception):
   def __init__(self, pkgname):
     self.pkgname = pkgname
+
+def _update_aur_repo_real(pkgname: str) -> None:
+  aurpath = const.AUR_REPO_DIR / pkgname
+  if not os.path.isdir(aurpath):
+    logger.info('cloning AUR repo: %s', aurpath)
+    with at_dir(const.AUR_REPO_DIR):
+      run_cmd(['git', 'clone', 'aur@aur.archlinux.org:%s.git' % pkgname])
+  else:
+    with at_dir(aurpath):
+      git_reset_hard()
+      git_pull()
+
+  logger.info('copying files to AUR repo: %s', aurpath)
+  files = run_cmd(['git', 'ls-files']).splitlines()
+  for f in files:
+    if f in const.SPECIAL_FILES:
+      continue
+    logger.debug('copying file %s', f)
+    shutil.copy(f, aurpath)
+
+  with at_dir(aurpath):
+    with open('.SRCINFO', 'wb') as srcinfo:
+      subprocess.run(
+        ['makepkg', '--printsrcinfo'],
+        stdout = srcinfo,
+        check = True,
+      )
+    run_cmd(['git', 'add', '.'])
+    run_cmd(['bash', '-c', 'git diff-index --quiet HEAD || git commit -m "update by lilac"'])
+    run_cmd(['git', 'push'])
+
+def update_aur_repo() -> None:
+  pkgname = _G.mod.pkgname
+  try:
+    _update_aur_repo_real(pkgname)
+  except subprocess.CalledProcessError as e:
+    tb = traceback.format_exc()
+    _G.repo.send_error_report(
+      pkgname,
+      exc = (e, tb),
+      subject = '[lilac] 提交软件包 %s 到 AUR 时出错',
+    )
 

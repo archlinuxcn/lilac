@@ -1,23 +1,19 @@
-import subprocess
-import traceback
 from subprocess import CalledProcessError
 import os
 import logging
 from types import SimpleNamespace
 from io import BytesIO
 import tarfile
-import shutil
 
 import requests
 
 from nicelogger import enable_pretty_logging
 from htmlutils import parse_document_from_requests
-from myutils import at_dir
 
 from lilac2 import lilacpy
 from lilac2.api import (
   run_cmd, vcs_update,
-  git_push, git_pull,
+  git_push, git_pull, git_reset_hard,
   add_into_array, edit_file,
   add_depends, add_makedepends,
   get_pkgver_and_pkgrel,
@@ -27,7 +23,9 @@ from lilac2.api import (
   git_add_files, git_commit,
   AurDownloadError,
 )
+from lilac2.const import SPECIAL_FILES, _G
 git_push, add_into_array, add_depends, add_makedepends
+git_pull, git_reset_hard
 edit_file, update_pkgver_and_pkgrel
 pypi_pre_build, pypi_post_build
 
@@ -36,14 +34,10 @@ UserAgent = 'lilac/0.2a (package auto-build bot, by lilydjwg)'
 s = requests.Session()
 s.headers['User-Agent'] = UserAgent
 logger = logging.getLogger(__name__)
-SPECIAL_FILES = ('package.list', 'lilac.py', 'lilac.yaml', '.gitignore')
 EMPTY_COMMIT = '4b825dc642cb6eb9a060e54bf8d69288fbee4904'
 _g = SimpleNamespace()
 build_output = None
 PYPI_URL = 'https://pypi.python.org/pypi/%s/json'
-
-# to be override
-AUR_REPO_DIR = '/tmp'
 
 def send_error_report(name, *, msg=None, exc=None, subject=None):
   # exc_info used as such needs Python 3.5+
@@ -135,9 +129,6 @@ def git_rm_files(files):
   if files:
     run_cmd(['git', 'rm', '--cached', '--'] + files)
 
-def git_reset_hard():
-  run_cmd(['git', 'reset', '--hard'])
-
 def git_last_commit(ref=None):
   cmd = ['git', 'log', '-1', '--format=%H']
   if ref:
@@ -184,6 +175,7 @@ def lilac_build(mod, build_prefix=None, oldver=None, newver=None, accept_noupdat
   build_output = None
 
   try:
+    _G.mod = mod
     if not hasattr(mod, '_G'):
       # fill nvchecker result unless already filled (e.g. by hand)
       mod._G = SimpleNamespace(oldver = oldver, newver = newver)
@@ -224,6 +216,7 @@ def lilac_build(mod, build_prefix=None, oldver=None, newver=None, accept_noupdat
   finally:
     if hasattr(mod, 'post_build_always'):
       mod.post_build_always(success=success)
+    del _G.mod
 
 def call_build_cmd(tag, depends, bindmounts=(), makechrootpkg_args=[]):
   global build_output
@@ -274,46 +267,4 @@ def prepend_self_path():
 
 def recv_gpg_keys():
   run_cmd(['recv_gpg_keys'])
-
-def _update_aur_repo_real(pkgname):
-  aurpath = os.path.join(AUR_REPO_DIR, pkgname)
-  if not os.path.isdir(aurpath):
-    logger.info('cloning AUR repo: %s', aurpath)
-    with at_dir(AUR_REPO_DIR):
-      run_cmd(['git', 'clone', 'aur@aur.archlinux.org:%s.git' % pkgname])
-  else:
-    with at_dir(aurpath):
-      git_reset_hard()
-      git_pull()
-
-  logger.info('copying files to AUR repo: %s', aurpath)
-  files = run_cmd(['git', 'ls-files']).splitlines()
-  for f in files:
-    if f in SPECIAL_FILES:
-      continue
-    logger.debug('copying file %s', f)
-    shutil.copy(f, aurpath)
-
-  with at_dir(aurpath):
-    with open('.SRCINFO', 'wb') as srcinfo:
-      subprocess.run(
-        ['makepkg', '--printsrcinfo'],
-        stdout = srcinfo,
-        check = True,
-      )
-    run_cmd(['git', 'add', '.'])
-    run_cmd(['bash', '-c', 'git diff-index --quiet HEAD || git commit -m "update by lilac"'])
-    run_cmd(['git', 'push'])
-
-def update_aur_repo():
-  pkgname = os.path.basename(os.getcwd())
-  try:
-    _update_aur_repo_real(pkgname)
-  except CalledProcessError as e:
-    tb = traceback.format_exc()
-    send_error_report(
-      pkgname,
-      exc = (e, tb),
-      subject = '[lilac] 提交软件包 %s 到 AUR 时出错',
-    )
 
