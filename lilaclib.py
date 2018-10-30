@@ -9,6 +9,7 @@ import requests
 
 from nicelogger import enable_pretty_logging
 from htmlutils import parse_document_from_requests
+from myutils import at_dir
 
 from lilac2 import lilacpy
 from lilac2.api import (
@@ -28,6 +29,7 @@ git_push, add_into_array, add_depends, add_makedepends
 git_pull, git_reset_hard
 edit_file, update_pkgver_and_pkgrel
 pypi_pre_build, pypi_post_build
+at_dir
 
 UserAgent = 'lilac/0.2a (package auto-build bot, by lilydjwg)'
 
