@@ -28,13 +28,10 @@ class Repo:
 
   def find_maintainers(self, mod: LilacMod) -> List[Maintainer]:
     with at_dir(self.repodir / mod.pkgbase):
-      maintainer = self.find_maintainer()
-    name, email = maintainer.split('<', 1)
-    name = name.strip('" ')
-    email = email.rstrip('>')
-    return [Maintainer(name, email)]
+      maintainer = self.find_maintainer_by_git()
+    return [maintainer]
 
-  def find_maintainer(self, file: str = '*') -> str:
+  def find_maintainer_by_git(self, file: str = '*') -> Maintainer:
     me = self.myaddress
 
     cmd = [
@@ -48,7 +45,10 @@ class Repo:
         line = p.stdout.readline()
         commit, author = line.rstrip().split(None, 1)
         if me not in author:
-          return author
+          name, email = author.split('<', 1)
+          name = name.strip('" ')
+          email = email.rstrip('>')
+          return Maintainer(name, email)
     finally:
       p.terminate()
 
@@ -62,7 +62,7 @@ class Repo:
 
     with at_dir(path):
       try:
-        who = self.find_maintainer()
+        who = str(self.find_maintainer_by_git())
         more = ''
       except Exception:
         who = self.mymaster
@@ -75,7 +75,7 @@ class Repo:
 
   def send_error_report(
     self,
-    mod: LilacMod, *,
+    mod: Union[LilacMod, str], *,
     msg: Optional[str] = None,
     exc: Optional[Tuple[Exception, str]] = None,
     subject: Optional[str] = None,
@@ -84,7 +84,12 @@ class Repo:
     if msg is None and exc is None:
       raise TypeError('send_error_report received inefficient args')
 
-    maintainers = self.find_maintainers(mod)
+    if isinstance(mod, str):
+      maintainers = [self.find_maintainer_by_git(mod)]
+      pkgbase = mod
+    else:
+      maintainers = self.find_maintainers(mod)
+      pkgbase = mod.pkgbase
 
     msgs = []
     if msg is not None:
@@ -107,7 +112,7 @@ class Repo:
         msgs.append('发生未知错误！调用栈如下：\n\n' + tb)
 
     if '%s' in subject_real:
-      subject_real = subject_real % mod.pkgbase
+      subject_real = subject_real % pkgbase
 
     if build_output:
       msgs.append('编译命令输出如下：\n\n' + build_output)

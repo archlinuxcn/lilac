@@ -39,10 +39,6 @@ _g = SimpleNamespace()
 build_output = None
 PYPI_URL = 'https://pypi.python.org/pypi/%s/json'
 
-def send_error_report(name, *, msg=None, exc=None, subject=None):
-  # exc_info used as such needs Python 3.5+
-  logger.error('%s\n\n%s', subject, msg, exc_info=exc)
-
 class MissingDependencies(Exception):
   def __init__(self, pkgs):
     self.deps = pkgs

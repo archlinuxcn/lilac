@@ -230,13 +230,13 @@ def _update_aur_repo_real(pkgname: str) -> None:
     run_cmd(['git', 'push'])
 
 def update_aur_repo() -> None:
-  pkgname = _G.mod.pkgname
+  pkgbase = _G.mod.pkgbase
   try:
-    _update_aur_repo_real(pkgname)
+    _update_aur_repo_real(pkgbase)
   except subprocess.CalledProcessError as e:
     tb = traceback.format_exc()
     _G.repo.send_error_report(
-      pkgname,
+      pkgbase,
       exc = (e, tb),
       subject = '[lilac] 提交软件包 %s 到 AUR 时出错',
     )

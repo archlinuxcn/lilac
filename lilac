@@ -6,7 +6,6 @@ import traceback
 import logging
 import configparser
 import time
-from subprocess import CalledProcessError
 from collections import defaultdict
 from typing import Set, Dict, List
 
@@ -57,7 +56,7 @@ import lilaclib
 from lilaclib import (
   git_reset_hard, git_last_commit,
   EMPTY_COMMIT, pkgrel_changed, lilac_build,
-  MissingDependencies, AurDownloadError,
+  MissingDependencies,
 )
 from lilac2 import lilacpy
 from lilac2.packages import (
@@ -65,7 +64,7 @@ from lilac2.packages import (
   Dependency,
 )
 from lilac2.cmd import run_cmd, git_pull, git_push
-from lilac2.tools import ansi_escape_re, kill_child_processes
+from lilac2.tools import kill_child_processes
 from lilac2.repo import Repo
 from lilac2.const import mydir, _G
 from lilac2.nvchecker import packages_need_update, nvtake, NvResult
@@ -119,7 +118,7 @@ def build_package(package: str, mod: LilacMod) -> bool:
   except Exception as e:
     tb = traceback.format_exc()
     logger.exception('packaging error')
-    send_error_report(package, exc=(e, tb))
+    REPO.send_error_report(_G.mod, exc=(e, tb))
     pkgver, pkgrel = get_pkgver_and_pkgrel()
     build_logger.error('%s %s [%s-%s] failed after %ds',
                        package, n[1], pkgver, pkgrel,
@@ -129,47 +128,6 @@ def build_package(package: str, mod: LilacMod) -> bool:
       log.write(lilaclib.build_output) # type: ignore
   lilaclib.build_output = None
   return built_successfully
-
-def send_error_report(name, *, msg=None, exc=None, subject=None):
-  if msg is None and exc is None:
-    raise TypeError('send_error_report received inefficient args')
-
-  who, tb_find = REPO.find_maintainer_or_admin(package=name)
-
-  msgs = []
-  if msg is not None:
-    msgs.append(msg)
-
-  if exc is not None:
-    exception, tb = exc
-    if isinstance(exception, CalledProcessError):
-      subject = subject or '在编译软件包 %s 时发生错误'
-      msgs.append('命令执行失败！\n\n命令 %r 返回了错误号 %d。' \
-                  '命令的输出如下：\n\n%s' % (
-                    exception.cmd, exception.returncode, exception.output))
-      msgs.append('调用栈如下：\n\n' + tb)
-    elif isinstance(exception, AurDownloadError):
-      subject = subject or '在获取AUR包 %s 时发生错误'
-      msgs.append('获取AUR包失败！\n\n')
-      msgs.append('调用栈如下：\n\n' + tb)
-    else:
-      subject = subject or '在编译软件包 %s 时发生未知错误'
-      msgs.append('发生未知错误！调用栈如下：\n\n' + tb)
-
-  if '%s' in subject:
-    subject = subject % name
-
-  if tb_find:
-    msgs.append('获取维护者信息也失败了！调用栈如下：\n\n' + tb_find)
-
-  if lilaclib.build_output:
-    msgs.append('编译命令输出如下：\n\n' + lilaclib.build_output)
-
-  msg = '\n'.join(msgs)
-  if not config.getboolean('smtp', 'use_ansi', fallback=False):
-    msg = ansi_escape_re.sub('', msg)
-  logger.debug('mail to %s:\nsubject: %s\nbody: %s', who, subject, msg[:200])
-  REPO.sendmail(who, subject, msg)
 
 def sign_and_copy():
   pkgs = [x for x in os.listdir() if x.endswith('.pkg.tar.xz')]
@@ -209,8 +167,8 @@ def start_build(mods, failed, built):
     dep_building_map[name] = {x.pkgdir.name for x in ds}
 
   for name, ds in nonexistent.items():
-    send_error_report(
-      name, subject='软件包 %s 的 lilac.py 指定了不存在的依赖',
+    REPO.send_error_report(
+      mods[name], subject='软件包 %s 的 lilac.py 指定了不存在的依赖',
       msg = f'''软件包 {name} 的 lilac.py 指定了 depends，然而其直接或者间接的依赖项 {ds!r} 并不在本仓库中。
 ''')
 
@@ -247,8 +205,8 @@ def start_build(mods, failed, built):
           if faileddeps:
             reason += '唔，这些包没能成功打包呢：%r' % faileddeps
 
-          send_error_report(pkg, subject='%s 出现依赖问题',
-                            msg = '''\
+          REPO.send_error_report(mods[pkg], subject='%s 出现依赖问题',
+                                 msg = '''\
 在成功地编译打包 {built} 之后，{pkg} 依旧依赖 {deps}。
 
 {reason}'''.format(
@@ -266,7 +224,7 @@ def load_all_lilac_and_report(repodir):
     tb = traceback.format_exception(*exc_info)
     tb = ''.join(tb)
     logger.error('error while loading lilac.py for %s', name, exc_info=exc_info)
-    send_error_report(name, exc=(exc_info[1], tb),
+    REPO.send_error_report(name, exc=(exc_info[1], tb),
                       subject='为软件包 %s 载入 lilac.py 时失败')
     build_logger.error('%s failed', name)
 
@@ -370,7 +328,6 @@ def setup():
 
   setup_build_logger()
   os.chdir(REPO.repodir)
-  lilaclib.send_error_report = send_error_report
 
 if __name__ == '__main__':
   try:
