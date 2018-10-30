@@ -14,26 +14,8 @@ BIND_MOUNTS = [
   os.path.expanduser('~/.cargo') + ':' + '/build/.cargo',
 ]
 
-def may_download_winterpy_libs():
-  import requests
-  os.makedirs(topdir+'/pylib', exist_ok=True)
-  libs = ['archpkg', 'htmlutils', 'mailutils', 'myutils',
-          'nicelogger', 'serializer', 'yamlutils']
-  s = requests.Session()
-  for name in libs:
-    name += '.py'
-    path = os.path.join(topdir, 'pylib', name)
-    if not os.path.exists(path):
-        print('Downloading %s' % name)
-        r = s.get('https://raw.githubusercontent.com/lilydjwg/winterpy/master/pylib/'+name)
-        with open(path, 'wb') as f:
-          f.write(r.content)
-
-if __name__ == '__main__':
-  may_download_winterpy_libs()
-
 sys.path.append(topdir)
-sys.path.append(topdir+'/pylib')
+sys.path.append(topdir+'/vendor')
 
 config = configparser.ConfigParser()
 config.optionxform = lambda option: option # type: ignore
