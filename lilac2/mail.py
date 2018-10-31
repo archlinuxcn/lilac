@@ -1,5 +1,5 @@
 import smtplib
-from typing import Union, Type
+from typing import Union, Type, List
 
 from mailutils import assemble_mail
 
@@ -34,7 +34,8 @@ class MailService:
       connection.login(username, password)
     return connection
 
-  def sendmail(self, to, subject: str, msg) -> None:
+  def sendmail(self, to: Union[str, List[str]],
+               subject: str, msg: str) -> None:
     if not self.send_email:
       return
 
@@ -42,8 +43,8 @@ class MailService:
     if len(msg) > 5 * 1024 ** 2:
       msg = msg[:1024 ** 2] + '\n\n日志过长，省略ing……\n\n' + \
           msg[-1024 ** 2:]
-    msg = assemble_mail('[%s] %s' % (
+    mail = assemble_mail('[%s] %s' % (
       self.mailtag, subject), to, self.from_, text=msg)
-    s.send_message(msg)
+    s.send_message(mail)
     s.quit()
 

@@ -102,13 +102,15 @@ class Repo:
     if self.trim_ansi_codes:
       msg = ansi_escape_re.sub('', msg)
 
-    for maintainer in maintainers:
-      logger.debug('mail to %s:\nsubject: %s\nbody: %s',
-                   maintainer, subject_real, msg[:200])
-      self.sendmail(maintainer, subject_real, msg)
+    addresses = [str(x) for x in maintainers]
+    logger.debug('mail to %s:\nsubject: %s\nbody: %s',
+                 addresses, subject_real, msg[:200])
+    self.sendmail(addresses, subject_real, msg)
 
-  def sendmail(self, who: Union[str, Maintainer], subject: str,
-               msg: str) -> None:
+  def sendmail(self, who: Union[str, List[str], Maintainer],
+               subject: str, msg: str) -> None:
+    if isinstance(who, Maintainer):
+      who = str(who)
     self.ms.sendmail(who, subject, msg)
 
   def send_repo_mail(self, subject: str, msg: str) -> None:
