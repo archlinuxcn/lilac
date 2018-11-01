@@ -23,13 +23,14 @@ from lilac2.api import (
   pypi_pre_build, pypi_post_build,
   git_add_files, git_commit,
   AurDownloadError,
+  update_aur_repo,
 )
 from lilac2.const import SPECIAL_FILES
 git_push, add_into_array, add_depends, add_makedepends
 git_pull, git_reset_hard
 edit_file, update_pkgver_and_pkgrel
 pypi_pre_build, pypi_post_build
-at_dir
+at_dir, update_aur_repo
 
 UserAgent = 'lilac/0.2a (package auto-build bot, by lilydjwg)'
 
