@@ -13,7 +13,6 @@ from .pkgbuild import (
   add_into_array, add_depends, add_makedepends,
   edit_file,
 )
-from .typing import Floatlike
 from . import const
 from .const import _G
 
@@ -27,7 +26,7 @@ def vcs_update() -> None:
   run_cmd(['makepkg', '-od'], use_pty=True)
 
 def get_pkgver_and_pkgrel(
-) -> Tuple[Optional[str], Optional[Floatlike]]:
+) -> Tuple[Optional[str], Optional[float]]:
   pkgrel = None
   pkgver = None
   with open('PKGBUILD') as f:
