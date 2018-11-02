@@ -1,6 +1,6 @@
 import types
 from typing import Union, Dict, Tuple, Type, List
-from typing import NamedTuple
+from typing import NamedTuple, Any
 from pathlib import Path
 
 Floatlike = Union[int, float]
@@ -8,6 +8,13 @@ Floatlike = Union[int, float]
 class LilacMod(types.ModuleType):
   time_limit_hours: Floatlike
   pkgbase: str
+  _G: types.SimpleNamespace
+  build_prefix: str
+  makechrootpkg_args: List[str]
+  # these are not methods but mypy doesn't understand
+  pre_build: Any
+  post_build: Any
+  post_build_always: Any
 
 LilacMods = Dict[str, LilacMod]
 

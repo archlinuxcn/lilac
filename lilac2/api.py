@@ -1,10 +1,10 @@
 import logging
 import shutil
-from typing import Tuple
 import re
 import os
 import subprocess
 import traceback
+from typing import Tuple, Optional
 
 from myutils import at_dir
 
@@ -26,7 +26,8 @@ def vcs_update() -> None:
   shutil.rmtree('src', ignore_errors=True)
   run_cmd(['makepkg', '-od'], use_pty=True)
 
-def get_pkgver_and_pkgrel() -> Tuple[str, Floatlike]:
+def get_pkgver_and_pkgrel(
+) -> Tuple[Optional[str], Optional[Floatlike]]:
   pkgrel = None
   pkgver = None
   with open('PKGBUILD') as f:
@@ -38,14 +39,13 @@ def get_pkgver_and_pkgrel() -> Tuple[str, Floatlike]:
       elif l.startswith('pkgver='):
         pkgver = l.rstrip().split('=', 1)[-1]
 
-  assert pkgver is not None and pkgrel is not None
-
   return pkgver, pkgrel
 
 def update_pkgver_and_pkgrel(
   newver: str, *, updpkgsums: bool = True) -> None:
 
   pkgver, pkgrel = get_pkgver_and_pkgrel()
+  assert pkgver is not None and pkgrel is not None
 
   for line in edit_file('PKGBUILD'):
     if line.startswith('pkgver=') and pkgver != newver:

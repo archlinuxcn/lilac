@@ -4,6 +4,7 @@ import logging
 from types import SimpleNamespace
 from io import BytesIO
 import tarfile
+from typing import Iterable, Optional, List
 
 import requests
 
@@ -26,6 +27,8 @@ from lilac2.api import (
   update_aur_repo,
 )
 from lilac2.const import SPECIAL_FILES
+from lilac2.typing import LilacMod
+from lilac2.packages import Dependency
 git_push, add_into_array, add_depends, add_makedepends
 git_pull, git_reset_hard
 edit_file, update_pkgver_and_pkgrel
@@ -165,7 +168,12 @@ def aur_post_build():
     git_commit()
   del _g.aur_pre_files, _g.aur_building_files
 
-def lilac_build(mod, build_prefix=None, oldver=None, newver=None, accept_noupdate=False, depends=(), bindmounts=()):
+def lilac_build(mod: LilacMod, build_prefix: Optional[str] = None,
+                oldver: Optional[str] = None, newver: Optional[str] = None,
+                accept_noupdate: bool = False,
+                depends: Iterable[Dependency] = (),
+                bindmounts: Iterable[str] = (),
+               ) -> None:
   run_cmd(["sh", "-c", "rm -f -- *.pkg.tar.xz *.pkg.tar.xz.sig *.src.tar.gz"])
   success = False
 
@@ -200,7 +208,7 @@ def lilac_build(mod, build_prefix=None, oldver=None, newver=None, accept_noupdat
       raise MissingDependencies(need_build_first)
     logger.info('depends: %s, resolved: %s', depends, depend_packages)
 
-    makechrootpkg_args = []
+    makechrootpkg_args: List[str] = []
     if hasattr(mod, 'makechrootpkg_args'):
         makechrootpkg_args = mod.makechrootpkg_args
 
