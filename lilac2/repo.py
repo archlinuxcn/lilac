@@ -2,8 +2,10 @@ import subprocess
 import pathlib
 from typing import Optional, Tuple, List, Union
 import logging
+from functools import lru_cache
 
 from myutils import at_dir
+from github import GitHub
 
 from .mail import MailService
 from .typing import LilacMod, Maintainer
@@ -24,11 +26,51 @@ class Repo:
       config.get('repository', 'repodir')).expanduser()
 
     self.ms = MailService(config)
+    self.gh = GitHub(config.get('lilac', 'github_token', fallback=None))
+
+  @lru_cache()
+  def maintainer_from_github(self, username: str) -> Optional[Maintainer]:
+    userinfo = self.gh.get_user_info(username)
+    if userinfo['email']:
+      return Maintainer(userinfo['name'], userinfo['email'])
+    else:
+      return None
 
   def find_maintainers(self, mod: LilacMod) -> List[Maintainer]:
-    with at_dir(self.repodir / mod.pkgbase):
-      maintainer = self.find_maintainer_by_git()
-    return [maintainer]
+    if hasattr(mod, 'maintainers'):
+      ret = []
+      errors = []
+      for m in mod.maintainers:
+        if 'github' in m:
+          u = self.maintainer_from_github(m['github'])
+          if u is None:
+            errors.append(f'GitHub 用户 {m["github"]} 未公开 Email 地址')
+          else:
+            ret.append(u)
+        elif 'email' in m:
+          ret.append(Maintainer.from_email_address(m['email']))
+        else:
+          logger.error('unsupported maintainer info: %r', m)
+          errors.append(f'不支持的格式：{m!r}')
+          continue
+
+    if not ret or errors:
+      # fallback to git
+      with at_dir(self.repodir / mod.pkgbase):
+        git_maintainer = self.find_maintainer_by_git()
+
+    if errors:
+      error_str = '\n'.join(errors)
+      self.sendmail(
+        git_maintainer,
+        subject = f'{mod.pkgbase} 的 maintainers 信息有误',
+        msg = f"以下 maintainers 信息有误，请修正。\n\n{error_str}\n",
+      )
+
+    if not ret:
+      return [git_maintainer]
+    else:
+      return ret
 
   def find_maintainer_by_git(self, file: str = '*') -> Maintainer:
     me = self.myaddress
@@ -44,10 +86,7 @@ class Repo:
         line = p.stdout.readline()
         commit, author = line.rstrip().split(None, 1)
         if me not in author:
-          name, email = author.split('<', 1)
-          name = name.strip('" ')
-          email = email.rstrip('>')
-          return Maintainer(name, email)
+          return Maintainer.from_email_address(author)
     finally:
       p.terminate()
 
@@ -61,7 +100,7 @@ class Repo:
     exc: Optional[Tuple[Exception, str]] = None,
     subject: Optional[str] = None,
     build_output: Optional[str] = None,
-  ):
+  ) -> None:
     if msg is None and exc is None:
       raise TypeError('send_error_report received inefficient args')
 
