@@ -37,9 +37,10 @@ class Repo:
       return None
 
   def find_maintainers(self, mod: LilacMod) -> List[Maintainer]:
+    ret = []
+    errors = []
+
     if hasattr(mod, 'maintainers'):
-      ret = []
-      errors = []
       for m in mod.maintainers:
         if 'github' in m:
           u = self.maintainer_from_github(m['github'])
