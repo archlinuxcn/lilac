@@ -4,7 +4,7 @@
 * `pre_build`: 打包前执行的函数。
 * `post_build`: 打包成功后执行的函数。
 * `post_build_always`: 打包最后执行的函数，不论成功与否。可选。
-* `update_on`: 配置更新触发器。这是一个提供给 [nvchecker](https://github.com/lilydjwg/nvchecker) 的配置的列表。其中第一项为软件本体，检测到的版本信息会通过 `_G` 变量传递回来。例子：
+* `update_on`: （弃用；请使用 lilac.yaml）配置更新触发器。这是一个提供给 [nvchecker](https://github.com/lilydjwg/nvchecker) 的配置的列表。其中第一项为软件本体，检测到的版本信息会通过 `_G` 变量传递回来。例子：
 
 ```python
 update_on = [{
