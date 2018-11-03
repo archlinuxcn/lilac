@@ -12,11 +12,13 @@ from .cmd import run_cmd, git_pull, git_push
 from .pkgbuild import (
   add_into_array, add_depends, add_makedepends,
   edit_file,
+  obtain_array, obtain_depends, obtain_makedepends, obtain_optdepends,
 )
 from . import const
 from .const import _G
 
 git_push, add_into_array, add_depends, add_makedepends
+obtain_array, obtain_depends, obtain_makedepends, obtain_optdepends
 
 logger = logging.getLogger(__name__)
 
