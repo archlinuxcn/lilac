@@ -26,10 +26,17 @@ class Repo:
       config.get('repository', 'repodir')).expanduser()
 
     self.ms = MailService(config)
-    self.gh = GitHub(config.get('lilac', 'github_token', fallback=None))
+    github_token = config.get('lilac', 'github_token', fallback=None)
+    if github_token:
+      self.gh = GitHub(config.get('lilac', 'github_token', fallback=None))
+    else:
+      self.gh = None
 
   @lru_cache()
   def maintainer_from_github(self, username: str) -> Optional[Maintainer]:
+    if self.gh is None:
+      raise ValueError('未设置 github token，无法从 GitHub 取得用户 Email')
+
     userinfo = self.gh.get_user_info(username)
     if userinfo['email']:
       return Maintainer(userinfo['name'], userinfo['email'])
