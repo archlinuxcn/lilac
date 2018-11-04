@@ -18,6 +18,7 @@ from lilac2.api import (
   git_push, git_pull, git_reset_hard,
   add_into_array, edit_file,
   add_depends, add_makedepends,
+  obtain_array, obtain_depends, obtain_makedepends, obtain_optdepends,
   get_pkgver_and_pkgrel,
   update_pkgver_and_pkgrel,
   update_pkgrel,
@@ -32,6 +33,7 @@ from lilac2.packages import Dependency
 git_push, add_into_array, add_depends, add_makedepends
 git_pull, git_reset_hard
 edit_file, update_pkgver_and_pkgrel
+obtain_array, obtain_depends, obtain_makedepends, obtain_optdepends
 pypi_pre_build, pypi_post_build
 at_dir, update_aur_repo
 
