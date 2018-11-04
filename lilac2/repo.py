@@ -65,8 +65,6 @@ class Repo:
               errors.append(f'GitHub 用户 {m["github"]} 未公开 Email 地址')
             else:
               ret.append(u)
-        elif 'email' in m:
-          ret.append(Maintainer.from_email_address(m['email']))
         else:
           logger.error('unsupported maintainer info: %r', m)
           errors.append(f'不支持的格式：{m!r}')
