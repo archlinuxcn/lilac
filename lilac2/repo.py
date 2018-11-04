@@ -1,10 +1,9 @@
 import subprocess
-import pathlib
+from pathlib import Path
 from typing import Optional, Tuple, List, Union, Dict
 import logging
 from functools import lru_cache
 
-from myutils import at_dir
 from github import GitHub
 
 from .mail import MailService
@@ -22,8 +21,7 @@ class Repo:
     self.trim_ansi_codes = not config.getboolean(
       'smtp', 'use_ansi', fallback=False)
 
-    self.repodir = pathlib.Path(
-      config.get('repository', 'repodir')).expanduser()
+    self.repodir = Path(config.get('repository', 'repodir')).expanduser()
 
     self.ms = MailService(config)
     github_token = config.get('lilac', 'github_token', fallback=None)
@@ -72,8 +70,8 @@ class Repo:
 
     if not ret or errors:
       # fallback to git
-      with at_dir(self.repodir / mod.pkgbase):
-        git_maintainer = self.find_maintainer_by_git()
+      dir = self.repodir / mod.pkgbase
+      git_maintainer = self.find_maintainer_by_git(dir)
 
     if errors:
       error_str = '\n'.join(errors)
@@ -90,14 +88,21 @@ class Repo:
     else:
       return ret
 
-  def find_maintainer_by_git(self, file: str = '*') -> Maintainer:
+  def find_maintainer_by_git(
+    self,
+    dir: Path = Path('.'),
+    file: str = '*',
+  ) -> Maintainer:
+
     me = self.myaddress
 
     cmd = [
       "git", "log", "--format=%H %an <%ae>", "--", file,
     ]
     p = subprocess.Popen(
-      cmd, stdout=subprocess.PIPE, universal_newlines=True)
+      cmd, stdout=subprocess.PIPE, universal_newlines=True,
+      cwd = dir,
+    )
 
     try:
       while True:
@@ -123,7 +128,7 @@ class Repo:
       raise TypeError('send_error_report received inefficient args')
 
     if isinstance(mod, str):
-      maintainers = [self.find_maintainer_by_git(mod)]
+      maintainers = [self.find_maintainer_by_git(file=mod)]
       pkgbase = mod
     else:
       maintainers = self.find_maintainers(mod)
