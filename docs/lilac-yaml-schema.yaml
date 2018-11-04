@@ -61,10 +61,15 @@ properties:
           required:
             - github
         - type: object
-          description: Email address in the form "Name <user@host>"
+          description: GitHub username and an email address in the form "Name <user@host>". The GitHub public email does not matter.
           properties:
+            github:
+              type: string
             email:
               type: string
+          required:
+            - github
+            - email
     minItems: 1
 required:
   - update_on

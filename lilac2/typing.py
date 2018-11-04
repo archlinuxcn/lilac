@@ -1,5 +1,5 @@
 import types
-from typing import Union, Dict, Tuple, Type, List, NamedTuple
+from typing import Union, Dict, Tuple, Type, List, NamedTuple, Optional
 from pathlib import Path
 
 class LilacMod(types.ModuleType):
@@ -18,14 +18,17 @@ PathLike = Union[str, Path]
 class Maintainer(NamedTuple):
   name: str
   email: str
+  github: Optional[str]
 
   def __str__(self):
     return f'{self.name} <{self.email}>'
 
   @classmethod
-  def from_email_address(cls, s: str) -> 'Maintainer':
+  def from_email_address(
+    cls, s: str, github: Optional[str] = None,
+  ) -> 'Maintainer':
     name, email = s.split('<', 1)
     name = name.strip('" ')
     email = email.rstrip('>')
-    return cls(name, email)
+    return cls(name, email, github)
 

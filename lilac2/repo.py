@@ -39,7 +39,7 @@ class Repo:
 
     userinfo = self.gh.get_user_info(username)
     if userinfo['email']:
-      return Maintainer(userinfo['name'], userinfo['email'])
+      return Maintainer(userinfo['name'], userinfo['email'], username)
     else:
       return None
 
@@ -51,7 +51,11 @@ class Repo:
     maintainers: List[Dict[str, str]] = getattr(mod, 'maintainers', None)
     if maintainers is not None:
       for m in maintainers:
-        if 'github' in m:
+        if 'github' in m and 'email' in m:
+          ret.append(
+            Maintainer.from_email_address(m['email'], m['github'])
+          )
+        elif 'github' in m:
           try:
             u = self.maintainer_from_github(m['github'])
           except Exception as e:
