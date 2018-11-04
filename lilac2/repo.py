@@ -36,6 +36,7 @@ class Repo:
     else:
       return None
 
+  @lru_cache()
   def find_maintainers(self, mod: LilacMod) -> List[Maintainer]:
     ret = []
     errors = []
@@ -43,11 +44,15 @@ class Repo:
     if hasattr(mod, 'maintainers'):
       for m in mod.maintainers:
         if 'github' in m:
-          u = self.maintainer_from_github(m['github'])
-          if u is None:
-            errors.append(f'GitHub 用户 {m["github"]} 未公开 Email 地址')
+          try:
+            u = self.maintainer_from_github(m['github'])
+          except Exception as e:
+            errors.append(f'从 GitHub 获取用户 Email 时出错：{e!r}')
           else:
-            ret.append(u)
+            if u is None:
+              errors.append(f'GitHub 用户 {m["github"]} 未公开 Email 地址')
+            else:
+              ret.append(u)
         elif 'email' in m:
           ret.append(Maintainer.from_email_address(m['email']))
         else:
