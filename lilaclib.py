@@ -185,13 +185,15 @@ def lilac_build(mod: LilacMod, build_prefix: Optional[str] = None,
     if not hasattr(mod, '_G'):
       # fill nvchecker result unless already filled (e.g. by hand)
       mod._G = SimpleNamespace(oldver = oldver, newver = newver)
-    if hasattr(mod, 'pre_build'):
+    pre_build = getattr(mod, 'pre_build', None)
+    if pre_build is not None:
       logger.debug('accept_noupdate=%r, oldver=%r, newver=%r', accept_noupdate, oldver, newver)
-      mod.pre_build()
+      pre_build()
     recv_gpg_keys()
 
     need_build_first = set()
-    build_prefix = build_prefix or mod.build_prefix
+    build_prefix = build_prefix or getattr(
+      mod, 'build_prefix', 'extra-x86_64')
     depend_packages = []
 
     for x in depends:
@@ -216,12 +218,14 @@ def lilac_build(mod: LilacMod, build_prefix: Optional[str] = None,
     pkgs = [x for x in os.listdir() if x.endswith('.pkg.tar.xz')]
     if not pkgs:
       raise Exception('no package built')
-    if hasattr(mod, 'post_build'):
-      mod.post_build()
+    post_build = getattr(mod, 'post_build', None)
+    if post_build is not None:
+      post_build()
     success = True
   finally:
-    if hasattr(mod, 'post_build_always'):
-      mod.post_build_always(success=success)
+    post_build_always = getattr(mod, 'post_build_always', None)
+    if post_build_always is not None:
+      post_build_always(success=success)
 
 def call_build_cmd(tag, depends, bindmounts=(), makechrootpkg_args=[]):
   global build_output

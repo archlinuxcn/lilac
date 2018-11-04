@@ -1,19 +1,12 @@
 import types
-from typing import Union, Dict, Tuple, Type, List
-from typing import NamedTuple, Any
+from typing import Union, Dict, Tuple, Type, List, NamedTuple
 from pathlib import Path
 
 class LilacMod(types.ModuleType):
   time_limit_hours: float
   pkgbase: str
   _G: types.SimpleNamespace
-  build_prefix: str
   makechrootpkg_args: List[str]
-  maintainers: List[Dict[str, str]]
-  # these are not methods but mypy doesn't understand
-  pre_build: Any
-  post_build: Any
-  post_build_always: Any
 
 LilacMods = Dict[str, LilacMod]
 

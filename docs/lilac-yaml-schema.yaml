@@ -7,6 +7,12 @@ properties:
   build_prefix:
     description: The prefix of build command to be used. E.g. extra-x86_64, multilib or archlinuxcn-x86_64.
     type: string
+    default: extra-x86_64
+    enum:
+      - extra-x86_64
+      - archlinuxcn-x86_64
+      - multilib
+      - multilib-archlinuxcn
   pre_build:
     description: Name of function to be used as the pre_build function.
     type: string
@@ -61,6 +67,5 @@ properties:
               type: string
     minItems: 1
 required:
-  - build_prefix
   - update_on
   - maintainers

@@ -1,6 +1,6 @@
 import subprocess
 import pathlib
-from typing import Optional, Tuple, List, Union
+from typing import Optional, Tuple, List, Union, Dict
 import logging
 from functools import lru_cache
 
@@ -48,8 +48,9 @@ class Repo:
     ret = []
     errors = []
 
-    if hasattr(mod, 'maintainers'):
-      for m in mod.maintainers:
+    maintainers: List[Dict[str, str]] = getattr(mod, 'maintainers', None)
+    if maintainers is not None:
+      for m in maintainers:
         if 'github' in m:
           try:
             u = self.maintainer_from_github(m['github'])

@@ -17,7 +17,7 @@ update_on = [{
 ```
 
 ## 辅助信息
-* `build_prefix`: 打包命令的前缀，如 `extra-x86_64`、`multilib`、`archlinuxcn-x86_64` 等。不同前缀会启动不同的仓库。
+* `build_prefix`: 打包命令的前缀，如 `extra-x86_64`、`multilib`、`archlinuxcn-x86_64` 等。不同前缀会启动不同的仓库。可选，默认为 `extra-x86_64`。
 * `depends`: 位于本仓库中的依赖项，为一列表，其中的元素为 `pkgname`（对于普通包）或者 `(pkgbase, pkgname)`（对于 split package）。pkgname 或者 pkgbase 与对应包所在的目录名一致。可选。
 * `time_limit_hours`: 表示打包的超时时间，单位为小时。可选，默认为1小时。
 * `makechrootpkg_args`: 传递给 `makechrootpkg` 的额外参数。可选。
