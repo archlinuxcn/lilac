@@ -1,3 +1,4 @@
+import pathlib
 from typing import Dict, Any
 
 import yamlutils
@@ -5,9 +6,9 @@ import yamlutils
 # TODO: migrate to lilac2.api
 import lilaclib
 
-def load_lilac_yaml() -> Dict[str, Any]:
+def load_lilac_yaml(dir: pathlib.Path) -> Dict[str, Any]:
   try:
-    with open('lilac.yaml') as f:
+    with open(dir / 'lilac.yaml') as f:
       conf = yamlutils.load(f)
   except FileNotFoundError:
     return {}
