@@ -27,8 +27,12 @@ class Maintainer(NamedTuple):
   def from_email_address(
     cls, s: str, github: Optional[str] = None,
   ) -> 'Maintainer':
-    name, email = s.split('<', 1)
-    name = name.strip('" ')
-    email = email.rstrip('>')
+    if '<' in s:
+      name, email = s.split('<', 1)
+      name = name.strip('" ')
+      email = email.rstrip('>')
+    else:
+      name = s.rsplit('@', 1)[0]
+      email = s
     return cls(name, email, github)
 
