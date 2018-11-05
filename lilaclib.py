@@ -4,6 +4,7 @@ import logging
 from types import SimpleNamespace
 from io import BytesIO
 import tarfile
+from pathlib import Path
 from typing import Iterable, Optional, List
 
 import requests
@@ -264,7 +265,7 @@ def call_build_cmd(tag, depends, bindmounts=(), makechrootpkg_args=[]):
 def single_main(build_prefix='makepkg'):
   prepend_self_path()
   enable_pretty_logging('DEBUG')
-  with lilacpy.load_lilac() as mod:
+  with lilacpy.load_lilac(Path('.')) as mod:
     lilac_build(
       mod,
       build_prefix = build_prefix,
