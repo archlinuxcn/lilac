@@ -153,6 +153,8 @@ class Repo:
       else:
         subject_real = subject or '在编译软件包 %s 时发生未知错误'
         msgs.append('发生未知错误！调用栈如下：\n\n' + tb)
+    else:
+      subject_real = subject
 
     if '%s' in subject_real:
       subject_real = subject_real % pkgbase
