@@ -72,5 +72,4 @@ properties:
             - email
     minItems: 1
 required:
-  - update_on
   - maintainers
