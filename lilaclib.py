@@ -25,6 +25,7 @@ from lilac2.api import (
   update_pkgrel,
   pypi_pre_build, pypi_post_build,
   git_add_files, git_commit,
+  git_pkgbuild_commit,
   AurDownloadError,
   update_aur_repo,
 )
