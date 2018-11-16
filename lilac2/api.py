@@ -62,6 +62,12 @@ def update_pkgver_and_pkgrel(
   if updpkgsums:
     run_cmd(["updpkgsums"])
 
+def update_newver() -> None:
+  update_pkgver_and_pkgrel(_G.newver)
+
+def update_newver_filter_v() -> None:
+  update_pkgver_and_pkgrel(_G.newver.lstrip('v'))
+
 def update_pkgrel(rel=None):
   with open('PKGBUILD') as f:
     pkgbuild = f.read()

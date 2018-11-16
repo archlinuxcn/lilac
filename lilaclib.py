@@ -23,6 +23,7 @@ from lilac2.api import (
   get_pkgver_and_pkgrel,
   update_pkgver_and_pkgrel,
   update_pkgrel,
+  update_newver, update_newver_filter_v,
   pypi_pre_build, pypi_post_build,
   git_add_files, git_commit,
   git_pkgbuild_commit,
