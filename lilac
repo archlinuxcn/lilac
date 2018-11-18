@@ -103,7 +103,11 @@ def build_package(package: str, mod: LilacMod) -> bool:
     tb = traceback.format_exc()
     logger.exception('packaging error')
     REPO.send_error_report(_G.mod, exc=(e, tb))
-    pkgver, pkgrel = get_pkgver_and_pkgrel()
+    pkgver = pkgrel = None
+    try:
+      pkgver, pkgrel = get_pkgver_and_pkgrel()
+    except Exception as e2:
+      logger.error('get_pkgver_and_pkgrel failed: %r', e2)
     build_logger.error('%s %s [%s-%s] failed after %ds',
                        package, n[1], pkgver, pkgrel,
                        time.time() - start_time)
