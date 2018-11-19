@@ -100,6 +100,7 @@ def packages_need_update(
   cmd: List[Union[str, PathLike]] = [
     'nvchecker', '--logger', 'both', '--json-log-fd', str(wfd),
     NVCHECKER_FILE]
+  logger.info('Running nvchecker...')
   process = subprocess.Popen(
     cmd, cwd=repo.repodir, pass_fds=(wfd,))
   os.close(wfd)
