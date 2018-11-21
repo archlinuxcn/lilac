@@ -2,9 +2,11 @@
 
 import os
 import subprocess
-from typing import List, Set
+from typing import List, Set, Tuple
 
 import pyalpm
+
+from .const import _G
 
 _official_repos = ['core', 'extra', 'community', 'multilib']
 _official_packages: Set[str] = set()
@@ -47,6 +49,8 @@ def check_srcinfo() -> None:
       if pkg in _official_packages:
         bad_packages.append(pkg)
 
+  _G.pkgver, _G.pkgrel = _get_package_version(srcinfo)
+
   if bad_groups or bad_packages:
     raise ConflictWithOfficialError(bad_groups, bad_packages)
 
@@ -56,3 +60,19 @@ def get_srcinfo() -> List[str]:
     universal_newlines = True,
   )
   return out.splitlines()
+
+def _get_package_version(srcinfo: List[str]) -> Tuple[str, str]:
+  pkgver = pkgrel = None
+
+  for line in get_srcinfo():
+    line = line.strip()
+    if not pkgver and line.startswith('pkgver = '):
+      pkgver = line.split()[-1]
+    elif not pkgrel and line.startswith('pkgrel = '):
+      pkgrel = line.split()[-1]
+    if pkgver and pkgrel:
+      break
+
+  assert pkgver is not None
+  assert pkgrel is not None
+  return pkgver, pkgrel

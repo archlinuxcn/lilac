@@ -10,3 +10,5 @@ SPECIAL_FILES = ('package.list', 'lilac.py', 'lilac.yaml', '.gitignore')
 _G = types.SimpleNamespace()
 # repo: Repo
 # mod: LilacMod
+# pkgver: Optional[str]
+# pkgrel: Optional[str]
