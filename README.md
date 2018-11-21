@@ -11,7 +11,7 @@
 命令
 ----
 
-* Python >= 3.4
+* Python >= 3.6
 * curl
 * git
 * makepkg
@@ -21,6 +21,7 @@
 * Local MTA (batch)
 * devtools (batch)
 * pid_children (batch) (a program to find out descendant processes by pid)
+* fakeroot (batch)
 
 Python 库
 ---------
@@ -30,3 +31,4 @@ Python 库
 * winterpy (will auto download if not available)
 * toposort
 * pyyaml
+* pyalpm

@@ -31,13 +31,14 @@ from lilac2.api import (
 )
 from lilac2.const import SPECIAL_FILES
 from lilac2.typing import LilacMod
+from lilac2 import pkgbuild
 from lilac2.packages import Dependency
 git_push, add_into_array, add_depends, add_makedepends
 git_pull, git_reset_hard
 edit_file, update_pkgver_and_pkgrel
 obtain_array, obtain_depends, obtain_makedepends, obtain_optdepends
 pypi_pre_build, pypi_post_build
-at_dir, update_aur_repo
+at_dir, update_aur_repo, git_pkgbuild_commit
 
 UserAgent = 'lilac/0.2a (package auto-build bot, by lilydjwg)'
 
@@ -193,6 +194,7 @@ def lilac_build(mod: LilacMod, build_prefix: Optional[str] = None,
     if pre_build is not None:
       logger.debug('accept_noupdate=%r, oldver=%r, newver=%r', accept_noupdate, oldver, newver)
       pre_build()
+    pkgbuild.check_srcinfo()
     recv_gpg_keys()
 
     need_build_first = set()

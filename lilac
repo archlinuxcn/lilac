@@ -38,6 +38,7 @@ from lilac2.const import mydir, _G
 from lilac2.nvchecker import packages_need_update, nvtake, NvResult
 from lilac2.api import get_pkgver_and_pkgrel
 from lilac2.typing import LilacMod, LilacMods
+from lilac2 import pkgbuild
 
 BIND_MOUNTS = [
   os.path.expanduser('~/.cargo') + ':' + '/build/.cargo',
@@ -174,6 +175,10 @@ def start_build(mods: LilacMods, failed: Set[str], built: Set[str]) -> None:
   # used to decide what to install when building
   DEPENDS = building_depmap
 
+  dbpath = REPO.repodir / 'pacmandb'
+  dbpath.mkdir(exist_ok=True)
+  pkgbuild.init_data(dbpath)
+
   try:
     logger.info('building these packages: %r', packages)
     for pkg in packages:
@@ -188,6 +193,20 @@ def start_build(mods: LilacMods, failed: Set[str], built: Set[str]) -> None:
             built.add(pkg)
           else:
             failed.add(pkg)
+
+        except pkgbuild.ConflictWithOfficialError as e:
+          reason = ''
+          if e.groups:
+            reason += f'软件包被加入了官方组：{e.groups}\n'
+          if e.packages:
+            reason += f'软件包将取代官方包：{e.packages}\n'
+
+          REPO.send_error_report(
+            mods[pkg],
+            subject='%s 与官方软件库冲突',
+            msg = reason,
+          )
+          failed.add(pkg)
 
         except MissingDependencies as e:
           reason = ''
