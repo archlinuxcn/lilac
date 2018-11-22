@@ -27,7 +27,7 @@ def init_data(dbpath: os.PathLike) -> None:
   else:
     p.check_returncode()
 
-  H = pyalpm.Handle('/', dbpath)
+  H = pyalpm.Handle('/', str(dbpath))
   for repo in _official_repos:
     db = H.register_syncdb(repo, 0)
     _official_packages.update(p.name for p in db.pkgcache)
