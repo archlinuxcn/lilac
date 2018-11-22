@@ -300,7 +300,11 @@ def main_may_raise(D: Dict[str, Any]) -> None:
         nvtake(update_succeeded, mods)
     else:
       if need_update:
-        nvtake(need_update, mods)
+        # only nvtake packages we have tried to build (excluding unbuilt
+        # packages due to internal errors)
+        built = update_succeeded | failed
+        update_nv = built & need_update
+        nvtake(update_nv, mods)
 
     git_reset_hard()
     if config.getboolean('lilac', 'git_push'):
