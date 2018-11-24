@@ -42,10 +42,19 @@ def _add_deps(which, extra_deps):
   '''
   Add more values into the dependency array
   '''
+  field_appeared = False
+
   for line in edit_file('PKGBUILD'):
     if line.strip().startswith(which):
       line = add_into_array(line, extra_deps)
+      field_appeared = True
     print(line)
+
+  if not field_appeared:
+    with open('PKGBUILD', 'a') as f:
+      line = f'{which}=()'
+      line = add_into_array(line, extra_deps)
+      f.write(line + '\n')
 
 def add_depends(extra_deps):
   _add_deps('depends', extra_deps)
