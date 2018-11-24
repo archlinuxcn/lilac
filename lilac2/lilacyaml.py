@@ -17,7 +17,7 @@ def load_lilac_yaml(dir: pathlib.Path) -> Dict[str, Any]:
   if update_on:
     for i, entry in enumerate(update_on):
       if isinstance(entry, str):
-        update_on[i] = {entry: None}
+        update_on[i] = {entry: ''}
 
   depends = conf.get('depends')
   if depends:
