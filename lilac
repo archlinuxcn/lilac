@@ -303,7 +303,7 @@ def main_may_raise(D: Dict[str, Any]) -> None:
         # only nvtake packages we have tried to build (excluding unbuilt
         # packages due to internal errors)
         built = update_succeeded | failed
-        update_nv = (built | rebuild) & need_update
+        update_nv = built & (need_update | rebuild)
         nvtake(update_nv, mods)
 
     git_reset_hard()
