@@ -82,8 +82,8 @@ class Repo:
       )
 
     if not ret:
-      logger.warning("lilac doesn't give out maintainers, "
-                     "fallback to git.")
+      logger.warning("lilac doesn't give out maintainers for %s, "
+                     "fallback to git.", mod.pkgbase)
       return [git_maintainer]
     else:
       return ret

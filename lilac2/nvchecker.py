@@ -150,8 +150,8 @@ def packages_need_update(
       error_owners[maintainer].extend(pkgerrs)
 
   for who, their_errors in error_owners.items():
-    logger.info('send nvchecker report for %r packages to %s',
-                {x['name'] for x in their_errors}, who)
+    logger.warning('send nvchecker report for %r packages to %s',
+                   {x['name'] for x in their_errors}, who)
     repo.sendmail(who, 'nvchecker 错误报告',
                   '\n'.join(_format_error(e) for e in their_errors))
 
