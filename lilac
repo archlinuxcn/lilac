@@ -144,8 +144,8 @@ def start_build(mods: LilacMods, failed: Set[str], built: Set[str]) -> None:
     for d in ds:
       if not d.resolve():
         if not d.managed():
-          logger.warn('%s depends on %s, but it\'s not managed.',
-                      name, d)
+          logger.warning('%s depends on %s, but it\'s not managed.',
+                         name, d)
           nonexistent[name].append(d)
           continue
         # we need build this too

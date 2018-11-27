@@ -48,7 +48,7 @@ def _gen_config_from_ini(repo, U):
   all_known = set(full.sections())
   unknown = U - all_known
   if unknown:
-    logger.warn('unknown packages: %r', unknown)
+    logger.warning('unknown packages: %r', unknown)
 
   newconfig = {k: full[k] for k in U & all_known}
 
@@ -126,7 +126,7 @@ def packages_need_update(
     elif event == 'up-to-date':
       if i == 0:
         nvdata[pkg] = NvResult(j['version'], j['version'])
-    elif j['level'] in ['warn', 'error', 'exception', 'critical']:
+    elif j['level'] in ['warning', 'warn', 'error', 'exception', 'critical']:
       errors[pkg].append(j)
 
   ret = process.wait()

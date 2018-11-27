@@ -251,7 +251,7 @@ def call_build_cmd(tag, depends, bindmounts=(), makechrootpkg_args=[]):
         # Note that this check does not consider all possible formats
         source_dir = x.split(':')[0]
         if not os.path.exists(source_dir):
-          logger.warn('Invalid bindmount spec %s: source dir does not exist', x)
+          logger.warning('Invalid bindmount spec %s: source dir does not exist', x)
           continue
         cmd += ['-d', x]
 
