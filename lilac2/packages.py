@@ -1,13 +1,17 @@
 from collections import defaultdict, namedtuple
-from typing import Dict
+from pathlib import Path
+from typing import Dict, Union, Tuple, Set
 
 import archpkg
 
 from .api import run_cmd
+from .typing import LilacMods
 
-def get_dependency_map(depman, mods):
-  map = defaultdict(set)
-  rmap = defaultdict(set)
+def get_dependency_map(
+  depman: 'DependencyManager', mods: LilacMods,
+) -> Dict[str, Set['Dependency']]:
+  map: Dict[str, Set['Dependency']] = defaultdict(set)
+  rmap: Dict[str, Set[str]] = defaultdict(set)
 
   for name, mod in mods.items():
     depends = getattr(mod, 'depends', ())
@@ -17,10 +21,10 @@ def get_dependency_map(depman, mods):
       rmap[d.pkgname].add(name)
     map[name].update(ds)
 
-  for name, ds in map.items():
+  for name, deps in map.items():
     dependers = rmap[name]
     for dd in dependers:
-      map[dd].update(ds)
+      map[dd].update(deps)
 
   return map
 
@@ -59,10 +63,10 @@ class Dependency(_DependencyTuple):
 class DependencyManager:
   _CACHE: Dict[str, Dependency] = {}
 
-  def __init__(self, repodir):
+  def __init__(self, repodir: Path) -> None:
     self.repodir = repodir
 
-  def get(self, what):
+  def get(self, what: Union[str, Tuple[str, str]]) -> Dependency:
     if isinstance(what, tuple):
       pkgbase, pkgname = what
     else:
@@ -73,7 +77,7 @@ class DependencyManager:
         self.repodir / pkgbase, pkgname)
     return self._CACHE[pkgname]
 
-def get_changed_packages(revisions):
+def get_changed_packages(revisions: str) -> Set[str]:
   cmd = ["git", "diff", "--name-only", revisions]
   r = run_cmd(cmd).splitlines()
   ret = {x.split('/', 1)[0] for x in r}

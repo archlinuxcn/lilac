@@ -58,7 +58,7 @@ MYNAME = config.get('lilac', 'name')
 
 building_packages: Set[str] = set()
 nvdata: Dict[str, NvResult] = {}
-DEPENDS: Dict[str, List[Dependency]] = {}
+DEPENDS: Dict[str, Set[Dependency]] = {}
 
 logger = logging.getLogger(__name__)
 build_logger = logging.getLogger('build')
@@ -117,7 +117,7 @@ def build_package(package: str, mod: LilacMod) -> bool:
   lilaclib.build_output = None
   return built_successfully
 
-def sign_and_copy():
+def sign_and_copy() -> None:
   pkgs = [x for x in os.listdir() if x.endswith('.pkg.tar.xz')]
   for pkg in pkgs:
     run_cmd(['gpg', '--pinentry-mode', 'loopback', '--passphrase', '',
@@ -158,10 +158,10 @@ def start_build(mods: LilacMods, failed: Set[str], built: Set[str]) -> None:
         building_packages.add(d.pkgname)
     dep_building_map[name] = {x.pkgdir.name for x in ds}
 
-  for name, ds in nonexistent.items():
+  for name, deps in nonexistent.items():
     REPO.send_error_report(
       mods[name], subject='软件包 %s 的 lilac.py 指定了不存在的依赖',
-      msg = f'''软件包 {name} 的 lilac.py 指定了 depends，然而其直接或者间接的依赖项 {ds!r} 并不在本仓库中。
+      msg = f'''软件包 {name} 的 lilac.py 指定了 depends，然而其直接或者间接的依赖项 {deps!r} 并不在本仓库中。
 ''')
 
   packages = toposort_flatten(dep_building_map)
@@ -316,7 +316,7 @@ def main_may_raise(D: Dict[str, Any]) -> None:
     if config.getboolean('lilac', 'git_push'):
       git_push()
 
-def main():
+def main() -> None:
   store = os.path.join(mydir, 'store')
   with PickledData(store, default={}) as D:
     try:
@@ -328,7 +328,7 @@ def main():
       msg = '调用栈如下：\n\n' + tb
       REPO.report_error(subject, msg)
 
-def setup():
+def setup() -> None:
   if config.getboolean('lilac', 'log_to_file'):
     os.makedirs(os.path.join(mydir, 'log'), exist_ok=True)
     logfile = os.path.join(mydir, 'log', time.strftime('%Y-%m-%dT%H:%M:%S'))
