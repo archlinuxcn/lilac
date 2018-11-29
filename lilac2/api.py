@@ -263,7 +263,7 @@ def git_add_files(files, *, force=False):
     run_cmd(['git', 'reset', '--'] + files)
     raise
 
-def git_commit(*, check_status=True):
+def git_commit(*, check_status: bool = True) -> None:
   if check_status:
     ret = [x for x in
            run_cmd(["git", "status", "-s", "."]).splitlines()
@@ -274,7 +274,7 @@ def git_commit(*, check_status=True):
   run_cmd(['git', 'commit', '-m', 'auto update for package %s' % (
     os.path.split(os.getcwd())[1])])
 
-def git_reset_hard():
+def git_reset_hard() -> None:
   run_cmd(['git', 'reset', '--hard'])
 
 class AurDownloadError(Exception):

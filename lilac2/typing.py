@@ -1,5 +1,8 @@
 import types
-from typing import Union, Dict, Tuple, Type, List, NamedTuple, Optional
+from typing import (
+  Union, Dict, Tuple, Type, List, NamedTuple, Optional,
+  Sequence,
+)
 from pathlib import Path
 
 class LilacMod(types.ModuleType):
@@ -12,7 +15,7 @@ LilacMods = Dict[str, LilacMod]
 
 ExcInfo = Tuple[Type[BaseException], BaseException, types.TracebackType]
 
-Cmd = List[Union[str, Path]]
+Cmd = Sequence[Union[str, Path]]
 PathLike = Union[str, Path]
 
 class Maintainer(NamedTuple):

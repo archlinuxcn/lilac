@@ -22,9 +22,11 @@ from nicelogger import enable_pretty_logging
 
 import lilaclib
 from lilaclib import (
-  git_reset_hard, git_last_commit,
   EMPTY_COMMIT, pkgrel_changed, lilac_build,
   MissingDependencies,
+)
+from lilac2.api import (
+  git_reset_hard
 )
 from lilac2 import lilacpy
 from lilac2.packages import (
@@ -127,6 +129,10 @@ def sign_and_copy():
       os.link(f, os.path.join(DESTDIR, f))
     except FileExistsError:
       pass
+
+def git_last_commit() -> str:
+  cmd = ['git', 'log', '-1', '--format=%H']
+  return run_cmd(cmd).strip()
 
 def start_build(mods: LilacMods, failed: Set[str], built: Set[str]) -> None:
   # built is used to collect built package names

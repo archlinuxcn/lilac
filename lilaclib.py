@@ -136,12 +136,6 @@ def git_rm_files(files):
   if files:
     run_cmd(['git', 'rm', '--cached', '--'] + files)
 
-def git_last_commit(ref=None):
-  cmd = ['git', 'log', '-1', '--format=%H']
-  if ref:
-    cmd.append(ref)
-  return run_cmd(cmd).strip()
-
 def aur_pre_build(name=None, *, do_vcs_update=True):
   if os.path.exists('PKGBUILD'):
     pkgver, pkgrel = get_pkgver_and_pkgrel()
