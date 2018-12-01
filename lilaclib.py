@@ -1,19 +1,14 @@
-from subprocess import CalledProcessError
 import os
 import logging
 from types import SimpleNamespace
 from io import BytesIO
 import tarfile
-from pathlib import Path
-from typing import Iterable, Optional, List
 
 import requests
 
-from nicelogger import enable_pretty_logging
 from htmlutils import parse_document_from_requests
 from myutils import at_dir
 
-from lilac2 import lilacpy
 from lilac2.api import (
   run_cmd, vcs_update,
   git_push, git_pull, git_reset_hard,
@@ -28,17 +23,17 @@ from lilac2.api import (
   git_pkgbuild_commit,
   AurDownloadError,
   update_aur_repo,
+  single_main,
 )
 from lilac2.const import SPECIAL_FILES
-from lilac2.typing import LilacMod
-from lilac2 import pkgbuild
-from lilac2.packages import Dependency
+
 git_push, add_into_array, add_depends, add_makedepends
 git_pull, git_reset_hard
 edit_file, update_pkgver_and_pkgrel
 obtain_array, obtain_depends, obtain_makedepends, obtain_optdepends
 pypi_pre_build, pypi_post_build
 at_dir, update_aur_repo, git_pkgbuild_commit
+single_main
 
 UserAgent = 'lilac/0.2a (package auto-build bot, by lilydjwg)'
 
@@ -47,12 +42,7 @@ s.headers['User-Agent'] = UserAgent
 logger = logging.getLogger(__name__)
 EMPTY_COMMIT = '4b825dc642cb6eb9a060e54bf8d69288fbee4904'
 _g = SimpleNamespace()
-build_output = None
 PYPI_URL = 'https://pypi.python.org/pypi/%s/json'
-
-class MissingDependencies(Exception):
-  def __init__(self, pkgs):
-    self.deps = pkgs
 
 def download_official_pkgbuild(name):
   url = 'https://www.archlinux.org/packages/search/json/?name=' + name
@@ -166,111 +156,4 @@ def aur_post_build():
   if output:
     git_commit()
   del _g.aur_pre_files, _g.aur_building_files
-
-def lilac_build(mod: LilacMod, build_prefix: Optional[str] = None,
-                oldver: Optional[str] = None, newver: Optional[str] = None,
-                accept_noupdate: bool = False,
-                depends: Iterable[Dependency] = (),
-                bindmounts: Iterable[str] = (),
-               ) -> None:
-  run_cmd(["sh", "-c", "rm -f -- *.pkg.tar.xz *.pkg.tar.xz.sig *.src.tar.gz"])
-  success = False
-
-  global build_output
-  # reset in case no one cleans it up
-  build_output = None
-
-  try:
-    if not hasattr(mod, '_G'):
-      # fill nvchecker result unless already filled (e.g. by hand)
-      mod._G = SimpleNamespace(oldver = oldver, newver = newver)
-    pre_build = getattr(mod, 'pre_build', None)
-    if pre_build is not None:
-      logger.debug('accept_noupdate=%r, oldver=%r, newver=%r', accept_noupdate, oldver, newver)
-      pre_build()
-    pkgbuild.check_srcinfo()
-    run_cmd(['recv_gpg_keys'])
-
-    need_build_first = set()
-    build_prefix = build_prefix or getattr(
-      mod, 'build_prefix', 'extra-x86_64')
-    depend_packages = []
-
-    for x in depends:
-      p = x.resolve()
-      if p is None:
-        if not x.managed():
-          # ignore depends that are not in repo
-          continue
-        need_build_first.add(x.pkgname)
-      else:
-        depend_packages.append(p)
-
-    if need_build_first:
-      raise MissingDependencies(need_build_first)
-    logger.info('depends: %s, resolved: %s', depends, depend_packages)
-
-    makechrootpkg_args: List[str] = []
-    if hasattr(mod, 'makechrootpkg_args'):
-        makechrootpkg_args = mod.makechrootpkg_args
-
-    call_build_cmd(build_prefix, depend_packages, bindmounts, makechrootpkg_args)
-    pkgs = [x for x in os.listdir() if x.endswith('.pkg.tar.xz')]
-    if not pkgs:
-      raise Exception('no package built')
-    post_build = getattr(mod, 'post_build', None)
-    if post_build is not None:
-      post_build()
-    success = True
-  finally:
-    post_build_always = getattr(mod, 'post_build_always', None)
-    if post_build_always is not None:
-      post_build_always(success=success)
-
-def call_build_cmd(tag, depends, bindmounts=(), makechrootpkg_args=[]):
-  global build_output
-  if tag == 'makepkg':
-    cmd = ['makepkg', '--holdver']
-  else:
-    cmd = ['%s-build' % tag, '--']
-
-    if depends:
-      for x in depends:
-        cmd += ['-I', x]
-
-    if bindmounts:
-      for x in bindmounts:
-        # Skipping non-existent source paths
-        # See --bind in systemd-nspawn(1) for bindmount spec details
-        # Note that this check does not consider all possible formats
-        source_dir = x.split(':')[0]
-        if not os.path.exists(source_dir):
-          logger.warning('Invalid bindmount spec %s: source dir does not exist', x)
-          continue
-        cmd += ['-d', x]
-
-    cmd.extend(makechrootpkg_args)
-    cmd.extend(['--', '--holdver'])
-
-  # NOTE that Ctrl-C here may not succeed
-  try:
-    build_output = run_cmd(cmd, use_pty=True)
-  except CalledProcessError:
-    build_output = None
-    raise
-
-def single_main(build_prefix: str = 'makepkg') -> None:
-  prepend_self_path()
-  enable_pretty_logging('DEBUG')
-  with lilacpy.load_lilac(Path('.')) as mod:
-    lilac_build(
-      mod,
-      build_prefix = build_prefix,
-      accept_noupdate = True,
-    )
-
-def prepend_self_path() -> None:
-  mydir = os.path.realpath(os.path.dirname(__file__))
-  path = os.environ['PATH']
-  os.environ['PATH'] = mydir + os.pathsep + path
 

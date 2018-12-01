@@ -20,13 +20,11 @@ from myutils import at_dir, execution_timeout, lock_file
 from serializer import PickledData
 from nicelogger import enable_pretty_logging
 
-import lilaclib
 from lilaclib import (
-  EMPTY_COMMIT, pkgrel_changed, lilac_build,
-  MissingDependencies,
+  EMPTY_COMMIT, pkgrel_changed,
 )
 from lilac2.api import (
-  git_reset_hard
+  git_reset_hard,
 )
 from lilac2 import lilacpy
 from lilac2.packages import (
@@ -40,6 +38,8 @@ from lilac2.const import mydir, _G
 from lilac2.nvchecker import packages_need_update, nvtake, NvResult
 from lilac2.typing import LilacMod, LilacMods
 from lilac2 import pkgbuild
+from lilac2.building import lilac_build, MissingDependencies
+import lilac2.building as B
 
 BIND_MOUNTS = [
   os.path.expanduser('~/.cargo') + ':' + '/build/.cargo',
@@ -113,8 +113,8 @@ def build_package(package: str, mod: LilacMod) -> bool:
 
   if config.getboolean('lilac', 'save_buildlog'):
     with open('lilac-%s.log' % (n[1] or 'none').replace('/', '-'), 'w') as log:
-      log.write(lilaclib.build_output) # type: ignore
-  lilaclib.build_output = None
+      log.write(B.build_output) # type: ignore
+  B.build_output = None
   return built_successfully
 
 def sign_and_copy() -> None:

@@ -7,6 +7,7 @@ import traceback
 from typing import Tuple, Optional, Iterator, Dict, List, Union
 import fileinput
 import tempfile
+from pathlib import Path
 
 from myutils import at_dir
 
@@ -326,4 +327,23 @@ def update_aur_repo() -> None:
 def git_pkgbuild_commit() -> None:
   git_add_files('PKGBUILD')
   git_commit()
+
+def _prepend_self_path() -> None:
+  mydir = Path(__file__).resolve().parent.parent
+  path = os.environ['PATH']
+  os.environ['PATH'] = str(mydir / path)
+
+def single_main(build_prefix: str = 'makepkg') -> None:
+  from nicelogger import enable_pretty_logging
+  from . import lilacpy
+  from .building import lilac_build
+
+  _prepend_self_path()
+  enable_pretty_logging('DEBUG')
+  with lilacpy.load_lilac(Path('.')) as mod:
+    lilac_build(
+      mod,
+      build_prefix = build_prefix,
+      accept_noupdate = True,
+    )
 
