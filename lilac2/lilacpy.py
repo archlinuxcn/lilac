@@ -35,12 +35,14 @@ def load_lilac(dir: Path) -> Generator[LilacMod, None, None]:
   try:
     spec = importlib.util.spec_from_file_location( # type: ignore # Path is accepted too
       'lilac.py', dir / 'lilac.py')
-    mod = spec.loader.load_module() # type: ignore
+    mod = importlib.util.module_from_spec(spec)
 
     yamlconf = load_lilac_yaml(dir)
     for k, v in yamlconf.items():
       setattr(mod, k, v)
 
+    assert spec.loader
+    spec.loader.exec_module(mod)
     mod = cast(LilacMod, mod)
     mod.pkgbase = dir.name
     yield mod
