@@ -189,7 +189,7 @@ def lilac_build(mod: LilacMod, build_prefix: Optional[str] = None,
       logger.debug('accept_noupdate=%r, oldver=%r, newver=%r', accept_noupdate, oldver, newver)
       pre_build()
     pkgbuild.check_srcinfo()
-    recv_gpg_keys()
+    run_cmd(['recv_gpg_keys'])
 
     need_build_first = set()
     build_prefix = build_prefix or getattr(
@@ -259,7 +259,7 @@ def call_build_cmd(tag, depends, bindmounts=(), makechrootpkg_args=[]):
     build_output = None
     raise
 
-def single_main(build_prefix='makepkg'):
+def single_main(build_prefix: str = 'makepkg') -> None:
   prepend_self_path()
   enable_pretty_logging('DEBUG')
   with lilacpy.load_lilac(Path('.')) as mod:
@@ -269,11 +269,8 @@ def single_main(build_prefix='makepkg'):
       accept_noupdate = True,
     )
 
-def prepend_self_path():
+def prepend_self_path() -> None:
   mydir = os.path.realpath(os.path.dirname(__file__))
   path = os.environ['PATH']
   os.environ['PATH'] = mydir + os.pathsep + path
-
-def recv_gpg_keys():
-  run_cmd(['recv_gpg_keys'])
 

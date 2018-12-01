@@ -1,6 +1,6 @@
 from collections import defaultdict, namedtuple
 from pathlib import Path
-from typing import Dict, Union, Tuple, Set
+from typing import Dict, Union, Tuple, Set, Optional
 
 import archpkg
 
@@ -32,19 +32,18 @@ _DependencyTuple = namedtuple(
   '_DependencyTuple', 'pkgdir pkgname')
 
 class Dependency(_DependencyTuple):
-  def resolve(self):
+  def resolve(self) -> Optional[archpkg.PkgNameInfo]:
     try:
-      r = self._find_local_package()
+      return self._find_local_package()
     except FileNotFoundError:
-      r = None
-    return r
+      return None
 
-  def managed(self):
+  def managed(self) -> bool:
     return (self.pkgdir / 'lilac.py').exists()
 
-  def _find_local_package(self):
+  def _find_local_package(self) -> archpkg.PkgNameInfo:
     files = [x for x in self.pkgdir.iterdir()
-              if x.name.endswith('.pkg.tar.xz')]
+             if x.name.endswith('.pkg.tar.xz')]
     pkgs = []
     for x in files:
       info = archpkg.PkgNameInfo.parseFilename(x.name)
