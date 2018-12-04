@@ -25,7 +25,7 @@ class NvResult(NamedTuple):
   newver: Optional[str]
 
 def _gen_config_from_ini(repo, U):
-  full = configparser.ConfigParser(dict_type=dict, allow_no_value=True)
+  full = configparser.ConfigParser(allow_no_value=True)
   nvchecker_full = repo.repodir / 'nvchecker.ini'
   try:
     full.read([nvchecker_full])

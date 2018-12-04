@@ -4,7 +4,8 @@ import re
 import os
 import subprocess
 import traceback
-from typing import Tuple, Optional, Iterator, Dict, List, Union
+from typing import Dict, List, Union
+from typing import Tuple, Optional, Iterable, Iterator
 import fileinput
 import tempfile
 from pathlib import Path
@@ -38,7 +39,7 @@ def _unquote_item(s: str) -> Optional[str]:
   else:
     return None
 
-def add_into_array(line: str, values: Iterator[str]) -> str:
+def add_into_array(line: str, values: Iterable[str]) -> str:
   l = line.find('(')
   r = line.rfind(')')
   arr_str = line[l+1:r].strip()
@@ -51,7 +52,7 @@ def add_into_array(line: str, values: Iterator[str]) -> str:
   line = line[:l] + arr_str
   return line
 
-def _add_deps(which, extra_deps):
+def _add_deps(which: str, extra_deps: Iterable[str]) -> None:
   '''
   Add more values into the dependency array
   '''
@@ -263,7 +264,9 @@ def pypi_post_build():
   git_add_files('PKGBUILD')
   git_commit()
 
-def git_add_files(files, *, force=False):
+def git_add_files(
+  files: Union[str, List[str]], *, force: bool = False,
+) -> None:
   if isinstance(files, str):
     files = [files]
   try:
