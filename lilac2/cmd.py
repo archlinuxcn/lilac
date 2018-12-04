@@ -91,3 +91,8 @@ def run_cmd(cmd: Cmd, *, use_pty: bool = False, silent: bool = False,
       raise subprocess.CalledProcessError(code, cmd, outs)
   return outs
 
+def pkgrel_changed(revisions: str, pkgname: str) -> bool:
+  cmd = ["git", "diff", "-p", revisions, '--', pkgname + '/PKGBUILD']
+  r = run_cmd(cmd, silent=True).splitlines()
+  return any(x.startswith('+pkgrel=') for x in r)
+

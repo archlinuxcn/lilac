@@ -20,9 +20,6 @@ from myutils import at_dir, execution_timeout, lock_file
 from serializer import PickledData
 from nicelogger import enable_pretty_logging
 
-from lilaclib import (
-  EMPTY_COMMIT, pkgrel_changed,
-)
 from lilac2.api import (
   git_reset_hard,
 )
@@ -31,7 +28,7 @@ from lilac2.packages import (
   DependencyManager, get_dependency_map, get_changed_packages,
   Dependency,
 )
-from lilac2.cmd import run_cmd, git_pull, git_push
+from lilac2.cmd import run_cmd, git_pull, git_push, pkgrel_changed
 from lilac2.tools import kill_child_processes
 from lilac2.repo import Repo
 from lilac2.const import mydir, _G
@@ -63,6 +60,8 @@ DEPENDS: Dict[str, Set[Dependency]] = {}
 logger = logging.getLogger(__name__)
 build_logger = logging.getLogger('build')
 REPO = _G.repo = Repo(config)
+
+EMPTY_COMMIT = '4b825dc642cb6eb9a060e54bf8d69288fbee4904'
 
 def setup_build_logger() -> None:
   handler = logging.FileHandler(os.path.join(mydir, 'build.log'))

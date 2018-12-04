@@ -8,16 +8,28 @@ from typing import Tuple, Optional, Iterator, Dict, List, Union
 import fileinput
 import tempfile
 from pathlib import Path
+from types import SimpleNamespace
+import tarfile
+import io
+
+import requests
 
 from myutils import at_dir
+from htmlutils import parse_document_from_requests
 
 from .cmd import run_cmd, git_pull, git_push
 from . import const
-from .const import _G
+from .const import _G, SPECIAL_FILES
 
 git_push
 
 logger = logging.getLogger(__name__)
+
+_g = SimpleNamespace()
+UserAgent = 'lilac/0.2b (package auto-build bot, by lilydjwg)'
+
+s = requests.Session()
+s.headers['User-Agent'] = UserAgent
 
 def _unquote_item(s: str) -> Optional[str]:
   m = re.search(r'''[ \t'"]*([^ '"]+)[ \t'"]*''', s)
@@ -346,4 +358,113 @@ def single_main(build_prefix: str = 'makepkg') -> None:
       build_prefix = build_prefix,
       accept_noupdate = True,
     )
+
+def _clean_directory() -> List[str]:
+  '''clean all PKGBUILD and related files'''
+  files = run_cmd(['git', 'ls-files']).splitlines()
+  logger.info('clean directory')
+  ret = []
+  for f in files:
+    if f in SPECIAL_FILES:
+      continue
+    try:
+      logger.debug('unlink file %s', f)
+      os.unlink(f)
+      ret.append(f)
+    except FileNotFoundError:
+      pass
+  return ret
+
+def _try_aur_url(name: str) -> bytes:
+  aur4url = 'https://aur.archlinux.org/cgit/aur.git/snapshot/{name}.tar.gz'
+  templates = [aur4url]
+  urls = [url.format(first_two=name[:2], name=name) for url in templates]
+  for url in urls:
+    response = s.get(url)
+    if response.status_code == 200:
+      logger.debug("downloaded aur tarball '%s' from url '%s'", name, url)
+      return response.content
+  logger.error("failed to find aur url for '%s'", name)
+  raise AurDownloadError(name)
+
+def _download_aur_pkgbuild(name: str) -> List[str]:
+  content = io.BytesIO(_try_aur_url(name))
+  files = []
+  with tarfile.open(
+    name=name+".tar.gz", mode="r:gz", fileobj=content
+  ) as tarf:
+    for tarinfo in tarf:
+      basename, remain = os.path.split(tarinfo.name)
+      if basename == '':
+        continue
+      if remain in ('.AURINFO', '.SRCINFO', '.gitignore'):
+        continue
+      tarinfo.name = remain
+      tarf.extract(tarinfo)
+      files.append(remain)
+  return files
+
+def git_rm_files(files: List[str]) -> None:
+  if files:
+    run_cmd(['git', 'rm', '--cached', '--'] + files)
+
+def aur_pre_build(
+  name: Optional[str] = None, *, do_vcs_update: bool = True,
+) -> None:
+  if os.path.exists('PKGBUILD'):
+    pkgver, pkgrel = get_pkgver_and_pkgrel()
+  else:
+    pkgver = None
+
+  _g.aur_pre_files = _clean_directory()
+  if name is None:
+    name = os.path.basename(os.getcwd())
+  _g.aur_building_files = _download_aur_pkgbuild(name)
+
+  new_pkgver, new_pkgrel = get_pkgver_and_pkgrel()
+  if pkgver and pkgver == new_pkgver:
+    # change to larger pkgrel
+    update_pkgrel(max(pkgrel, new_pkgrel))
+
+  if do_vcs_update and name.endswith(('-git', '-hg', '-svn', '-bzr')):
+    vcs_update()
+    # recheck after sync, because AUR pkgver may lag behind
+    new_pkgver, new_pkgrel = get_pkgver_and_pkgrel()
+    if pkgver and pkgver == new_pkgver:
+      update_pkgrel(max(pkgrel, new_pkgrel))
+
+def aur_post_build() -> None:
+  git_rm_files(_g.aur_pre_files)
+  git_add_files(_g.aur_building_files, force=True)
+  output = run_cmd(["git", "status", "-s", "."]).strip()
+  if output:
+    git_commit()
+  del _g.aur_pre_files, _g.aur_building_files
+
+def download_official_pkgbuild(name: str) -> List[str]:
+  url = 'https://www.archlinux.org/packages/search/json/?name=' + name
+  logger.info('download PKGBUILD for %s.', name)
+  info = s.get(url).json()
+  r = [r for r in info['results'] if r['repo'] != 'testing'][0]
+  repo = r['repo']
+  arch = r['arch']
+  if repo in ('core', 'extra'):
+    gitrepo = 'packages'
+  else:
+    gitrepo = 'community'
+  pkgbase = [r['pkgbase'] for r in info['results'] if r['repo'] != 'testing'][0]
+
+  tree_url = 'https://projects.archlinux.org/svntogit/%s.git/tree/repos/%s-%s?h=packages/%s' % (
+    gitrepo, repo, arch, pkgbase)
+  doc = parse_document_from_requests(tree_url, s)
+  blobs = doc.xpath('//div[@class="content"]//td/a[contains(concat(" ", normalize-space(@class), " "), " ls-blob ")]')
+  files = [x.text for x in blobs]
+  for filename in files:
+    blob_url = 'https://projects.archlinux.org/svntogit/%s.git/plain/repos/%s-%s/%s?h=packages/%s' % (
+      gitrepo, repo, arch, filename, pkgbase)
+    with open(filename, 'wb') as f:
+      logger.debug('download file %s.', filename)
+      data = s.get(blob_url).content
+      f.write(data)
+  return files
 

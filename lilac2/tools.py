@@ -14,3 +14,4 @@ def kill_child_processes() -> None:
       os.kill(int(pid), signal.SIGKILL)
     except OSError:
       pass
+
