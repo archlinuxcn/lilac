@@ -18,7 +18,7 @@ import requests
 from myutils import at_dir
 from htmlutils import parse_document_from_requests
 
-from .cmd import run_cmd, git_pull, git_push
+from .cmd import run_cmd, git_pull, git_push, git_reset_hard
 from . import const
 from .const import _G, SPECIAL_FILES
 
@@ -289,9 +289,6 @@ def git_commit(*, check_status: bool = True) -> None:
 
   run_cmd(['git', 'commit', '-m', 'auto update for package %s' % (
     os.path.split(os.getcwd())[1])])
-
-def git_reset_hard() -> None:
-  run_cmd(['git', 'reset', '--hard'])
 
 class AurDownloadError(Exception):
   def __init__(self, pkgname):

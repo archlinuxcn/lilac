@@ -27,6 +27,18 @@ def git_push() -> None:
       else:
         raise
 
+def git_reset_hard() -> None:
+  run_cmd(['git', 'reset', '--hard'])
+
+def get_git_branch() -> str:
+  out = subprocess.check_output(
+    ['git', 'branch', '--no-color'], universal_newlines = True)
+  for line in out.splitlines():
+    if line.startswith('* '):
+      return line.split(None, 1)[-1]
+
+  return '(unknown branch)'
+
 def run_cmd(cmd: Cmd, *, use_pty: bool = False, silent: bool = False,
             cwd: Optional[os.PathLike] = None) -> str:
   logger.debug('running %r, %susing pty,%s showing output', cmd,
