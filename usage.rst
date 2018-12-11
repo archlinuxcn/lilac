@@ -38,7 +38,7 @@ lilac 是由百合仙子（a.k.a. `依云 <https://github.com/lilydjwg>`_\ ）�
 ------------
 为了后续编写及调试 ``lilac.py`` 的方便，应当设置 ``PYTHONPATH`` 环境变量，使 python 能够使用 ``lilaclib`` 。如果使用了上述方法构建了 lilac 调试环境，使用以下代码设置环境变量： ::
 
-  export PYTHONPATH=$PYTHONPATH:$HOME/lilac
+  export PYTHONPATH=$PYTHONPATH:$HOME/lilac:$HOME/lilac/vendor
 
 使用 lilac
 ==========
