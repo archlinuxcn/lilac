@@ -359,7 +359,7 @@ def single_main(build_prefix: str = 'makepkg') -> None:
       accept_noupdate = True,
     )
 
-def _clean_directory() -> List[str]:
+def clean_directory() -> List[str]:
   '''clean all PKGBUILD and related files'''
   files = run_cmd(['git', 'ls-files']).splitlines()
   logger.info('clean directory')
@@ -416,7 +416,7 @@ def aur_pre_build(
   else:
     pkgver = None
 
-  _g.aur_pre_files = _clean_directory()
+  _g.aur_pre_files = clean_directory()
   if name is None:
     name = os.path.basename(os.getcwd())
   _g.aur_building_files = _download_aur_pkgbuild(name)
