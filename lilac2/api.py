@@ -296,10 +296,10 @@ class AurDownloadError(Exception):
 
 def _update_aur_repo_real(pkgname: str) -> None:
   aurpath = const.AUR_REPO_DIR / pkgname
-  if not os.path.isdir(aurpath):
+  if not aurpath.is_dir():
     logger.info('cloning AUR repo: %s', aurpath)
     with at_dir(const.AUR_REPO_DIR):
-      run_cmd(['git', 'clone', 'aur@aur.archlinux.org:%s.git' % pkgname])
+      run_cmd(['git', 'clone', f'aur@aur.archlinux.org:{pkgname}.git'])
   else:
     with at_dir(aurpath):
       git_reset_hard()
