@@ -2,6 +2,8 @@ from collections import defaultdict, namedtuple
 from pathlib import Path
 from typing import Dict, Union, Tuple, Set, Optional
 
+from toposort import toposort_flatten
+
 import archpkg
 
 from .api import run_cmd
@@ -11,20 +13,26 @@ def get_dependency_map(
   depman: 'DependencyManager', mods: LilacMods,
 ) -> Dict[str, Set['Dependency']]:
   map: Dict[str, Set['Dependency']] = defaultdict(set)
+  shallow_map: Dict[str, Set[str]] = defaultdict(set)
   rmap: Dict[str, Set[str]] = defaultdict(set)
 
   for name, mod in mods.items():
     depends = getattr(mod, 'depends', ())
 
     ds = [depman.get(d) for d in depends]
-    for d in ds:
-      rmap[d.pkgname].add(name)
-    map[name].update(ds)
+    if ds:
+      for d in ds:
+        shallow_map[name].add(d.pkgname)
+        rmap[d.pkgname].add(name)
+      map[name].update(ds)
 
-  for name, deps in map.items():
-    dependers = rmap[name]
-    for dd in dependers:
-      map[dd].update(deps)
+  dep_order = toposort_flatten(shallow_map)
+  for name in dep_order:
+    if name in rmap:
+      deps = map[name]
+      dependers = rmap[name]
+      for dd in dependers:
+        map[dd].update(deps)
 
   return map
 
