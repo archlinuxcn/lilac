@@ -40,7 +40,7 @@ def check_srcinfo() -> None:
 
   for line in srcinfo:
     line = line.strip()
-    if line.startswith('group = '):
+    if line.startswith('groups = '):
       g = line.split()[-1]
       if g in _official_groups:
         bad_groups.append(g)
