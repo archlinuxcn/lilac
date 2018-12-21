@@ -55,6 +55,7 @@ MYNAME = config.get('lilac', 'name')
 
 building_packages: Set[str] = set()
 nvdata: Dict[str, NvResult] = {}
+DEPMAP: Dict[str, Set[Dependency]] = {}
 DEPENDS: Dict[str, Set[Dependency]] = {}
 
 logger = logging.getLogger(__name__)
@@ -136,12 +137,10 @@ def git_last_commit() -> str:
 def start_build(mods: LilacMods, failed: Set[str], built: Set[str]) -> None:
   # built is used to collect built package names
   global DEPENDS
-  depman = DependencyManager(REPO.repodir)
-  depmap = get_dependency_map(depman, mods)
 
   building_depmap = {}
   for p in building_packages:
-    building_depmap[p] = depmap[p]
+    building_depmap[p] = DEPMAP[p]
 
   dep_building_map = {}
   nonexistent: Dict[str, List[Dependency]] = defaultdict(list)
@@ -169,7 +168,7 @@ def start_build(mods: LilacMods, failed: Set[str], built: Set[str]) -> None:
 
   # ensure all packages including dependents are included
   for p in packages:
-    building_depmap[p] = depmap[p]
+    building_depmap[p] = DEPMAP[p]
 
   # used to decide what to install when building
   DEPENDS = building_depmap
@@ -244,7 +243,9 @@ def load_all_lilac_and_report(
 
   return mods, failed
 
-def main_may_raise(D: Dict[str, Any]) -> None:
+def main_may_raise(D: Dict[str, Any], pkgs_to_build: List[str]) -> None:
+  global DEPMAP
+
   failed_info = D.get('failed', {})
 
   if get_git_branch() != 'master':
@@ -254,27 +255,45 @@ def main_may_raise(D: Dict[str, Any]) -> None:
   git_pull()
   mods, failed = load_all_lilac_and_report(REPO.repodir)
 
-  U = set(mods)
-  last_commit = D.get('last_commit', EMPTY_COMMIT)
-  revisions = last_commit + '..HEAD'
-  changed = get_changed_packages(revisions) & U
+  depman = DependencyManager(REPO.repodir)
+  DEPMAP = get_dependency_map(depman, mods)
+
+  if pkgs_to_build:
+    all_mods = mods
+    mods = {}
+    for pkg_to_build in pkgs_to_build:
+      for dep in DEPMAP[pkg_to_build]:
+        mods[dep.pkgname] = all_mods[dep.pkgname]
+      mods[pkg_to_build] = all_mods[pkg_to_build]
+
   _nvdata, unknown, rebuild = packages_need_update(REPO, mods)
   nvdata.update(_nvdata)
+
+  if pkgs_to_build:
+    need_update = need_rebuild_failed = need_rebuild_pkgrel = set()
+    rebuild = rebuild | set(pkgs_to_build)
+  else:
+    U = set(mods)
+    last_commit = D.get('last_commit', EMPTY_COMMIT)
+    revisions = last_commit + '..HEAD'
+    changed = get_changed_packages(revisions) & U
+
+    failed_prev = set(failed_info.keys())
+    # no update from upstream, but build instructions have changed; rebuild
+    # failed ones
+    need_rebuild_failed = failed_prev & changed
+    # if pkgrel is updated, build a new release
+    need_rebuild_pkgrel = {x for x in changed
+                          if pkgrel_changed(revisions, x)} - unknown
+
   updated = {x for x, y in nvdata.items()
               if y.oldver != y.newver}
-
-  failed_prev = set(failed_info.keys())
   failed_updated = {k for k, v in failed_info.items()
                     if k in nvdata and nvdata[k][1] != v}
   # build updated; if last build failed but it gets updated once more,
   # build it again
   need_update = updated | failed_updated
-  # no update from upstream, but build instructions have changed; rebuild
-  # failed ones
-  need_rebuild_failed = failed_prev & changed
-  # if pkgrel is updated, build a new release
-  need_rebuild_pkgrel = {x for x in changed
-                        if pkgrel_changed(revisions, x)} - unknown
+
   all_building = need_update | need_rebuild_failed | need_rebuild_pkgrel \
       | rebuild
 
@@ -285,7 +304,7 @@ def main_may_raise(D: Dict[str, Any]) -> None:
   logger.info('these packages are updated as detected by nvchecker: %r',
               need_update or None)
   logger.info('these packages need rebuilding'
-              ' as detected by nvchecker: %r',
+              ' as detected by nvchecker or manually specified: %r',
               rebuild or None)
 
   building_packages.update(all_building)
@@ -318,11 +337,11 @@ def main_may_raise(D: Dict[str, Any]) -> None:
     if config.getboolean('lilac', 'git_push'):
       git_push()
 
-def main() -> None:
+def main(pkgs_to_build: List[str]) -> None:
   store = os.path.join(mydir, 'store')
   with PickledData(store, default={}) as D:
     try:
-      main_may_raise(D)
+      main_may_raise(D, pkgs_to_build)
     except Exception:
       tb = traceback.format_exc()
       logger.exception('unexpected error')
@@ -354,9 +373,6 @@ if __name__ == '__main__':
   try:
     setup()
 
-    if len(sys.argv) == 1:
-      main()
-    else:
-      sys.exit('no argument should be given')
+    main(sys.argv[1:])
   except Exception:
     logger.exception('unexpected error')
