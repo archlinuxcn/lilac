@@ -270,7 +270,9 @@ def main_may_raise(D: Dict[str, Any], pkgs_to_build: List[str]) -> None:
   nvdata.update(_nvdata)
 
   if pkgs_to_build:
-    need_update = need_rebuild_failed = need_rebuild_pkgrel = set()
+    need_update: Set[str] = set()
+    need_rebuild_failed: Set[str] = set()
+    need_rebuild_pkgrel: Set[str] = set()
     rebuild = rebuild | set(pkgs_to_build)
   else:
     U = set(mods)
