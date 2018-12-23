@@ -2,7 +2,7 @@
 
 import os
 import subprocess
-from typing import List, Set, Tuple
+from typing import List, Optional, Set, Tuple
 
 import archpkg
 import pyalpm
@@ -18,7 +18,7 @@ class ConflictWithOfficialError(Exception):
     self.groups = groups
     self.packages = packages
 
-class OlderThanRepoPackage(Exception):
+class DowngradingError(Exception):
   def __init__(self, pkgname, built_version, repo_version):
     self.pkgname = pkgname
     self.built_version = built_version
@@ -63,13 +63,13 @@ def check_srcinfo() -> None:
 
   # check if the newly built package is older than the existing
   # package in repos or not
-  built_version = format_package_version()
+  built_version = format_package_version(_G.epoch, _G.pkgver, _G.pkgrel)
   for pkgname in pkgnames:
     try:
       pkg_info = archpkg.get_package_info(pkgname)
       repo_version = pkg_info['Version']
       if pyalpm.vercmp(built_version, repo_version) < 0:
-        raise OlderThanRepoPackage(pkgname, built_version, repo_version)
+        raise DowngradingError(pkgname, built_version, repo_version)
     except subprocess.CalledProcessError:
       # the newly built package is not in repos yet - fine
       pass
@@ -84,7 +84,7 @@ def get_srcinfo() -> List[str]:
   )
   return out.splitlines()
 
-def _get_package_version(srcinfo: List[str]) -> Tuple[str, str]:
+def _get_package_version(srcinfo: List[str]) -> Tuple[Optional[str], str, str]:
   epoch = pkgver = pkgrel = None
 
   for line in get_srcinfo():
@@ -100,8 +100,8 @@ def _get_package_version(srcinfo: List[str]) -> Tuple[str, str]:
   assert pkgrel is not None
   return epoch, pkgver, pkgrel
 
-def format_package_version() -> str:
-  if _G.epoch:
-    return '{}:{}-{}'.format(_G.epoch, _G.pkgver, _G.pkgrel)
+def format_package_version(epoch: Optional[str], pkgver: str, pkgrel: str) -> str:
+  if epoch:
+    return '{}:{}-{}'.format(epoch, pkgver, pkgrel)
   else:
-    return '{}-{}'.format(_G.pkgver, _G.pkgrel)
+    return '{}-{}'.format(pkgver, pkgrel)

@@ -96,9 +96,9 @@ def build_package(package: str, mod: LilacMod) -> bool:
     sign_and_copy()
     built_successfully = True
     build_logger.info('%s %s [%s] successful after %ds',
-                      package, n[1], pkgbuild.format_package_version(),
+                      package, n[1], pkgbuild.format_package_version(_G.epoch, _G.pkgver, _G.pkgrel),
                       time.time() - start_time)
-  except (MissingDependencies, pkgbuild.OlderThanRepoPackage):
+  except (MissingDependencies, pkgbuild.DowngradingError):
     build_logger.error('%s %s failed after %ds',
                       package, n[1], time.time() - start_time)
     raise
@@ -107,7 +107,7 @@ def build_package(package: str, mod: LilacMod) -> bool:
     logger.exception('packaging error')
     REPO.send_error_report(_G.mod, exc=(e, tb))
     build_logger.error('%s %s [%s] failed after %ds',
-                       package, n[1], pkgbuild.format_package_version(),
+                       package, n[1], pkgbuild.format_package_version(_G.epoch, _G.pkgver, _G.pkgrel),
                        time.time() - start_time)
   finally:
     del _G.mod, _G.epoch, _G.pkgver, _G.pkgrel
@@ -222,9 +222,9 @@ def start_build(mods: LilacMods, failed: Set[str], built: Set[str]) -> None:
     built = built, deps = e.deps, pkg = pkg, reason = reason,
   ))
           failed.add(pkg)
-        except pkgbuild.OlderThanRepoPackage as e:
-          REPO.send_error_report(mods[pkg], subject='%s 新打的包比倉庫裡的包舊', msg=textwrap.dedent(f'''
-          包 {e.pkgname} 打的版本為 {e.built_version}，但在倉庫裡已有較新版本 {e.repo_version}。
+        except pkgbuild.DowngradingError as e:
+          REPO.send_error_report(mods[pkg], subject='%s 新打的包比仓库里的包旧', msg=textwrap.dedent(f'''
+          包 {e.pkgname} 打的版本为 {e.built_version}，但在仓库里已有较新版本 {e.repo_version}。
           '''))
           failed.add(pkg)
 
