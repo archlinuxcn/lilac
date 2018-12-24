@@ -7,6 +7,7 @@ TERM = xterm
 # NVCHECKER_GITHUB_TOKEN =
 
 [repository]
+name = archlinuxcn
 email = repo@example.com
 repodir = /path/to/gitrepo
 destdir = /path/to/pkgdir

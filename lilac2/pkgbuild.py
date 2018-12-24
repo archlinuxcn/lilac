@@ -2,9 +2,8 @@
 
 import os
 import subprocess
-from typing import List, Optional, Set, Tuple
+from typing import Dict, List, Optional, Set, Tuple
 
-import archpkg
 import pyalpm
 
 from .const import _G
@@ -12,6 +11,7 @@ from .const import _G
 _official_repos = ['core', 'extra', 'community', 'multilib']
 _official_packages: Set[str] = set()
 _official_groups: Set[str] = set()
+_repo_package_versions: Dict[str, str] = {}
 
 class ConflictWithOfficialError(Exception):
   def __init__(self, groups, packages):
@@ -25,6 +25,8 @@ class DowngradingError(Exception):
     self.repo_version = repo_version
 
 def init_data(dbpath: os.PathLike) -> None:
+  global _repo_package_versions
+
   for _ in range(3):
     p = subprocess.run(
       ['fakeroot', 'pacman', '-Sy', '--dbpath', dbpath],
@@ -39,6 +41,9 @@ def init_data(dbpath: os.PathLike) -> None:
     db = H.register_syncdb(repo, 0)
     _official_packages.update(p.name for p in db.pkgcache)
     _official_groups.update(g[0] for g in db.grpcache)
+
+  db = H.register_syncdb(_G.repo.name, 0)
+  _repo_package_versions = {p.name: p.version for p in db.pkgcache}
 
 def check_srcinfo() -> None:
   srcinfo = get_srcinfo()
@@ -66,11 +71,10 @@ def check_srcinfo() -> None:
   built_version = format_package_version(_G.epoch, _G.pkgver, _G.pkgrel)
   for pkgname in pkgnames:
     try:
-      pkg_info = archpkg.get_package_info(pkgname)
-      repo_version = pkg_info['Version']
+      repo_version = _repo_package_versions[pkgname]
       if pyalpm.vercmp(built_version, repo_version) < 0:
         raise DowngradingError(pkgname, built_version, repo_version)
-    except subprocess.CalledProcessError:
+    except KeyError:
       # the newly built package is not in repos yet - fine
       pass
 
