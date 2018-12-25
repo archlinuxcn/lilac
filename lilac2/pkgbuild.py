@@ -2,7 +2,7 @@
 
 import os
 import subprocess
-from typing import List, Set, Tuple
+from typing import Dict, List, Optional, Set, Tuple
 
 import pyalpm
 
@@ -11,13 +11,22 @@ from .const import _G
 _official_repos = ['core', 'extra', 'community', 'multilib']
 _official_packages: Set[str] = set()
 _official_groups: Set[str] = set()
+_repo_package_versions: Dict[str, str] = {}
 
 class ConflictWithOfficialError(Exception):
   def __init__(self, groups, packages):
     self.groups = groups
     self.packages = packages
 
+class DowngradingError(Exception):
+  def __init__(self, pkgname, built_version, repo_version):
+    self.pkgname = pkgname
+    self.built_version = built_version
+    self.repo_version = repo_version
+
 def init_data(dbpath: os.PathLike) -> None:
+  global _repo_package_versions
+
   for _ in range(3):
     p = subprocess.run(
       ['fakeroot', 'pacman', '-Sy', '--dbpath', dbpath],
@@ -33,10 +42,14 @@ def init_data(dbpath: os.PathLike) -> None:
     _official_packages.update(p.name for p in db.pkgcache)
     _official_groups.update(g[0] for g in db.grpcache)
 
+  db = H.register_syncdb(_G.repo.name, 0)
+  _repo_package_versions = {p.name: p.version for p in db.pkgcache}
+
 def check_srcinfo() -> None:
   srcinfo = get_srcinfo()
   bad_groups = []
   bad_packages = []
+  pkgnames = []
 
   for line in srcinfo:
     line = line.strip()
@@ -48,8 +61,22 @@ def check_srcinfo() -> None:
       pkg = line.split()[-1]
       if pkg in _official_packages:
         bad_packages.append(pkg)
+    elif line.startswith('pkgname = '):
+      pkgnames.append(line.split()[-1])
 
-  _G.pkgver, _G.pkgrel = _get_package_version(srcinfo)
+  _G.epoch, _G.pkgver, _G.pkgrel = _get_package_version(srcinfo)
+
+  # check if the newly built package is older than the existing
+  # package in repos or not
+  built_version = format_package_version(_G.epoch, _G.pkgver, _G.pkgrel)
+  for pkgname in pkgnames:
+    try:
+      repo_version = _repo_package_versions[pkgname]
+      if pyalpm.vercmp(built_version, repo_version) < 0:
+        raise DowngradingError(pkgname, built_version, repo_version)
+    except KeyError:
+      # the newly built package is not in repos yet - fine
+      pass
 
   if bad_groups or bad_packages:
     raise ConflictWithOfficialError(bad_groups, bad_packages)
@@ -61,18 +88,24 @@ def get_srcinfo() -> List[str]:
   )
   return out.splitlines()
 
-def _get_package_version(srcinfo: List[str]) -> Tuple[str, str]:
-  pkgver = pkgrel = None
+def _get_package_version(srcinfo: List[str]) -> Tuple[Optional[str], str, str]:
+  epoch = pkgver = pkgrel = None
 
   for line in get_srcinfo():
     line = line.strip()
-    if not pkgver and line.startswith('pkgver = '):
+    if not epoch and line.startswith('epoch = '):
+      epoch = line.split()[-1]
+    elif not pkgver and line.startswith('pkgver = '):
       pkgver = line.split()[-1]
     elif not pkgrel and line.startswith('pkgrel = '):
       pkgrel = line.split()[-1]
-    if pkgver and pkgrel:
-      break
 
   assert pkgver is not None
   assert pkgrel is not None
-  return pkgver, pkgrel
+  return epoch, pkgver, pkgrel
+
+def format_package_version(epoch: Optional[str], pkgver: str, pkgrel: str) -> str:
+  if epoch:
+    return '{}:{}-{}'.format(epoch, pkgver, pkgrel)
+  else:
+    return '{}-{}'.format(pkgver, pkgrel)

@@ -9,6 +9,7 @@ import time
 from collections import defaultdict
 import pathlib
 from typing import Set, Dict, List, Tuple, Any
+import textwrap
 
 from toposort import toposort_flatten
 
@@ -74,7 +75,7 @@ def build_package(package: str, mod: LilacMod) -> bool:
   start_time = time.time()
   try:
     _G.mod = mod
-    _G.pkgver = _G.pkgrel = None
+    _G.epoch = _G.pkgver = _G.pkgrel = None
     built_successfully = False
     n = nvdata[package]
     maintainer = REPO.find_maintainers(mod)[0]
@@ -94,10 +95,10 @@ def build_package(package: str, mod: LilacMod) -> bool:
       raise
     sign_and_copy()
     built_successfully = True
-    build_logger.info('%s %s [%s-%s] successful after %ds',
-                      package, n[1], _G.pkgver, _G.pkgrel,
+    build_logger.info('%s %s [%s] successful after %ds',
+                      package, n[1], pkgbuild.format_package_version(_G.epoch, _G.pkgver, _G.pkgrel),
                       time.time() - start_time)
-  except MissingDependencies:
+  except (MissingDependencies, pkgbuild.DowngradingError):
     build_logger.error('%s %s failed after %ds',
                       package, n[1], time.time() - start_time)
     raise
@@ -105,11 +106,11 @@ def build_package(package: str, mod: LilacMod) -> bool:
     tb = traceback.format_exc()
     logger.exception('packaging error')
     REPO.send_error_report(_G.mod, exc=(e, tb))
-    build_logger.error('%s %s [%s-%s] failed after %ds',
-                       package, n[1], _G.pkgver, _G.pkgrel,
+    build_logger.error('%s %s [%s] failed after %ds',
+                       package, n[1], pkgbuild.format_package_version(_G.epoch, _G.pkgver, _G.pkgrel),
                        time.time() - start_time)
   finally:
-    del _G.mod, _G.pkgver, _G.pkgrel
+    del _G.mod, _G.epoch, _G.pkgver, _G.pkgrel
 
   if config.getboolean('lilac', 'save_buildlog'):
     with open('lilac-%s.log' % (n[1] or 'none').replace('/', '-'), 'w') as log:
@@ -220,6 +221,11 @@ def start_build(mods: LilacMods, failed: Set[str], built: Set[str]) -> None:
 {reason}'''.format(
     built = built, deps = e.deps, pkg = pkg, reason = reason,
   ))
+          failed.add(pkg)
+        except pkgbuild.DowngradingError as e:
+          REPO.send_error_report(mods[pkg], subject='%s 新打的包比仓库里的包旧', msg=textwrap.dedent(f'''
+          包 {e.pkgname} 打的版本为 {e.built_version}，但在仓库里已有较新版本 {e.repo_version}。
+          '''))
           failed.add(pkg)
 
   except KeyboardInterrupt:

@@ -18,6 +18,7 @@ class Repo:
     self.myaddress = config.get('lilac', 'email')
     self.mymaster = config.get('lilac', 'master')
     self.repomail = config.get('repository', 'email')
+    self.name = config.get('repository', 'name')
     self.trim_ansi_codes = not config.getboolean(
       'smtp', 'use_ansi', fallback=False)
 
