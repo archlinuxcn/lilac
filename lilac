@@ -95,6 +95,8 @@ def build_package(package: str, mod: LilacMod) -> bool:
       raise
     sign_and_copy()
     built_successfully = True
+    assert _G.pkgver is not None
+    assert _G.pkgrel is not None
     build_logger.info('%s %s [%s] successful after %ds',
                       package, n[1], pkgbuild.format_package_version(_G.epoch, _G.pkgver, _G.pkgrel),
                       time.time() - start_time)
