@@ -1,6 +1,5 @@
 import configparser
 import os
-import traceback
 import logging
 from collections import defaultdict
 import subprocess
@@ -24,36 +23,6 @@ class NvResult(NamedTuple):
   oldver: Optional[str]
   newver: Optional[str]
 
-def _gen_config_from_ini(repo, U):
-  full = configparser.ConfigParser(allow_no_value=True)
-  nvchecker_full = repo.repodir / 'nvchecker.ini'
-  try:
-    full.read([nvchecker_full])
-  except Exception:
-    tb = traceback.format_exc()
-    try:
-      who = repo.find_maintainer(file='nvchecker.ini')
-      more = ''
-    except Exception:
-      who = repo.mymaster
-      more = traceback.format_exc()
-
-    subject = 'nvchecker 配置文件错误'
-    msg = '调用栈如下：\n\n' + tb
-    if more:
-      msg += '\n获取维护者信息也失败了！调用栈如下：\n\n' + more
-    repo.sendmail(who, subject, msg)
-    raise
-
-  all_known = set(full.sections())
-  unknown = U - all_known
-  if unknown:
-    logger.warning('unknown packages: %r', unknown)
-
-  newconfig = {k: full[k] for k in U & all_known}
-
-  return newconfig, unknown
-
 def _gen_config_from_mods(
   repo: Repo, mods: LilacMods,
 ) -> Tuple[Dict[str, Any], Set[str]]:
@@ -76,10 +45,7 @@ def _gen_config_from_mods(
 def packages_need_update(
   repo: Repo, mods: LilacMods,
 ) -> Tuple[Dict[str, NvResult], Set[str], Set[str]]:
-  newconfig, left = _gen_config_from_mods(repo, mods)
-  newconfig2, unknown = _gen_config_from_ini(repo, left)
-  newconfig.update(newconfig2)
-  del newconfig2, left
+  newconfig, unknown = _gen_config_from_mods(repo, mods)
 
   if not OLDVER_FILE.exists():
     open(OLDVER_FILE, 'a').close()
