@@ -409,7 +409,7 @@ def git_rm_files(files: List[str]) -> None:
     run_cmd(['git', 'rm', '--cached', '--'] + files)
 
 def aur_pre_build(
-  name: Optional[str] = None, *, do_vcs_update: bool = True,
+  name: Optional[str] = None, *, do_vcs_update: bool = None,
 ) -> None:
   if os.path.exists('PKGBUILD'):
     pkgver, pkgrel = get_pkgver_and_pkgrel()
@@ -426,7 +426,10 @@ def aur_pre_build(
     # change to larger pkgrel
     update_pkgrel(max(pkgrel, new_pkgrel))
 
-  if do_vcs_update and name.endswith(('-git', '-hg', '-svn', '-bzr')):
+  if do_vcs_update is None:
+      do_vcs_update = name.endswith(('-git', '-hg', '-svn', '-bzr'))
+
+  if do_vcs_update:
     vcs_update()
     # recheck after sync, because AUR pkgver may lag behind
     new_pkgver, new_pkgrel = get_pkgver_and_pkgrel()
