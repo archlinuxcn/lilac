@@ -176,7 +176,7 @@ def start_build(mods: LilacMods, failed: Set[str], built: Set[str]) -> None:
   # used to decide what to install when building
   DEPENDS = building_depmap
 
-  dbpath = REPO.repodir / 'pacmandb'
+  dbpath = mydir / 'pacmandb'
   dbpath.mkdir(exist_ok=True)
   pkgbuild.init_data(dbpath)
 
