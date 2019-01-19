@@ -145,7 +145,7 @@ def start_build(mods: LilacMods, failed: Set[str], built: Set[str]) -> None:
   for p in building_packages:
     building_depmap[p] = DEPMAP[p]
 
-  dep_building_map = {}
+  dep_building_map: Dict[str, Set[str]] = {}
   nonexistent: Dict[str, List[Dependency]] = defaultdict(list)
   for name, ds in building_depmap.items():
     for d in ds:
