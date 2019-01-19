@@ -157,7 +157,15 @@ def start_build(mods: LilacMods, failed: Set[str], built: Set[str]) -> None:
           continue
         # we need build this too
         building_packages.add(d.pkgname)
-    dep_building_map[name] = {x.pkgdir.name for x in ds}
+
+    dep_building_map[name] = set()
+    for x in ds:
+      pkgbase = x.pkgdir.name
+      dep_building_map[name].add(pkgbase)
+      # a dependency may depend other packages, we need their relations
+      if pkgbase in DEPMAP:
+        dep_building_map[pkgbase] = {
+          x.pkgdir.name for x in DEPMAP[pkgbase]}
 
   for name, deps in nonexistent.items():
     REPO.send_error_report(
