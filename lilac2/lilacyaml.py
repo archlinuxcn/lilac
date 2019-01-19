@@ -1,10 +1,19 @@
 import pathlib
 from typing import Dict, Any
+import importlib.resources
 
 import yamlutils
 
-# TODO: migrate to lilac2.api
-import lilaclib
+from . import api
+
+ALIASES: Dict[str, Any]
+
+def _load_aliases() -> None:
+  global ALIASES
+  data = importlib.resources.read_text('lilac2', 'aliases.yaml')
+  ALIASES = yamlutils.load(data)
+
+_load_aliases()
 
 def load_lilac_yaml(dir: pathlib.Path) -> Dict[str, Any]:
   try:
@@ -18,6 +27,8 @@ def load_lilac_yaml(dir: pathlib.Path) -> Dict[str, Any]:
     for i, entry in enumerate(update_on):
       if isinstance(entry, str):
         update_on[i] = {entry: ''}
+      elif 'alias' in entry.keys():
+        update_on[i] = ALIASES[entry['alias']]
 
   depends = conf.get('depends')
   if depends:
@@ -28,7 +39,7 @@ def load_lilac_yaml(dir: pathlib.Path) -> Dict[str, Any]:
   for func in ['pre_build', 'post_build', 'post_build_always']:
     name = conf.get(func)
     if name:
-      funcvalue = getattr(lilaclib, name)
+      funcvalue = getattr(api, name)
       conf[func] = funcvalue
 
   return conf

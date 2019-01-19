@@ -1,0 +1,16 @@
+python:
+  archpkg: python
+  from_pattern: '^(\d+\.\d+)\..*'
+  to_pattern: '\1'
+ruby:
+  archpkg: ruby
+  from_pattern: ^(\d+\.\d+)\..*
+  to_pattern: \1
+boost:
+  archpkg: boost-libs
+  from_pattern: ^(\d+\.\d+)\..*
+  to_pattern: \1
+icu:
+  archpkg: icu
+  from_pattern: ^(\d+)\..*
+  to_pattern: \1
