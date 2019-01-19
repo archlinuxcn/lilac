@@ -293,8 +293,7 @@ def main_may_raise(D: Dict[str, Any], pkgs_to_build: List[str]) -> None:
   else:
     U = set(mods)
     last_commit = D.get('last_commit', EMPTY_COMMIT)
-    revisions = last_commit + '..HEAD'
-    changed = get_changed_packages(revisions) & U
+    changed = get_changed_packages(last_commit, 'HEAD') & U
 
     failed_prev = set(failed_info.keys())
     # no update from upstream, but build instructions have changed; rebuild
@@ -302,7 +301,7 @@ def main_may_raise(D: Dict[str, Any], pkgs_to_build: List[str]) -> None:
     need_rebuild_failed = failed_prev & changed
     # if pkgrel is updated, build a new release
     need_rebuild_pkgrel = {x for x in changed
-                          if pkgrel_changed(revisions, x)} - unknown
+                          if pkgrel_changed(last_commit, 'HEAD', x)} - unknown
 
   updated = {x for x, y in nvdata.items()
               if y.oldver != y.newver}

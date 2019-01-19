@@ -84,8 +84,8 @@ class DependencyManager:
         self.repodir / pkgbase, pkgname)
     return self._CACHE[pkgname]
 
-def get_changed_packages(revisions: str) -> Set[str]:
-  cmd = ["git", "diff", "--name-only", revisions]
+def get_changed_packages(from_: str, to: str) -> Set[str]:
+  cmd = ["git", "diff", "--name-only", '--relative', from_, to]
   r = run_cmd(cmd).splitlines()
   ret = {x.split('/', 1)[0] for x in r}
   return ret
