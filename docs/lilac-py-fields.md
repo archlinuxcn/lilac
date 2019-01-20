@@ -4,6 +4,7 @@
 * `pre_build`: 打包前执行的函数。
 * `post_build`: 打包成功后执行的函数。
 * `post_build_always`: 打包最后执行的函数，不论成功与否。可选。
+* `prepare`: 清理前执行的函数。可选。如果返回字符串，则跳过打包。用于在明知无法打包时留下上一次打的包，以便依赖使用。
 
 ## 辅助信息
 * `makechrootpkg_args`: 传递给 `makechrootpkg` 的额外参数。可选。

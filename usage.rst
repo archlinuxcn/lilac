@@ -46,31 +46,11 @@ lilac 是由百合仙子（a.k.a. `依云 <https://github.com/lilydjwg>`_\ ）�
 
 编写 lilac.py
 -------------
-每一个软件包对应一个 ``lilac.py``\ ，该文件应当和软件的 ``PKGBUILD`` 在同一目录下。
+每一个软件包对应一个 ``lilac.py`` 及一个 ``lilac.yaml``\ ，该文件应当和软件的 ``PKGBUILD`` 在同一目录下。
 
-``lilac.py`` 中定义了几个函数及变量，lilac 运行时会检查相关变量，并调用此文件中的相关函数。以下做详细说明：
+``lilac.py`` 定义如何更新打包脚本。\ ``lilac.yaml`` 中定义打包相关的数据和元信息。可选的 ``package.list`` 中可以每行一个地列出 split package 会产生的包，避免额外的包被清理。
 
-函数
-~~~~
-``pre_build()``
-  该函数在构建过程开始之前执行。通常用于修改直接从 AUR 获取到的 ``PKGBUILD`` ，以使构建过程能够正常进行。
-
-``post_build()``
-  该函数在\ *成功*\ 构建软件包后执行，通常用于清理目录、运行 ``git add PKGBUILD`` 和 ``git commit``\ 。
-
-``post_build_always(success)``
-  该函数在构建软件包后执行（无论是否构建成功）。\ ``success`` 参数传入构建状态：\ ``True`` 表示构建成功，\ ``False`` 表示构建失败。
-
-变量
-~~~~
-``build_prefix``
-  ``str`` 类型，指定要使用的 devtools 中的构建工具的前缀，通常使用 ``'archlinuxcn-x86_64'`` ，构建 32 位包时通常使用 ``'multilib-archlinuxcn'`` 。详细信息请参考 `打包 <https://github.com/archlinuxcn/repo/wiki/%E6%89%93%E5%8C%85>`_ 。
-
-``depends``
-  ``list`` 类型，用于定义该软件包位于 archlinuxcn 的依赖。构建软件包时首先检查此变量，若依赖没有被满足，则跳过该软件包构建其依赖，在其依赖构建成功后才会构建此软件包。其中的元素，如果软件包名和 PKGBUILD 所在目录名相同，写该目录；如果不同，写 ``(目录名, 包名)``\ 。比如依赖 libdbusmenu-glib 的，写成 ``depends = [('libdbusmenu', 'libdbusmenu-glib')]``\ 。
-
-``packages``
-  ``list`` 类型，用于构建 split-package 时指定只构建部分包（因为另外部分没有更新）。如果为 ``None`` 或者未定义，构建 PKGBUILD 中包含的所有包。
+详细说明见 docs/ 目录。
 
 测试 lilac.py
 -------------
@@ -82,12 +62,6 @@ lilac 是由百合仙子（a.k.a. `依云 <https://github.com/lilydjwg>`_\ ）�
 保存并运行 ``lilac.py``\ ： ::
 
   ./lilac.py
-
-更新 nvchecker.ini
-------------------
-要使 lilac 正确工作，还需要将软件包的信息添加到社区源仓库中的 ``nvchecker.ini`` 中。
-
-详细信息请参看\ `用 nvchecker 检查新版本 <https://github.com/archlinuxcn/repo/wiki/%E7%94%A8-nvchecker-%E6%A3%80%E6%9F%A5%E6%96%B0%E7%89%88%E6%9C%AC>`_\ 。
 
 使用模板
 --------

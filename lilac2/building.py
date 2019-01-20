@@ -4,7 +4,7 @@ import os
 import logging
 import subprocess
 from pathlib import Path
-from typing import Optional, Iterable, List
+from typing import Optional, Iterable, List, Set
 from types import SimpleNamespace
 
 from . import pkgbuild
@@ -17,8 +17,12 @@ logger = logging.getLogger(__name__)
 build_output: Optional[str] = None
 
 class MissingDependencies(Exception):
-  def __init__(self, pkgs):
+  def __init__(self, pkgs: Set[str]) -> None:
     self.deps = pkgs
+
+class SkipBuild(Exception):
+  def __init__(self, msg: str) -> None:
+    self.msg = msg
 
 def lilac_build(
   mod: LilacMod, build_prefix: Optional[str] = None,
@@ -27,7 +31,6 @@ def lilac_build(
   depends: Iterable[Dependency] = (),
   bindmounts: List[str] = [],
 ) -> None:
-  run_cmd(["sh", "-c", "rm -f -- *.pkg.tar.xz *.pkg.tar.xz.sig *.src.tar.gz"])
   success = False
 
   global build_output
@@ -38,6 +41,14 @@ def lilac_build(
     if not hasattr(mod, '_G'):
       # fill nvchecker result unless already filled (e.g. by hand)
       mod._G = SimpleNamespace(oldver = oldver, newver = newver)
+
+    prepare = getattr(mod, 'prepare', None)
+    if prepare is not None:
+      msg = prepare()
+      if isinstance(msg, str):
+        raise SkipBuild(msg)
+
+    run_cmd(["sh", "-c", "rm -f -- *.pkg.tar.xz *.pkg.tar.xz.sig *.src.tar.gz"])
     pre_build = getattr(mod, 'pre_build', None)
     if pre_build is not None:
       logger.debug('accept_noupdate=%r, oldver=%r, newver=%r', accept_noupdate, oldver, newver)

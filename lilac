@@ -36,7 +36,7 @@ from lilac2.const import mydir, _G
 from lilac2.nvchecker import packages_need_update, nvtake, NvResult
 from lilac2.typing import LilacMod, LilacMods
 from lilac2 import pkgbuild
-from lilac2.building import lilac_build, MissingDependencies
+from lilac2.building import lilac_build, MissingDependencies, SkipBuild
 import lilac2.building as B
 
 BIND_MOUNTS = [
@@ -102,8 +102,12 @@ def build_package(package: str, mod: LilacMod) -> bool:
                       time.time() - start_time)
   except (MissingDependencies, pkgbuild.DowngradingError):
     build_logger.error('%s %s failed after %ds',
-                      package, n[1], time.time() - start_time)
+                       package, n[1], time.time() - start_time)
     raise
+  except SkipBuild as e:
+    logger.warn('%s %s skipped because %s', package, n[1], e.msg)
+    build_logger.warn('%s %s skipped after %ds',
+                       package, n[1], time.time() - start_time)
   except Exception as e:
     tb = traceback.format_exc()
     logger.exception('packaging error')
