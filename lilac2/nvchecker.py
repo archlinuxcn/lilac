@@ -55,7 +55,7 @@ def packages_need_update(
     'newver': NEWVER_FILE,
   }
 
-  new = configparser.ConfigParser( # type: ignore
+  new = configparser.ConfigParser(
     dict_type=dict, allow_no_value=True)
   new.read_dict(newconfig)
   with open(NVCHECKER_FILE, 'w') as f:

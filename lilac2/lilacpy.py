@@ -42,7 +42,7 @@ def load_lilac(dir: Path) -> Generator[LilacMod, None, None]:
       setattr(mod, k, v)
 
     assert spec.loader
-    spec.loader.exec_module(mod)
+    spec.loader.exec_module(mod) # type: ignore
     mod = cast(LilacMod, mod)
     mod.pkgbase = dir.name
     yield mod

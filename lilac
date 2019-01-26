@@ -66,7 +66,7 @@ REPO = _G.repo = Repo(config)
 EMPTY_COMMIT = '4b825dc642cb6eb9a060e54bf8d69288fbee4904'
 
 def setup_build_logger() -> None:
-  handler = logging.FileHandler(os.path.join(mydir, 'build.log'))
+  handler = logging.FileHandler(mydir / 'build.log')
   handler.setFormatter(logging.Formatter('[%(asctime)s] %(message)s', '%Y-%m-%d %H:%M:%S'))
   build_logger.addHandler(handler)
 

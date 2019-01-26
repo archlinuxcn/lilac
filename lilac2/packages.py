@@ -1,6 +1,7 @@
 from collections import defaultdict, namedtuple
 from pathlib import Path
 from typing import Dict, Union, Tuple, Set, Optional
+import re
 
 from toposort import toposort_flatten
 
@@ -89,4 +90,33 @@ def get_changed_packages(from_: str, to: str) -> Set[str]:
   r = run_cmd(cmd).splitlines()
   ret = {x.split('/', 1)[0] for x in r}
   return ret
+
+_re_package = re.compile(r'package(?:_(.+))?\s*\(')
+
+def get_all_managed_packages(repodir: Path) -> Set[Tuple[str, str]]:
+  packages: Set[Tuple[str, str]] = set()
+  for pkg in repodir.glob('*/PKGBUILD'):
+    pkgbase = pkg.parent.name
+
+    pkgfile = pkg.with_name('package.list')
+    if pkgfile.exists():
+      with open(pkgfile) as f:
+        packages.update((pkgbase, x) for x in f.read().split())
+        continue
+
+    found = False
+    with open(pkg) as f:
+      for l in f:
+        l = l.strip()
+        m = _re_package.match(l)
+        if m:
+          found = True
+          if m.group(1):
+            packages.add((pkgbase, m.group(1)))
+          else:
+            packages.add((pkgbase, pkgbase))
+    if not found:
+      packages.add((pkgbase, pkgbase))
+
+  return packages
 

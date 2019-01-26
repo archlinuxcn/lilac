@@ -45,6 +45,9 @@ def init_data(dbpath: os.PathLike) -> None:
   db = H.register_syncdb(_G.repo.name, 0)
   _repo_package_versions = {p.name: p.version for p in db.pkgcache}
 
+def get_official_packages() -> Set[str]:
+  return _official_packages
+
 def check_srcinfo() -> None:
   srcinfo = get_srcinfo()
   bad_groups = []
