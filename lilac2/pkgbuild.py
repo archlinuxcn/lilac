@@ -24,12 +24,18 @@ class DowngradingError(Exception):
     self.built_version = built_version
     self.repo_version = repo_version
 
-def init_data(dbpath: os.PathLike) -> None:
+def init_data(dbpath: os.PathLike, *, quiet: bool = False) -> None:
   global _repo_package_versions
+
+  if quiet:
+    kwargs = {'stderr': subprocess.DEVNULL}
+  else:
+    kwargs = {}
 
   for _ in range(3):
     p = subprocess.run(
       ['fakeroot', 'pacman', '-Sy', '--dbpath', dbpath],
+      **kwargs,
     )
     if p.returncode == 0:
       break
