@@ -28,7 +28,7 @@ def init_data(dbpath: os.PathLike, *, quiet: bool = False) -> None:
   global _repo_package_versions
 
   if quiet:
-    kwargs = {'stderr': subprocess.DEVNULL}
+    kwargs = {'stdout': subprocess.DEVNULL}
   else:
     kwargs = {}
 
