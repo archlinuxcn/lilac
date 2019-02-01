@@ -255,8 +255,7 @@ check() {
 
   new_pkgver = get_pkgver_and_pkgrel()[0]
   if pkgver and pkgver == new_pkgver:
-    # change pkgrel to what specified in PKGBUILD
-    update_pkgrel(pkgrel)
+    update_pkgrel()
 
 def pypi_post_build():
   git_add_files('PKGBUILD')
