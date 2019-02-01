@@ -33,7 +33,7 @@ def init_data(dbpath: os.PathLike, *, quiet: bool = False) -> None:
     kwargs = {}
 
   for _ in range(3):
-    p = subprocess.run(
+    p = subprocess.run( # type: ignore # what a mess...
       ['fakeroot', 'pacman', '-Sy', '--dbpath', dbpath],
       **kwargs,
     )
