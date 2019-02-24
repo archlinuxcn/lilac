@@ -14,3 +14,7 @@ icu:
   archpkg: icu
   from_pattern: ^(\d+)\..*
   to_pattern: \1
+readline:
+  archpkg: readline
+  from_pattern: ^(\d+)\..*
+  to_pattern: \1
