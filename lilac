@@ -105,8 +105,8 @@ def build_package(package: str, mod: LilacMod) -> bool:
                        package, n[1], time.time() - start_time)
     raise
   except SkipBuild as e:
-    logger.warn('%s %s skipped because %s', package, n[1], e.msg)
-    build_logger.warn('%s %s skipped after %ds',
+    logger.warning('%s %s skipped because %s', package, n[1], e.msg)
+    build_logger.warning('%s %s skipped after %ds',
                        package, n[1], time.time() - start_time)
   except Exception as e:
     tb = traceback.format_exc()
