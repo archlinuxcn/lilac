@@ -83,8 +83,12 @@ def lilac_build(
     if hasattr(mod, 'makechrootpkg_args'):
         makechrootpkg_args = mod.makechrootpkg_args
 
+    makepkg_args: List[str] = []
+    if hasattr(mod, 'makepkg_args'):
+        makepkg_args = mod.makepkg_args
+
     call_build_cmd(
-      build_prefix, depend_packages, bindmounts, build_args, makechrootpkg_args)
+      build_prefix, depend_packages, bindmounts, build_args, makechrootpkg_args, makepkg_args)
     pkgs = [x for x in os.listdir() if x.endswith('.pkg.tar.xz')]
     if not pkgs:
       raise Exception('no package built')
@@ -102,6 +106,7 @@ def call_build_cmd(
   bindmounts: List[str] = [],
   build_args: List[str] = [],
   makechrootpkg_args: List[str] = [],
+  makepkg_args: List[str] = [],
 ) -> None:
   global build_output
   cmd: Cmd
@@ -128,7 +133,9 @@ def call_build_cmd(
       cmd += ['-d', b]
 
     cmd.extend(makechrootpkg_args)
-    cmd.extend(['--', '--holdver'])
+    cmd.extend(['--'])
+    cmd.extend(makepkg_args)
+    cmd.extend(['--holdver'])
 
   # NOTE that Ctrl-C here may not succeed
   try:
