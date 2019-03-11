@@ -39,7 +39,7 @@ def _unquote_item(s: str) -> Optional[str]:
   else:
     return None
 
-def add_into_array(line: str, values: Iterable[str]) -> str:
+def _add_into_array(line: str, values: Iterable[str]) -> str:
   l = line.find('(')
   r = line.rfind(')')
   arr_str = line[l+1:r].strip()
@@ -50,29 +50,32 @@ def add_into_array(line: str, values: Iterable[str]) -> str:
   line = line[:l] + arr_str
   return line
 
-def _add_deps(which: str, extra_deps: Iterable[str]) -> None:
+def add_into_array(which: str, extra_deps: Iterable[str]) -> None:
   '''
-  Add more values into the dependency array
+  Add more values into the shell array
   '''
   field_appeared = False
 
   for line in edit_file('PKGBUILD'):
     if line.strip().startswith(which):
-      line = add_into_array(line, extra_deps)
+      line = _add_into_array(line, extra_deps)
       field_appeared = True
     print(line)
 
   if not field_appeared:
     with open('PKGBUILD', 'a') as f:
       line = f'{which}=()'
-      line = add_into_array(line, extra_deps)
+      line = _add_into_array(line, extra_deps)
       f.write(line + '\n')
 
+def add_arch(extra_arches):
+  add_into_array('arch', extra_arches)
+
 def add_depends(extra_deps):
-  _add_deps('depends', extra_deps)
+  add_into_array('depends', extra_deps)
 
 def add_makedepends(extra_deps):
-  _add_deps('makedepends', extra_deps)
+  add_into_array('makedepends', extra_deps)
 
 def edit_file(filename: str) -> Iterator[str]:
   with fileinput.input(files=(filename,), inplace=True) as f:
