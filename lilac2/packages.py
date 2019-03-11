@@ -41,18 +41,18 @@ _DependencyTuple = namedtuple(
   '_DependencyTuple', 'pkgdir pkgname')
 
 class Dependency(_DependencyTuple):
-  def resolve(self) -> Optional[Path]:
+  def resolve(self, arch='x86_64') -> Optional[Path]:
     try:
-      return self._find_local_package()
+      return self._find_local_package(arch)
     except FileNotFoundError:
       return None
 
   def managed(self) -> bool:
     return (self.pkgdir / 'lilac.py').exists()
 
-  def _find_local_package(self) -> Path:
+  def _find_local_package(self, arch) -> Path:
     files = [x for x in self.pkgdir.iterdir()
-             if x.name.endswith('.pkg.tar.xz')]
+             if x.name.endswith(tuple('-%s.pkg.tar.xz' % i for i in [arch, 'any']))]
     pkgs = []
     for x in files:
       info = archpkg.PkgNameInfo.parseFilename(x.name)

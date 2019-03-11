@@ -56,24 +56,10 @@ def lilac_build(
     pkgbuild.check_srcinfo()
     run_cmd(['recv_gpg_keys'])
 
-    need_build_first = set()
     build_prefix = build_prefix or getattr(
       mod, 'build_prefix', 'extra-x86_64')
-    depend_packages = []
-
-    for x in depends:
-      p = x.resolve()
-      if p is None:
-        if not x.managed():
-          # ignore depends that are not in repo
-          continue
-        need_build_first.add(x.pkgname)
-      else:
-        depend_packages.append(p)
-
-    if need_build_first:
-      raise MissingDependencies(need_build_first)
-    logger.info('depends: %s, resolved: %s', depends, depend_packages)
+    if type(build_prefix) is str:
+        build_prefix = [build_prefix]
 
     build_args: List[str] = []
     if hasattr(mod, 'build_args'):
@@ -87,8 +73,30 @@ def lilac_build(
     if hasattr(mod, 'makepkg_args'):
         makepkg_args = mod.makepkg_args
 
-    call_build_cmd(
-      build_prefix, depend_packages, bindmounts, build_args, makechrootpkg_args, makepkg_args)
+    for prefix in build_prefix:
+        need_build_first = set()
+        depend_packages = []
+        if 'multilib' in prefix:
+            arch = 'x86_64'
+        else:
+            arch = prefix.split('-')[-1]
+
+        for x in depends:
+          p = x.resolve(arch)
+          if p is None:
+            if not x.managed():
+              # ignore depends that are not in repo
+              continue
+            need_build_first.add(x.pkgname)
+          else:
+            depend_packages.append(p)
+
+        if need_build_first:
+          raise MissingDependencies(need_build_first)
+        logger.info('depends: %s, resolved: %s', depends, depend_packages)
+
+        call_build_cmd(prefix, depend_packages, bindmounts, build_args, makechrootpkg_args, makepkg_args)
+
     pkgs = [x for x in os.listdir() if x.endswith('.pkg.tar.xz')]
     if not pkgs:
       raise Exception('no package built')
