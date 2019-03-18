@@ -32,3 +32,4 @@ Python 库
 * toposort
 * pyyaml
 * pyalpm
+* structlog
