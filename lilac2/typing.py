@@ -10,6 +10,7 @@ class LilacMod(types.ModuleType):
   pkgbase: str
   _G: types.SimpleNamespace
   makechrootpkg_args: List[str]
+  build_args: List[str]
 
 LilacMods = Dict[str, LilacMod]
 
