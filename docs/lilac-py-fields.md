@@ -15,4 +15,4 @@
 ## 提供的信息
 * `_G.oldver`: 旧版本号。可能为 `None`。
 * `_G.newver`: 新版本号。可能为 `None`。
-* `lilac.yaml` 中的信息（如 `depends`、`maintainers`，已进行基本的解析）
+* `lilac.yaml` 中的信息（如 `repo_depends`、`maintainers`，已进行基本的解析）
