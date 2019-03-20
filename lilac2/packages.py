@@ -18,10 +18,7 @@ def get_dependency_map(
   rmap: Dict[str, Set[str]] = defaultdict(set)
 
   for name, mod in mods.items():
-    repo_depends = getattr(mod, 'repo_depends', ())
-    depends = getattr(mod, 'depends', ())
-    depends = set(depends)
-    depends.union(repo_depends)
+    depends = getattr(mod, 'repo_depends', ())
 
     ds = [depman.get(d) for d in depends]
     if ds:
