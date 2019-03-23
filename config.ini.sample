@@ -10,6 +10,8 @@ TERM = xterm
 name = archlinuxcn
 email = repo@example.com
 repodir = /path/to/gitrepo
+# The path where built packages and signatures are copied to
+# Leave it blank (e.g. destdir = ) if there's no need to copy built packages
 destdir = /path/to/pkgdir
 
 [lilac]
