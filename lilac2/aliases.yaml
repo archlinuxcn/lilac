@@ -18,3 +18,7 @@ readline:
   archpkg: readline
   from_pattern: ^(\d+)\..*
   to_pattern: \1
+clang:
+  archpkg: clang
+  from_pattern: ^(\d+)\..*
+  to_pattern: \1
