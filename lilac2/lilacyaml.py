@@ -27,8 +27,6 @@ def load_lilac_yaml(dir: pathlib.Path) -> Dict[str, Any]:
     for i, entry in enumerate(update_on):
       if isinstance(entry, str):
         update_on[i] = {entry: ''}
-      elif 'alias' in entry.keys():
-        update_on[i] = ALIASES[entry['alias']]
 
   depends = conf.get('repo_depends')
   if depends:

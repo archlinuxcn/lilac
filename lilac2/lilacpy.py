@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Generator, cast, Dict, Tuple
 
 from .typing import LilacMod, LilacMods, ExcInfo
-from .lilacyaml import load_lilac_yaml
+from .lilacyaml import load_lilac_yaml, ALIASES
 
 def load_all(repodir: Path) -> Tuple[LilacMods, Dict[str, ExcInfo]]:
   mods = {}
@@ -45,6 +45,12 @@ def load_lilac(dir: Path) -> Generator[LilacMod, None, None]:
     spec.loader.exec_module(mod) # type: ignore
     mod = cast(LilacMod, mod)
     mod.pkgbase = dir.name
+
+    if hasattr(mod, 'update_on'):
+      for i, entry in enumerate(mod.update_on):
+        if 'alias' in entry:
+          mod.update_on[i] = ALIASES[entry['alias']]
+
     yield mod
 
   finally:
