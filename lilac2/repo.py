@@ -10,6 +10,7 @@ from .mail import MailService
 from .typing import LilacMod, Maintainer
 from .tools import ansi_escape_re
 from . import api
+from .building import build_output
 
 logger = logging.getLogger(__name__)
 
@@ -123,7 +124,6 @@ class Repo:
     msg: Optional[str] = None,
     exc: Optional[Tuple[Exception, str]] = None,
     subject: Optional[str] = None,
-    build_output: Optional[str] = None,
   ) -> None:
     if msg is None and exc is None:
       raise TypeError('send_error_report received inefficient args')
