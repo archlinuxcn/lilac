@@ -68,6 +68,7 @@ def run_cmd(cmd: Cmd, *, use_pty: bool = False, silent: bool = False,
   else:
     rfd = p.stdout.fileno()
   out = []
+  outlen = 0
 
   while True:
     try:
@@ -88,6 +89,9 @@ def run_cmd(cmd: Cmd, *, use_pty: bool = False, silent: bool = False,
     if not silent:
       sys.stderr.buffer.write(r)
     out.append(r)
+    outlen += len(r)
+    if outlen > 1024 ** 3: # larger than 1G
+      p.kill()
 
   code = p.wait()
   if use_pty:
@@ -99,6 +103,8 @@ def run_cmd(cmd: Cmd, *, use_pty: bool = False, silent: bool = False,
   outs = outb.decode('utf-8', errors='replace')
   outs = outs.replace('\r\n', '\n')
   outs = re.sub(r'.*\r', '', outs)
+  if outlen > 1024 ** 3: # larger than 1G
+    outs += '\n\n输出过多，已击杀。\n'
   if code != 0:
       raise subprocess.CalledProcessError(code, cmd, outs)
   return outs
