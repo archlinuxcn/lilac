@@ -3,3 +3,4 @@ __pycache__/
 *.sw*
 .pytest_cache/
 config.ini
+*.mo

@@ -13,6 +13,9 @@ from .const import mydir
 from .typing import LilacMods, PathLike
 from .repo import Repo, Maintainer
 
+import gettext
+_ = gettext.gettext
+
 logger = logging.getLogger(__name__)
 
 NVCHECKER_FILE: Path = mydir / 'nvchecker.ini'
@@ -123,20 +126,20 @@ def packages_need_update(
   for who, their_errors in error_owners.items():
     logger.warning('send nvchecker report for %r packages to %s',
                    {x['name'] for x in their_errors}, who)
-    repo.sendmail(who, 'nvchecker 错误报告',
+    repo.sendmail(who, _('Error report of nvchecker'),
                   '\n'.join(_format_error(e) for e in their_errors))
 
   if unknown or None in errors or missing:
-    subject = 'nvchecker 问题'
+    subject = _('Can not check new versions')
     msg = ''
     if unknown:
-      msg += '以下软件包没有相应的更新配置信息：\n\n' + ''.join(
+      msg += _('These packages have no update_on information: \n\n') + ''.join(
         x + '\n' for x in sorted(unknown)) + '\n'
     if None in errors:
-      msg += '在更新检查时出现了一些错误：\n\n' + '\n'.join(
+      msg += _('These packages get errors when checking for new versions: \n\n') + '\n'.join(
         _format_error(e) for e in errors[None]) + '\n'
     if missing:
-      msg += '以下软件包没有所对应的目录：\n\n' + \
+      msg += _('These packages have no corresponding folder: \n\n') + \
           '\n'.join( missing) + '\n'
     repo.send_repo_mail(subject, msg)
 

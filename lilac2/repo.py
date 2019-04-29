@@ -12,6 +12,9 @@ from .tools import ansi_escape_re
 from . import api
 from .building import build_output
 
+import gettext
+_ = gettext.gettext
+
 logger = logging.getLogger(__name__)
 
 class Repo:
@@ -35,7 +38,7 @@ class Repo:
   @lru_cache()
   def maintainer_from_github(self, username: str) -> Optional[Maintainer]:
     if self.gh is None:
-      raise ValueError('未设置 github token，无法从 GitHub 取得用户 Email')
+      raise ValueError(_('Please set the github token in config.ini to fetch the public emails of maintainers from GitHub.'))
 
     userinfo = self.gh.get_user_info(username)
     if userinfo['email']:
@@ -59,15 +62,15 @@ class Repo:
           try:
             u = self.maintainer_from_github(m['github'])
           except Exception as e:
-            errors.append(f'从 GitHub 获取用户 Email 时出错：{e!r}')
+            errors.append(_('Can not fetch the public email of maintainers from GitHub：{e}').format(e=repr(e)))
           else:
             if u is None:
-              errors.append(f'GitHub 用户 {m["github"]} 未公开 Email 地址')
+              errors.append(_('Maintainer {m} have no public email on GitHub').format(m=m["github"]))
             else:
               ret.append(u)
         else:
           logger.error('unsupported maintainer info: %r', m)
-          errors.append(f'不支持的格式：{m!r}')
+          errors.append(_('Unsupported maintainer information：{m}').format(m=repr(m)))
           continue
 
     if not ret or errors:
@@ -79,8 +82,8 @@ class Repo:
       error_str = '\n'.join(errors)
       self.sendmail(
         git_maintainer,
-        subject = f'{mod.pkgbase} 的 maintainers 信息有误',
-        msg = f"以下 maintainers 信息有误，请修正。\n\n{error_str}\n",
+        subject = _('Can not parse the maintainer information for package {pkgbase}').format(pkgbase=mod.pkgbase),
+        msg = _("Please fix the following maintainer information.\n\n{error_str}\n").format(error_str=error_str),
       )
 
     if not ret:
@@ -142,18 +145,18 @@ class Repo:
     if exc is not None:
       exception, tb = exc
       if isinstance(exception, subprocess.CalledProcessError):
-        subject_real = subject or '在编译软件包 %s 时发生错误'
-        msgs.append('命令执行失败！\n\n命令 %r 返回了错误号 %d。' \
-                    '命令的输出如下：\n\n%s' % (
+        subject_real = subject or _('Can not build package %s')
+        msgs.append(_('Error occurs when executing command.\n\nCommand %r aborted with error code %d.') \
+                    _('Outputs:\n\n%s') % (
                       exception.cmd, exception.returncode, exception.output))
-        msgs.append('调用栈如下：\n\n' + tb)
+                    msgs.append(_('Traceback:\n\n') + tb)
       elif isinstance(exception, api.AurDownloadError):
-        subject_real = subject or '在获取AUR包 %s 时发生错误'
-        msgs.append('获取AUR包失败！\n\n')
-        msgs.append('调用栈如下：\n\n' + tb)
+        subject_real = subject or _('Can not fetch %s from AUR')
+        msgs.append(_('Error occurs when fetching source files from AUR.\n\n'))
+        msgs.append(_('Traceback:\n\n') + tb)
       else:
-        subject_real = subject or '在编译软件包 %s 时发生未知错误'
-        msgs.append('发生未知错误！调用栈如下：\n\n' + tb)
+        subject_real = subject or _('Can not build package %s')
+        msgs.append(_('Traceback:\n\n') + tb)
     else:
       if subject is None:
         raise ValueError('subject should be given but not')
@@ -163,7 +166,7 @@ class Repo:
       subject_real = subject_real % pkgbase
 
     if build_output:
-      msgs.append('编译命令输出如下：\n\n' + build_output)
+      msgs.append(_('Build log:\n\n') + build_output)
 
     msg = '\n'.join(msgs)
     if self.trim_ansi_codes:
