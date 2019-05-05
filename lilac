@@ -7,7 +7,6 @@ import logging
 import configparser
 import time
 from collections import defaultdict
-import pathlib
 from typing import Set, Dict, List, Tuple, Any
 import textwrap
 
@@ -104,7 +103,7 @@ def build_package(package: str, mod: LilacMod) -> bool:
     try:
       with execution_timeout(time_limit_hours * 3600):
         lilac_build(
-          mod,
+          REPO, mod,
           oldver = n[0], newver = n[1],
           depends = DEPENDS.get(package, ()),
           bindmounts = BIND_MOUNTS,
@@ -181,7 +180,7 @@ def git_last_commit() -> str:
   cmd = ['git', 'log', '-1', '--format=%H']
   return run_cmd(cmd).strip()
 
-def start_build(mods: LilacMods, failed: Set[str], built: Set[str]) -> None:
+def start_build(repo: Repo, failed: Set[str], built: Set[str]) -> None:
   # built is used to collect built package names
   global DEPENDS
 
@@ -194,7 +193,7 @@ def start_build(mods: LilacMods, failed: Set[str], built: Set[str]) -> None:
   for name, ds in building_depmap.items():
     for d in ds:
       if not d.resolve():
-        if not d.managed():
+        if not repo.managed(d):
           logger.warning('%s depends on %s, but it\'s not managed.',
                          name, d)
           nonexistent[name].append(d)
@@ -213,7 +212,7 @@ def start_build(mods: LilacMods, failed: Set[str], built: Set[str]) -> None:
 
   for name, deps in nonexistent.items():
     REPO.send_error_report(
-      mods[name], subject='软件包 %s 的 lilac.py 指定了不存在的依赖',
+      repo.mods[name], subject='软件包 %s 的 lilac.py 指定了不存在的依赖',
       msg = f'''软件包 {name} 的 lilac.py 指定了 depends，然而其直接或者间接的依赖项 {deps!r} 并不在本仓库中。
 ''')
 
@@ -286,9 +285,9 @@ def start_build(mods: LilacMods, failed: Set[str], built: Set[str]) -> None:
     logger.info('keyboard interrupted, bye~')
 
 def load_all_lilac_and_report(
-  repodir: pathlib.Path,
+  repo,
 ) -> Tuple[LilacMods, Set[str]]:
-  mods, errors = lilacpy.load_all(repodir)
+  errors = lilacpy.load_all(repo)
   failed = set(errors)
   for name, exc_info in errors.items():
     tb_lines = traceback.format_exception(*exc_info)
@@ -297,12 +296,12 @@ def load_all_lilac_and_report(
     exc = exc_info[1]
     if not isinstance(exc, Exception):
       raise
-    REPO.send_error_report(name, exc=(exc, tb),
+    repo.send_error_report(name, exc=(exc, tb),
                            subject='为软件包 %s 载入 lilac.py 时失败')
     build_logger_old.error('%s failed', name)
     build_logger.exception('lilac.py error', pkgbase = name)
 
-  return mods, failed
+  return failed
 
 def main_may_raise(D: Dict[str, Any], pkgs_to_build: List[str]) -> None:
   global DEPMAP
@@ -314,20 +313,20 @@ def main_may_raise(D: Dict[str, Any], pkgs_to_build: List[str]) -> None:
 
   git_reset_hard()
   git_pull()
-  mods, failed = load_all_lilac_and_report(REPO.repodir)
+  failed = load_all_lilac_and_report(REPO)
 
   depman = DependencyManager(REPO.repodir)
-  DEPMAP = get_dependency_map(depman, mods)
+  DEPMAP = get_dependency_map(depman, REPO.mods)
 
   if pkgs_to_build:
-    all_mods = mods
-    mods = {}
+    all_mods = REPO.mods
+    REPO.mods = {}
     for pkg_to_build in pkgs_to_build:
       for dep in DEPMAP[pkg_to_build]:
-        mods[dep.pkgname] = all_mods[dep.pkgname]
-      mods[pkg_to_build] = all_mods[pkg_to_build]
+        REPO.mods[dep.pkgname] = all_mods[dep.pkgname]
+      REPO.mods[pkg_to_build] = all_mods[pkg_to_build]
 
-  _nvdata, unknown, rebuild = packages_need_update(REPO, mods)
+  _nvdata, unknown, rebuild = packages_need_update(REPO)
   nvdata.update(_nvdata)
 
   if pkgs_to_build:
@@ -336,7 +335,7 @@ def main_may_raise(D: Dict[str, Any], pkgs_to_build: List[str]) -> None:
     need_rebuild_pkgrel: Set[str] = set()
     rebuild = rebuild | set(pkgs_to_build)
   else:
-    U = set(mods)
+    U = set(REPO.mods)
     last_commit = D.get('last_commit', EMPTY_COMMIT)
     changed = get_changed_packages(last_commit, 'HEAD') & U
 
@@ -373,7 +372,7 @@ def main_may_raise(D: Dict[str, Any], pkgs_to_build: List[str]) -> None:
   update_succeeded: Set[str] = set()
 
   try:
-    start_build(mods, failed, update_succeeded)
+    start_build(REPO, failed, update_succeeded)
     D['last_commit'] = git_last_commit()
   finally:
     # handle what has been processed even on exception
@@ -386,14 +385,14 @@ def main_may_raise(D: Dict[str, Any], pkgs_to_build: List[str]) -> None:
 
     if config.getboolean('lilac', 'rebuild_failed_pkgs'):
       if update_succeeded:
-        nvtake(update_succeeded, mods)
+        nvtake(update_succeeded, REPO.mods)
     else:
       if need_update or rebuild:
         # only nvtake packages we have tried to build (excluding unbuilt
         # packages due to internal errors)
         built = update_succeeded | failed
         update_nv = built & (need_update | rebuild)
-        nvtake(update_nv, mods)
+        nvtake(update_nv, REPO.mods)
 
     git_reset_hard()
     if config.getboolean('lilac', 'git_push'):

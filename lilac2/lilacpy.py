@@ -2,16 +2,15 @@ import sys
 import contextlib
 import importlib.util
 from pathlib import Path
-from typing import Generator, cast, Dict, Tuple
+from typing import Generator, cast, Dict
 
-from .typing import LilacMod, LilacMods, ExcInfo
+from .typing import LilacMod, ExcInfo
 from .lilacyaml import load_lilac_yaml, ALIASES
 
-def load_all(repodir: Path) -> Tuple[LilacMods, Dict[str, ExcInfo]]:
-  mods = {}
+def load_all(repo) -> Dict[str, ExcInfo]:
   errors = {}
 
-  for x in repodir.iterdir():
+  for x in repo.repodir.iterdir():
     if not x.is_dir():
       continue
 
@@ -20,15 +19,14 @@ def load_all(repodir: Path) -> Tuple[LilacMods, Dict[str, ExcInfo]]:
 
     try:
       with load_lilac(x) as mod:
-        mods[x.name] = mod
+        if getattr(mod, 'managed', True):
+          repo.mods[x.name] = mod
       if hasattr(mod, 'time_limit_hours') and mod.time_limit_hours < 0:
         raise ValueError('time_limit_hours should be positive.')
-    except FileNotFoundError:
-      pass
     except Exception:
       errors[x.name] = cast(ExcInfo, sys.exc_info())
 
-  return mods, errors
+  return errors
 
 @contextlib.contextmanager
 def load_lilac(dir: Path) -> Generator[LilacMod, None, None]:
@@ -42,7 +40,10 @@ def load_lilac(dir: Path) -> Generator[LilacMod, None, None]:
       setattr(mod, k, v)
 
     assert spec.loader
-    spec.loader.exec_module(mod) # type: ignore
+    try:
+      spec.loader.exec_module(mod) # type: ignore
+    except FileNotFoundError:
+      pass
     mod = cast(LilacMod, mod)
     mod.pkgbase = dir.name
 

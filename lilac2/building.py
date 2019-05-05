@@ -25,7 +25,7 @@ class SkipBuild(Exception):
     self.msg = msg
 
 def lilac_build(
-  mod: LilacMod, build_prefix: Optional[str] = None,
+  mod: LilacMod, repo, build_prefix: Optional[str] = None,
   oldver: Optional[str] = None, newver: Optional[str] = None,
   accept_noupdate: bool = False,
   depends: Iterable[Dependency] = (),
@@ -64,7 +64,7 @@ def lilac_build(
     for x in depends:
       p = x.resolve()
       if p is None:
-        if not x.managed():
+        if not repo.managed(x):
           # ignore depends that are not in repo
           continue
         need_build_first.add(x.pkgname)

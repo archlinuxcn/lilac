@@ -11,6 +11,7 @@ from .typing import LilacMod, Maintainer
 from .tools import ansi_escape_re
 from . import api
 from .building import build_output
+from .typing import LilacMods
 
 logger = logging.getLogger(__name__)
 
@@ -31,6 +32,8 @@ class Repo:
       self.gh = GitHub(config.get('lilac', 'github_token', fallback=None))
     else:
       self.gh = None
+
+    self.mods: LilacMods = {}  # to be filled by lilacpy.load_all()
 
   @lru_cache()
   def maintainer_from_github(self, username: str) -> Optional[Maintainer]:
@@ -183,3 +186,5 @@ class Repo:
   def send_repo_mail(self, subject: str, msg: str) -> None:
     self.ms.sendmail(self.repomail, subject, msg)
 
+  def managed(self, dep) -> bool:
+    return dep.pkgdir in self.mods
