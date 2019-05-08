@@ -35,7 +35,7 @@ class Repo:
   @lru_cache()
   def maintainer_from_github(self, username: str) -> Optional[Maintainer]:
     if self.gh is None:
-      raise ValueError('未设置 github token，无法从 GitHub 取得用户 Email')
+      raise ValueError('未设置 github token，无法从 GitHub 取得用户 Email 地址')
 
     userinfo = self.gh.get_user_info(username)
     if userinfo['email']:
@@ -59,7 +59,7 @@ class Repo:
           try:
             u = self.maintainer_from_github(m['github'])
           except Exception as e:
-            errors.append(f'从 GitHub 获取用户 Email 时出错：{e!r}')
+            errors.append(f'从 GitHub 获取用户 Email 地址时出错：{e!r}')
           else:
             if u is None:
               errors.append(f'GitHub 用户 {m["github"]} 未公开 Email 地址')

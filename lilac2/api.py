@@ -333,7 +333,7 @@ def update_aur_repo() -> None:
     _G.repo.send_error_report(
       pkgbase,
       exc = (e, tb),
-      subject = '[lilac] 提交软件包 %s 到 AUR 时出错',
+      subject = '提交软件包 %s 到 AUR 时出错',
     )
 
 def git_pkgbuild_commit() -> None:
