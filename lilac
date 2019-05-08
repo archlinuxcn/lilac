@@ -41,6 +41,9 @@ from lilac2.building import lilac_build, MissingDependencies, SkipBuild
 import lilac2.building as B
 from lilac2 import slogconf
 
+import gettext
+_ = gettext.gettext
+
 BIND_MOUNTS = [
   os.path.expanduser('~/.cargo') + ':' + '/build/.cargo',
 ]
@@ -213,9 +216,8 @@ def start_build(mods: LilacMods, failed: Set[str], built: Set[str]) -> None:
 
   for name, deps in nonexistent.items():
     REPO.send_error_report(
-      mods[name], subject='软件包 %s 的 lilac.py 指定了不存在的依赖',
-      msg = f'''软件包 {name} 的 lilac.py 指定了 depends，然而其直接或者间接的依赖项 {deps!r} 并不在本仓库中。
-''')
+      mods[name], subject=_('Can not resolve dependencies for package %s'),
+      msg = _('Can not resolve dependencies ({deps}) for package {name}.').format(deps=repr(deps), name=name))
 
   packages = toposort_flatten(dep_building_map)
   # filter out already built packages
@@ -250,13 +252,13 @@ def start_build(mods: LilacMods, failed: Set[str], built: Set[str]) -> None:
         except pkgbuild.ConflictWithOfficialError as e:
           reason = ''
           if e.groups:
-            reason += f'软件包被加入了官方组：{e.groups}\n'
+              reason += _('Packages adding to groups in official repositories: {groups}\n').format(groups=e.groups)
           if e.packages:
-            reason += f'软件包将取代官方包：{e.packages}\n'
+              reason += _('Packages replacing packages in official repositories: {packages}\n').format(packages=e.packages)
 
           REPO.send_error_report(
             mods[pkg],
-            subject='%s 与官方软件库冲突',
+            subject=_('Package %s is conflicted with packages in official repositories'),
             msg = reason,
           )
           failed.add(pkg)
@@ -266,20 +268,17 @@ def start_build(mods: LilacMods, failed: Set[str], built: Set[str]) -> None:
 
           faileddeps = e.deps & failed
           if faileddeps:
-            reason += '唔，这些包没能成功打包呢：%r' % faileddeps
+              reason += _('Whoops, can not build these packages: %r') % faileddeps
 
-          REPO.send_error_report(mods[pkg], subject='%s 出现依赖问题',
-                                 msg = '''\
-在成功地编译打包 {built} 之后，{pkg} 依旧依赖 {deps}。
-
-{reason}'''.format(
-    built = built, deps = e.deps, pkg = pkg, reason = reason,
-  ))
+          REPO.send_error_report(mods[pkg], subject=_('Can not build dependencies for package %s'),
+                                 msg = _('Can not build these dependencies for package {pkg} : {deps}').format(
+                                 deps = e.deps, pkg = pkg))
           failed.add(pkg)
         except pkgbuild.DowngradingError as e:
-          REPO.send_error_report(mods[pkg], subject='%s 新打的包比仓库里的包旧', msg=textwrap.dedent(f'''
-          包 {e.pkgname} 打的版本为 {e.built_version}，但在仓库里已有较新版本 {e.repo_version}。
-          '''))
+          REPO.send_error_report(mods[pkg], subject=_('The new version of package %s is older than existing packages'),
+                                 msg=textwrap.dedent(_("The new version of package {pkgname} is {built_version}." \
+                                                     _("However, version {repo_version} is already in the repository.")).format(
+                                 pkgname=e.pkgname, built_version=e.built_version, repo_version=e.repo_version)))
           failed.add(pkg)
 
   except KeyboardInterrupt:
@@ -297,8 +296,7 @@ def load_all_lilac_and_report(
     exc = exc_info[1]
     if not isinstance(exc, Exception):
       raise
-    REPO.send_error_report(name, exc=(exc, tb),
-                           subject='为软件包 %s 载入 lilac.py 时失败')
+    REPO.send_error_report(name, exc=(exc, tb), subject=_('Can not load lilac.py for package %s'))
     build_logger_old.error('%s failed', name)
     build_logger.exception('lilac.py error', pkgbase = name)
 
@@ -407,8 +405,8 @@ def main(pkgs_to_build: List[str]) -> None:
     except Exception:
       tb = traceback.format_exc()
       logger.exception('unexpected error')
-      subject = '运行时错误'
-      msg = '调用栈如下：\n\n' + tb
+      subject = _('Runtime error')
+      msg = _('Traceback:\n\n') + tb
       REPO.report_error(subject, msg)
 
 def setup() -> None:

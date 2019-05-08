@@ -1,0 +1,130 @@
+#: ./lilac2/api.py:339
+msgid "[lilac] Can not submit %s to AUR"
+msgstr "[lilac] Can not submit %s to AUR"
+
+#: ./lilac2/mail.py:47
+msgid "\n\nThe rest of the log is omitted since it's too long.\n\n"
+msgstr "\n\nThe rest of the log is omitted since it's too long.\n\n"
+
+#: ./lilac2/nvchecker.py:129
+msgid "Error report of nvchecker"
+msgstr "Error report of nvchecker"
+
+#: ./lilac2/nvchecker.py:133
+msgid "Can not check new versions"
+msgstr "Can not check new versions"
+
+#: ./lilac2/nvchecker.py:136
+msgid "These packages have no update_on information: \n\n"
+msgstr "These packages have no update_on information: \n\n"
+
+#: ./lilac2/nvchecker.py:139
+msgid "These packages get errors when checking for new versions: \n\n"
+msgstr "These packages get errors when checking for new versions: \n\n"
+
+#: ./lilac2/nvchecker.py:142
+msgid "These packages have no corresponding folder: \n\n"
+msgstr "These packages have no corresponding folder: \n\n"
+
+#: ./lilac2/repo.py:41
+msgid "Please set the github token in config.ini to fetch the public emails of maintainers from GitHub."
+msgstr "Please set the github token in config.ini to fetch the public emails of maintainers from GitHub."
+
+#: ./lilac2/repo.py:65
+msgid "Can not fetch the public email of maintainers from GitHub：{e}"
+msgstr "Can not fetch the public email of maintainers from GitHub：{e}"
+
+#: ./lilac2/repo.py:68
+msgid "Maintainer {m} have no public email on GitHub"
+msgstr "Maintainer {m} have no public email on GitHub"
+
+#: ./lilac2/repo.py:73
+msgid "Unsupported maintainer information：{m}"
+msgstr "Unsupported maintainer information：{m}"
+
+#: ./lilac2/repo.py:85
+msgid "Can not parse the maintainer information for package {pkgbase}"
+msgstr "Can not parse the maintainer information for package {pkgbase}"
+
+#: ./lilac2/repo.py:86
+msgid "Please fix the following maintainer information.\n\n{error_str}\n"
+msgstr "Please fix the following maintainer information.\n\n{error_str}\n"
+
+#: ./lilac2/repo.py:148 ./lilac2/repo.py:158
+msgid "Can not build package %s"
+msgstr "Can not build package %s"
+
+#: ./lilac2/repo.py:149
+msgid "Error occurs when executing command.\n\nCommand %r aborted with error code %d."
+msgstr "Error occurs when executing command.\n\nCommand %r aborted with error code %d."
+
+#: ./lilac2/repo.py:150
+msgid "Output:\n\n%s"
+msgstr "Output:\n\n%s"
+
+#: ./lilac2/repo.py:152 ./lilac2/repo.py:156 ./lilac2/repo.py:159
+msgid "Traceback:\n\n"
+msgstr "Traceback:\n\n"
+
+#: ./lilac2/repo.py:154
+msgid "Can not fetch %s from AUR"
+msgstr "Can not fetch %s from AUR"
+
+#: ./lilac2/repo.py:155
+msgid "Error occurs when fetching source files from AUR.\n\n"
+msgstr "Error occurs when fetching source files from AUR.\n\n"
+
+#: ./lilac2/repo.py:169
+msgid "Build log:\n\n"
+msgstr "Build log:\n\n"
+
+#: lilac:219
+msgid "Can not resolve dependencies for package %s"
+msgstr "Can not resolve dependencies for package %s"
+
+#: lilac:220
+msgid "Can not resolve dependencies ({deps}) for package {name}."
+msgstr "Can not resolve dependencies ({deps}) for package {name}."
+
+#: lilac:255
+msgid "Packages adding to groups in official repositories: {groups}\n"
+msgstr "Packages adding to groups in official repositories: {groups}\n"
+
+#: lilac:257
+msgid "Packages replacing packages in official repositories: {packages}\n"
+msgstr "Packages replacing packages in official repositories: {packages}\n"
+
+#: lilac:261
+msgid "Package %s is conflicted with packages in official repositories"
+msgstr "Package %s is conflicted with packages in official repositories"
+
+#: lilac:271
+msgid "Whoops, can not build these packages: %r"
+msgstr "Whoops, can not build these packages: %r"
+
+#: lilac:273
+msgid "Can not build dependencies for package %s"
+msgstr "Can not build dependencies for package %s"
+
+#: lilac:274
+msgid "Can not build these dependencies for package {pkg} : {deps}"
+msgstr "Can not build these dependencies for package {pkg} : {deps}"
+
+#: lilac:278
+msgid "The new version of package {pkgname} is {built_version}."
+msgstr "The new version of package {pkgname} is {built_version}."
+
+msgid "However, version {repo_version} is already in the repository."
+msgstr "However, version {repo_version} is already in the repository."
+
+#: lilac:278
+msgid "The new version of package %s is older than existing packages"
+msgstr "The new version of package %s is older than existing packages"
+
+#: lilac:298
+msgid "Can not load lilac.py for package %s"
+msgstr "Can not load lilac.py for package %s"
+
+#: lilac:407
+msgid "Runtime error"
+msgstr "Runtime error"

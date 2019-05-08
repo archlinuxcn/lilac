@@ -3,6 +3,9 @@ from typing import Union, Type, List
 
 from mailutils import assemble_mail
 
+import gettext
+_ = gettext.gettext
+
 SMTPClient = Union[smtplib.SMTP, smtplib.SMTP_SSL]
 
 class MailService:
@@ -41,7 +44,7 @@ class MailService:
 
     s = self.smtp_connect()
     if len(msg) > 5 * 1024 ** 2:
-      msg = msg[:1024 ** 2] + '\n\n日志过长，省略ing……\n\n' + \
+      msg = msg[:1024 ** 2] + _('\n\nThe rest of the log is omitted since it\'s too long.\n\n') + \
           msg[-1024 ** 2:]
     mail = assemble_mail('[%s] %s' % (
       self.mailtag, subject), to, self.from_, text=msg)

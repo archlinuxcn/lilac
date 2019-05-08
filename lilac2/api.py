@@ -22,6 +22,9 @@ from .cmd import run_cmd, git_pull, git_push, git_reset_hard
 from . import const
 from .const import _G, SPECIAL_FILES
 
+import gettext
+_ = gettext.gettext
+
 git_push
 
 logger = logging.getLogger(__name__)
@@ -333,7 +336,7 @@ def update_aur_repo() -> None:
     _G.repo.send_error_report(
       pkgbase,
       exc = (e, tb),
-      subject = '[lilac] 提交软件包 %s 到 AUR 时出错',
+      subject = _('[lilac] Can not submit %s to AUR'),
     )
 
 def git_pkgbuild_commit() -> None:
