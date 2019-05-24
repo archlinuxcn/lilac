@@ -103,7 +103,7 @@ def build_package(package: str, mod: LilacMod) -> bool:
     try:
       with execution_timeout(time_limit_hours * 3600):
         lilac_build(
-          REPO, mod,
+          mod, REPO,
           oldver = n[0], newver = n[1],
           depends = DEPENDS.get(package, ()),
           bindmounts = BIND_MOUNTS,
@@ -241,7 +241,7 @@ def start_build(repo: Repo, failed: Set[str], built: Set[str]) -> None:
       path = REPO.repodir / pkg
       with at_dir(path):
         try:
-          if build_package(pkg, mods[pkg]):
+          if build_package(pkg, repo.mods[pkg]):
             built.add(pkg)
           else:
             failed.add(pkg)
@@ -254,7 +254,7 @@ def start_build(repo: Repo, failed: Set[str], built: Set[str]) -> None:
             reason += f'软件包将取代官方包：{e.packages}\n'
 
           REPO.send_error_report(
-            mods[pkg],
+            repo.mods[pkg],
             subject='%s 与官方软件库冲突',
             msg = reason,
           )
@@ -267,7 +267,7 @@ def start_build(repo: Repo, failed: Set[str], built: Set[str]) -> None:
           if faileddeps:
             reason += '唔，这些包没能成功打包呢：%r' % faileddeps
 
-          REPO.send_error_report(mods[pkg], subject='%s 出现依赖问题',
+          REPO.send_error_report(repo.mods[pkg], subject='%s 出现依赖问题',
                                  msg = '''\
 在成功地编译打包 {built} 之后，{pkg} 依旧依赖 {deps}。
 
@@ -276,7 +276,7 @@ def start_build(repo: Repo, failed: Set[str], built: Set[str]) -> None:
   ))
           failed.add(pkg)
         except pkgbuild.DowngradingError as e:
-          REPO.send_error_report(mods[pkg], subject='%s 新打的包比仓库里的包旧', msg=textwrap.dedent(f'''
+          REPO.send_error_report(repo.mods[pkg], subject='%s 新打的包比仓库里的包旧', msg=textwrap.dedent(f'''
           包 {e.pkgname} 打的版本为 {e.built_version}，但在仓库里已有较新版本 {e.repo_version}。
           '''))
           failed.add(pkg)
