@@ -44,7 +44,9 @@ def load_lilac(dir: Path) -> Generator[LilacMod, None, None]:
     try:
       spec.loader.exec_module(mod) # type: ignore
     except FileNotFoundError:
-      pass
+      if not yamlconf:
+        raise FileNotFoundError('lilac.{yaml,py}')
+
     mod = cast(LilacMod, mod)
     mod.pkgbase = dir.name
 

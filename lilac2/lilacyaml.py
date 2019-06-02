@@ -16,11 +16,8 @@ def _load_aliases() -> None:
 _load_aliases()
 
 def load_lilac_yaml(dir: pathlib.Path) -> Dict[str, Any]:
-  try:
-    with open(dir / 'lilac.yaml') as f:
-      conf = yamlutils.load(f)
-  except FileNotFoundError:
-    return {}
+  with open(dir / 'lilac.yaml') as f:
+    conf = yamlutils.load(f)
 
   update_on = conf.get('update_on')
   if update_on:
