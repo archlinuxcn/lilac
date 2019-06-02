@@ -210,7 +210,7 @@ def start_build(repo: Repo, failed: Set[str], built: Set[str]) -> None:
           x.pkgdir.name for x in DEPMAP[pkgbase]}
 
   for name, deps in nonexistent.items():
-    REPO.send_error_report(
+    repo.send_error_report(
       repo.mods[name], subject='软件包 %s 的 lilac.py 指定了不存在的依赖',
       msg = f'''软件包 {name} 的 lilac.py 指定了 depends，然而其直接或者间接的依赖项 {deps!r} 并不在本仓库中。
 ''')
@@ -237,7 +237,7 @@ def start_build(repo: Repo, failed: Set[str], built: Set[str]) -> None:
         # marked as failed, skip
         continue
 
-      path = REPO.repodir / pkg
+      path = repo.repodir / pkg
       with at_dir(path):
         try:
           if build_package(pkg, repo.mods[pkg]):
@@ -252,7 +252,7 @@ def start_build(repo: Repo, failed: Set[str], built: Set[str]) -> None:
           if e.packages:
             reason += f'软件包将取代官方包：{e.packages}\n'
 
-          REPO.send_error_report(
+          repo.send_error_report(
             repo.mods[pkg],
             subject='%s 与官方软件库冲突',
             msg = reason,
@@ -266,7 +266,7 @@ def start_build(repo: Repo, failed: Set[str], built: Set[str]) -> None:
           if faileddeps:
             reason += '唔，这些包没能成功打包呢：%r' % faileddeps
 
-          REPO.send_error_report(repo.mods[pkg], subject='%s 出现依赖问题',
+          repo.send_error_report(repo.mods[pkg], subject='%s 出现依赖问题',
                                  msg = '''\
 在成功地编译打包 {built} 之后，{pkg} 依旧依赖 {deps}。
 
@@ -275,7 +275,7 @@ def start_build(repo: Repo, failed: Set[str], built: Set[str]) -> None:
   ))
           failed.add(pkg)
         except pkgbuild.DowngradingError as e:
-          REPO.send_error_report(repo.mods[pkg], subject='%s 新打的包比仓库里的包旧', msg=textwrap.dedent(f'''
+          repo.send_error_report(repo.mods[pkg], subject='%s 新打的包比仓库里的包旧', msg=textwrap.dedent(f'''
           包 {e.pkgname} 打的版本为 {e.built_version}，但在仓库里已有较新版本 {e.repo_version}。
           '''))
           failed.add(pkg)
