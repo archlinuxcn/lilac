@@ -12,6 +12,7 @@ class LilacMod(types.ModuleType):
   makechrootpkg_args: List[str]
   makepkg_args: List[str]
   build_args: List[str]
+  update_on: List[Dict[str, str]]
 
 LilacMods = Dict[str, LilacMod]
 

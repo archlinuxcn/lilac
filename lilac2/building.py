@@ -2,13 +2,17 @@ import os
 import logging
 import subprocess
 from pathlib import Path
-from typing import Optional, Iterable, List, Set
+from typing import Optional, Iterable, List, Set, TYPE_CHECKING
 from types import SimpleNamespace
 
 from . import pkgbuild
 from .typing import LilacMod, Cmd
 from .cmd import run_cmd
 from .packages import Dependency
+
+if TYPE_CHECKING:
+  from .repo import Repo
+  assert Repo # make pyflakes happy
 
 logger = logging.getLogger(__name__)
 
@@ -23,8 +27,11 @@ class SkipBuild(Exception):
     self.msg = msg
 
 def lilac_build(
-  mod: LilacMod, repo, build_prefix: Optional[str] = None,
-  oldver: Optional[str] = None, newver: Optional[str] = None,
+  mod: LilacMod,
+  repo: Optional['Repo'],
+  build_prefix: Optional[str] = None,
+  oldver: Optional[str] = None,
+  newver: Optional[str] = None,
   accept_noupdate: bool = False,
   depends: Iterable[Dependency] = (),
   bindmounts: List[str] = [],
@@ -62,7 +69,7 @@ def lilac_build(
     for x in depends:
       p = x.resolve()
       if p is None:
-        if not repo.manages(x):
+        if repo is None or not repo.manages(x):
           # ignore depends that are not in repo
           continue
         need_build_first.add(x.pkgname)
