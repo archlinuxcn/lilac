@@ -2,15 +2,16 @@ import sys
 import contextlib
 import importlib.util
 from pathlib import Path
-from typing import Generator, cast, Dict
+from typing import Generator, cast, Dict, Tuple
 
-from .typing import LilacMod, ExcInfo
+from .typing import LilacMod, LilacMods, ExcInfo
 from .lilacyaml import load_lilac_yaml, ALIASES
 
-def load_all(repo) -> Dict[str, ExcInfo]:
+def load_all(repodir: Path) -> Tuple[LilacMods, Dict[str, ExcInfo]]:
+  mods: LilacMods = {}
   errors = {}
 
-  for x in repo.repodir.iterdir():
+  for x in repodir.iterdir():
     if not x.is_dir():
       continue
 
@@ -20,13 +21,13 @@ def load_all(repo) -> Dict[str, ExcInfo]:
     try:
       with load_lilac(x) as mod:
         if getattr(mod, 'managed', True):
-          repo.mods[x.name] = mod
+          mods[x.name] = mod
       if hasattr(mod, 'time_limit_hours') and mod.time_limit_hours < 0:
         raise ValueError('time_limit_hours should be positive.')
     except Exception:
       errors[x.name] = cast(ExcInfo, sys.exc_info())
 
-  return errors
+  return mods, errors
 
 @contextlib.contextmanager
 def load_lilac(dir: Path) -> Generator[LilacMod, None, None]:

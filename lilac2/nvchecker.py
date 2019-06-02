@@ -24,11 +24,11 @@ class NvResult(NamedTuple):
   newver: Optional[str]
 
 def _gen_config_from_mods(
-  repo: Repo,
+  mods: LilacMods,
 ) -> Tuple[Dict[str, Any], Set[str]]:
   unknown = set()
   newconfig = {}
-  for name, mod in repo.mods.items():
+  for name, mod in mods.items():
     confs = getattr(mod, 'update_on', None)
     if not confs:
       unknown.add(name)
@@ -50,7 +50,7 @@ def _gen_config_from_mods(
 def packages_need_update(
   repo: Repo,
 ) -> Tuple[Dict[str, NvResult], Set[str], Set[str]]:
-  newconfig, unknown = _gen_config_from_mods(repo)
+  newconfig, unknown = _gen_config_from_mods(repo.mods)
 
   if not OLDVER_FILE.exists():
     open(OLDVER_FILE, 'a').close()
