@@ -3,7 +3,6 @@ from pathlib import Path
 from typing import Optional, Tuple, List, Union, Dict
 import logging
 from functools import lru_cache
-import os.path
 
 from github import GitHub
 
@@ -187,5 +186,5 @@ class Repo:
   def send_repo_mail(self, subject: str, msg: str) -> None:
     self.ms.sendmail(self.repomail, subject, msg)
 
-  def managed(self, dep) -> bool:
-    return os.path.basename(dep.pkgdir) in self.mods
+  def manages(self, dep) -> bool:
+    return dep.pkgdir.name in self.mods

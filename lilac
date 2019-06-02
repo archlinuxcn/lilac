@@ -193,7 +193,7 @@ def start_build(repo: Repo, failed: Set[str], built: Set[str]) -> None:
   for name, ds in building_depmap.items():
     for d in ds:
       if not d.resolve():
-        if not repo.managed(d):
+        if not repo.manages(d):
           logger.warning('%s depends on %s, but it\'s not managed.',
                          name, d)
           nonexistent[name].append(d)
