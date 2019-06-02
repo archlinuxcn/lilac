@@ -104,17 +104,11 @@ def packages_need_update(
   if ret != 0:
     raise subprocess.CalledProcessError(ret, cmd)
 
-  missing = []
   error_owners: Dict[Maintainer, List[Dict[str, Any]]] = defaultdict(list)
   for pkg, pkgerrs in errors.items():
     if pkg is None:
       continue
     pkg = pkg.split(':', 1)[0]
-
-    dir = repo.repodir / pkg
-    if not dir.is_dir():
-      missing.append(pkg)
-      continue
 
     maintainers = repo.find_maintainers(repo.mods[pkg])
     for maintainer in maintainers:
@@ -126,7 +120,7 @@ def packages_need_update(
     repo.sendmail(who, 'nvchecker 错误报告',
                   '\n'.join(_format_error(e) for e in their_errors))
 
-  if unknown or None in errors or missing:
+  if unknown or None in errors:
     subject = 'nvchecker 问题'
     msg = ''
     if unknown:
@@ -135,9 +129,6 @@ def packages_need_update(
     if None in errors:
       msg += '在更新检查时出现了一些错误：\n\n' + '\n'.join(
         _format_error(e) for e in errors[None]) + '\n'
-    if missing:
-      msg += '以下软件包没有所对应的目录：\n\n' + \
-          '\n'.join( missing) + '\n'
     repo.send_repo_mail(subject, msg)
 
   for name in repo.mods:
