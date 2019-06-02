@@ -8,7 +8,7 @@ from .typing import LilacMod, LilacMods, ExcInfo
 from .lilacyaml import load_lilac_yaml, ALIASES
 
 def load_all(repodir: Path) -> Tuple[LilacMods, Dict[str, ExcInfo]]:
-  mods = {}
+  mods: LilacMods = {}
   errors = {}
 
   for x in repodir.iterdir():
@@ -20,11 +20,10 @@ def load_all(repodir: Path) -> Tuple[LilacMods, Dict[str, ExcInfo]]:
 
     try:
       with load_lilac(x) as mod:
-        mods[x.name] = mod
+        if getattr(mod, 'managed', True):
+          mods[x.name] = mod
       if hasattr(mod, 'time_limit_hours') and mod.time_limit_hours < 0:
         raise ValueError('time_limit_hours should be positive.')
-    except FileNotFoundError:
-      pass
     except Exception:
       errors[x.name] = cast(ExcInfo, sys.exc_info())
 
@@ -42,7 +41,10 @@ def load_lilac(dir: Path) -> Generator[LilacMod, None, None]:
       setattr(mod, k, v)
 
     assert spec.loader
-    spec.loader.exec_module(mod) # type: ignore
+    try:
+      spec.loader.exec_module(mod) # type: ignore
+    except FileNotFoundError:
+      pass
     mod = cast(LilacMod, mod)
     mod.pkgbase = dir.name
 

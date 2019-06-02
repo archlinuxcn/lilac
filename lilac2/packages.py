@@ -47,9 +47,6 @@ class Dependency(_DependencyTuple):
     except FileNotFoundError:
       return None
 
-  def managed(self) -> bool:
-    return (self.pkgdir / 'lilac.py').exists()
-
   def _find_local_package(self) -> Path:
     files = [x for x in self.pkgdir.iterdir()
              if x.name.endswith('.pkg.tar.xz')]

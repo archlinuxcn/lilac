@@ -24,7 +24,7 @@ class NvResult(NamedTuple):
   newver: Optional[str]
 
 def _gen_config_from_mods(
-  repo: Repo, mods: LilacMods,
+  mods: LilacMods,
 ) -> Tuple[Dict[str, Any], Set[str]]:
   unknown = set()
   newconfig = {}
@@ -48,9 +48,9 @@ def _gen_config_from_mods(
   return newconfig, unknown
 
 def packages_need_update(
-  repo: Repo, mods: LilacMods,
+  repo: Repo,
 ) -> Tuple[Dict[str, NvResult], Set[str], Set[str]]:
-  newconfig, unknown = _gen_config_from_mods(repo, mods)
+  newconfig, unknown = _gen_config_from_mods(repo.mods)
 
   if not OLDVER_FILE.exists():
     open(OLDVER_FILE, 'a').close()
@@ -116,7 +116,7 @@ def packages_need_update(
       missing.append(pkg)
       continue
 
-    maintainers = repo.find_maintainers(mods[pkg])
+    maintainers = repo.find_maintainers(repo.mods[pkg])
     for maintainer in maintainers:
       error_owners[maintainer].extend(pkgerrs)
 
@@ -140,7 +140,7 @@ def packages_need_update(
           '\n'.join( missing) + '\n'
     repo.send_repo_mail(subject, msg)
 
-  for name in mods:
+  for name in repo.mods:
     if name not in nvdata:
       # we know nothing about these versions
       # maybe nvchecker has failed

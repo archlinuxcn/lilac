@@ -1,18 +1,23 @@
 import subprocess
 from pathlib import Path
-from typing import Optional, Tuple, List, Union, Dict
+from typing import Optional, Tuple, List, Union, Dict, Set
 import logging
 from functools import lru_cache
+import traceback
 
 from github import GitHub
+import structlog
 
 from .mail import MailService
 from .typing import LilacMod, Maintainer
 from .tools import ansi_escape_re
-from . import api
+from . import api, lilacpy
 from .building import build_output
+from .typing import LilacMods
 
 logger = logging.getLogger(__name__)
+build_logger_old = logging.getLogger('build')
+build_logger = structlog.get_logger(logger_name='build')
 
 class Repo:
   def __init__(self, config):
@@ -31,6 +36,8 @@ class Repo:
       self.gh = GitHub(config.get('lilac', 'github_token', fallback=None))
     else:
       self.gh = None
+
+    self.mods: LilacMods = {}  # to be filled by self.load_all_lilac_and_report()
 
   @lru_cache()
   def maintainer_from_github(self, username: str) -> Optional[Maintainer]:
@@ -183,3 +190,22 @@ class Repo:
   def send_repo_mail(self, subject: str, msg: str) -> None:
     self.ms.sendmail(self.repomail, subject, msg)
 
+  def manages(self, dep) -> bool:
+    return dep.pkgdir.name in self.mods
+
+  def load_all_lilac_and_report(self) -> Set[str]:
+    self.mods, errors = lilacpy.load_all(self.repodir)
+    failed = set(errors)
+    for name, exc_info in errors.items():
+      tb_lines = traceback.format_exception(*exc_info)
+      tb = ''.join(tb_lines)
+      logger.error('error while loading lilac.py for %s', name, exc_info=exc_info)
+      exc = exc_info[1]
+      if not isinstance(exc, Exception):
+        raise
+      self.send_error_report(name, exc=(exc, tb),
+                             subject='为软件包 %s 载入 lilac.py 时失败')
+      build_logger_old.error('%s failed', name)
+      build_logger.exception('lilac.py error', pkgbase = name)
+
+    return failed
