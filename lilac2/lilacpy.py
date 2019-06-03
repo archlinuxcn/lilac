@@ -36,9 +36,12 @@ def load_lilac(dir: Path) -> Generator[LilacMod, None, None]:
       'lilac.py', dir / 'lilac.py')
     mod = importlib.util.module_from_spec(spec)
 
-    yamlconf = load_lilac_yaml(dir)
-    for k, v in yamlconf.items():
-      setattr(mod, k, v)
+    try:
+      yamlconf = load_lilac_yaml(dir)
+      for k, v in yamlconf.items():
+        setattr(mod, k, v)
+    except FileNotFoundError:
+      yamlconf = {}
 
     assert spec.loader
     try:
