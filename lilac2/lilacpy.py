@@ -24,6 +24,8 @@ def load_all(repodir: Path) -> Tuple[LilacMods, Dict[str, ExcInfo]]:
           mods[x.name] = mod
       if hasattr(mod, 'time_limit_hours') and mod.time_limit_hours < 0:
         raise ValueError('time_limit_hours should be positive.')
+    except FileNotFoundError:
+      pass # ignore for now
     except Exception:
       errors[x.name] = cast(ExcInfo, sys.exc_info())
 
