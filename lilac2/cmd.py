@@ -9,6 +9,7 @@ from typing import Optional
 import types
 
 from .typing import Cmd
+from .tools import kill_child_processes
 
 logger = logging.getLogger(__name__)
 
@@ -53,61 +54,63 @@ def run_cmd(cmd: Cmd, *, use_pty: bool = False, silent: bool = False,
     stdin = subprocess.DEVNULL
     stdout = subprocess.PIPE
 
-  exited = False
-  def child_exited(signum: int, sigframe: types.FrameType) -> None:
-    nonlocal exited
-    exited = True
-  old_hdl = signal.signal(signal.SIGCHLD, child_exited)
+  try:
+    exited = False
+    def child_exited(signum: int, sigframe: types.FrameType) -> None:
+      nonlocal exited
+      exited = True
+    old_hdl = signal.signal(signal.SIGCHLD, child_exited)
 
-  p = subprocess.Popen(
-    cmd, stdin = stdin, stdout = stdout, stderr = subprocess.STDOUT,
-    cwd = cwd,
-  )
-  if use_pty:
-    os.close(stdout)
-  else:
-    rfd = p.stdout.fileno()
-  out = []
-  outlen = 0
+    p = subprocess.Popen(
+      cmd, stdin = stdin, stdout = stdout, stderr = subprocess.STDOUT,
+      cwd = cwd,
+    )
+    if use_pty:
+      os.close(stdout)
+    else:
+      rfd = p.stdout.fileno()
+    out = []
+    outlen = 0
 
-  while True:
-    try:
-      r = os.read(rfd, 4096)
-      if not r:
-        if exited:
+    while True:
+      try:
+        r = os.read(rfd, 4096)
+        if not r:
+          if exited:
+            break
+          else:
+            continue
+      except InterruptedError:
+        continue
+      except OSError as e:
+        if e.errno == 5: # Input/output error: no clients run
           break
         else:
-          continue
-    except InterruptedError:
-      continue
-    except OSError as e:
-      if e.errno == 5: # Input/output error: no clients run
-        break
-      else:
-        raise
-    r = r.replace(b'\x0f', b'') # ^O
-    if not silent:
-      sys.stderr.buffer.write(r)
-    out.append(r)
-    outlen += len(r)
+          raise
+      r = r.replace(b'\x0f', b'') # ^O
+      if not silent:
+        sys.stderr.buffer.write(r)
+      out.append(r)
+      outlen += len(r)
+      if outlen > 1024 ** 3: # larger than 1G
+        kill_child_processes()
+
+    code = p.wait()
+    if old_hdl is not None:
+      signal.signal(signal.SIGCHLD, old_hdl)
+
+    outb = b''.join(out)
+    outs = outb.decode('utf-8', errors='replace')
+    outs = outs.replace('\r\n', '\n')
+    outs = re.sub(r'.*\r', '', outs)
     if outlen > 1024 ** 3: # larger than 1G
-      p.kill()
-
-  code = p.wait()
-  if use_pty:
-    os.close(rfd)
-  if old_hdl is not None:
-    signal.signal(signal.SIGCHLD, old_hdl)
-
-  outb = b''.join(out)
-  outs = outb.decode('utf-8', errors='replace')
-  outs = outs.replace('\r\n', '\n')
-  outs = re.sub(r'.*\r', '', outs)
-  if outlen > 1024 ** 3: # larger than 1G
-    outs += '\n\n输出过多，已击杀。\n'
-  if code != 0:
-      raise subprocess.CalledProcessError(code, cmd, outs)
-  return outs
+      outs += '\n\n输出过多，已击杀。\n'
+    if code != 0:
+        raise subprocess.CalledProcessError(code, cmd, outs)
+    return outs
+  finally:
+    if use_pty:
+      os.close(rfd)
 
 def pkgrel_changed(from_: str, to: str, pkgname: str) -> bool:
   cmd = ["git", "diff", "-p", from_, to, '--', pkgname + '/PKGBUILD']
