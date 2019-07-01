@@ -331,7 +331,7 @@ def update_aur_repo() -> None:
   except subprocess.CalledProcessError as e:
     tb = traceback.format_exc()
     _G.repo.send_error_report(
-      pkgbase,
+      _G.mod,
       exc = (e, tb),
       subject = '提交软件包 %s 到 AUR 时出错',
     )

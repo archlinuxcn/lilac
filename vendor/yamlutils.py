@@ -3,7 +3,7 @@ from collections import OrderedDict
 import yaml
 try:
   from yaml import CLoader as Loader
-  from yaml import CDumper as Dumper # type: ignore
+  from yaml import CDumper as Dumper
 except ImportError:
   from yaml import Loader, Dumper # type: ignore
 
