@@ -34,7 +34,7 @@ def load_all(repodir: Path) -> Tuple[LilacMods, Dict[str, ExcInfo]]:
 @contextlib.contextmanager
 def load_lilac(dir: Path) -> Generator[LilacMod, None, None]:
   try:
-    spec = importlib.util.spec_from_file_location( # type: ignore # Path is accepted too
+    spec = importlib.util.spec_from_file_location(
       'lilac.py', dir / 'lilac.py')
     mod = importlib.util.module_from_spec(spec)
 
