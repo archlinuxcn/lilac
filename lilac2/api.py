@@ -158,7 +158,9 @@ def update_pkgver_and_pkgrel(
   if updpkgsums:
     run_cmd(["updpkgsums"])
 
-def update_pkgrel(rel=None):
+def update_pkgrel(
+  rel: Optional[Union[str, float, int]]=None,
+) -> None:
   with open('PKGBUILD') as f:
     pkgbuild = f.read()
 

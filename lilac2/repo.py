@@ -4,6 +4,7 @@ from typing import Optional, Tuple, List, Union, Dict, Set
 import logging
 from functools import lru_cache
 import traceback
+import configparser
 
 from github import GitHub
 import structlog
@@ -20,7 +21,9 @@ build_logger_old = logging.getLogger('build')
 build_logger = structlog.get_logger(logger_name='build')
 
 class Repo:
-  def __init__(self, config):
+  gh: Optional[GitHub]
+
+  def __init__(self, config: configparser.ConfigParser):
     self.myaddress = config.get('lilac', 'email')
     self.mymaster = config.get('lilac', 'master')
     self.repomail = config.get('repository', 'email')
