@@ -14,6 +14,7 @@ import tarfile
 import io
 
 import requests
+import pyalpm
 
 from myutils import at_dir
 from htmlutils import parse_document_from_requests
@@ -21,6 +22,7 @@ from htmlutils import parse_document_from_requests
 from .cmd import run_cmd, git_pull, git_push, git_reset_hard
 from . import const
 from .const import _G, SPECIAL_FILES
+from .typing import PkgRel
 
 git_push
 
@@ -124,19 +126,28 @@ def vcs_update() -> None:
   run_cmd(['makepkg', '-od'], use_pty=True)
 
 def get_pkgver_and_pkgrel(
-) -> Tuple[Optional[str], Optional[float]]:
+) -> Tuple[Optional[str], Optional[PkgRel]]:
   pkgrel = None
   pkgver = None
   with open('PKGBUILD') as f:
     for l in f:
       if l.startswith('pkgrel='):
-        pkgrel = float(l.rstrip().split('=', 1)[-1].strip('\'"'))
-        if int(pkgrel) == pkgrel:
-            pkgrel = int(pkgrel)
+        pkgrel = l.rstrip().split('=', 1)[-1].strip('\'"')
+        try:
+          pkgrel = int(pkgrel) # type: ignore
+        except (ValueError, TypeError):
+          pass
       elif l.startswith('pkgver='):
         pkgver = l.rstrip().split('=', 1)[-1]
 
   return pkgver, pkgrel
+
+def _next_pkgrel(rel: PkgRel) -> int:
+  if isinstance(rel, int):
+    return rel + 1
+
+  first_segment = rel.split('.')[0]
+  return int(first_segment) + 1
 
 def update_pkgver_and_pkgrel(
   newver: str, *, updpkgsums: bool = True) -> None:
@@ -151,7 +162,7 @@ def update_pkgver_and_pkgrel(
       if pkgver != newver:
         line = 'pkgrel=1'
       else:
-        line = f'pkgrel={int(pkgrel)+1}'
+        line = f'pkgrel={_next_pkgrel(pkgrel)}'
 
     print(line)
 
@@ -159,7 +170,7 @@ def update_pkgver_and_pkgrel(
     run_cmd(["updpkgsums"])
 
 def update_pkgrel(
-  rel: Optional[Union[str, float, int]]=None,
+  rel: Optional[PkgRel] = None,
 ) -> None:
   with open('PKGBUILD') as f:
     pkgbuild = f.read()
@@ -167,7 +178,7 @@ def update_pkgrel(
   def replacer(m):
     nonlocal rel
     if rel is None:
-      rel = int(float(m.group(1))) + 1
+      rel = _next_pkgrel(m.group(1))
     return str(rel)
 
   pkgbuild = re.sub(r'''(?<=^pkgrel=)['"]?([\d.]+)['"]?''', replacer, pkgbuild, count=1, flags=re.MULTILINE)
@@ -423,10 +434,11 @@ def aur_pre_build(
     name = os.path.basename(os.getcwd())
   _g.aur_building_files = _download_aur_pkgbuild(name)
 
-  new_pkgver, new_pkgrel = get_pkgver_and_pkgrel()
-  if pkgver and pkgver == new_pkgver:
+  aur_pkgver, aur_pkgrel = get_pkgver_and_pkgrel()
+  if pkgver and pkgver == aur_pkgver:
     # change to larger pkgrel
-    update_pkgrel(max(pkgrel, new_pkgrel))
+    if pyalpm.vercmp(f'1-{pkgrel}', f'1-{aur_pkgrel}') > 0:
+      update_pkgrel(pkgrel)
 
   if do_vcs_update is None:
     do_vcs_update = name.endswith(('-git', '-hg', '-svn', '-bzr'))
@@ -436,7 +448,8 @@ def aur_pre_build(
     # recheck after sync, because AUR pkgver may lag behind
     new_pkgver, new_pkgrel = get_pkgver_and_pkgrel()
     if pkgver and pkgver == new_pkgver:
-      update_pkgrel(max(pkgrel, new_pkgrel))
+      if pyalpm.vercmp(f'1-{pkgrel}', f'1-{new_pkgrel}') > 0:
+        update_pkgrel(pkgrel)
 
 def aur_post_build() -> None:
   git_rm_files(_g.aur_pre_files)
