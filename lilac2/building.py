@@ -14,6 +14,7 @@ from .nvchecker import NvResults
 if TYPE_CHECKING:
   from .repo import Repo
   assert Repo # make pyflakes happy
+  del Repo
 
 logger = logging.getLogger(__name__)
 

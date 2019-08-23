@@ -7,11 +7,16 @@ import json
 from pathlib import Path
 from typing import List, NamedTuple, Tuple, Set, Dict
 from typing import Optional, Any, Union, Iterable
+from typing import TYPE_CHECKING
 
 from .cmd import run_cmd
 from .const import mydir
 from .typing import LilacMods, PathLike
-from .repo import Repo, Maintainer
+
+if TYPE_CHECKING:
+  from .repo import Repo, Maintainer
+  assert Repo, Maintainer # make pyflakes happy
+  del Repo, Maintainer
 
 logger = logging.getLogger(__name__)
 
@@ -61,7 +66,7 @@ def _gen_config_from_mods(
   return newconfig, unknown
 
 def packages_need_update(
-  repo: Repo,
+  repo: 'Repo',
 ) -> Tuple[Dict[str, NvResults], Set[str], Set[str]]:
   newconfig, unknown = _gen_config_from_mods(repo.mods)
 
@@ -118,7 +123,7 @@ def packages_need_update(
   if ret != 0:
     raise subprocess.CalledProcessError(ret, cmd)
 
-  error_owners: Dict[Maintainer, List[Dict[str, Any]]] = defaultdict(list)
+  error_owners: Dict['Maintainer', List[Dict[str, Any]]] = defaultdict(list)
   for pkg, pkgerrs in errors.items():
     if pkg is None:
       continue
