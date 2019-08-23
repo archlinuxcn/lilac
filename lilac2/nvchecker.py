@@ -1,7 +1,7 @@
 import configparser
 import os
 import logging
-from collections import defaultdict
+from collections import defaultdict, UserList
 import subprocess
 import json
 from pathlib import Path
@@ -20,8 +20,21 @@ OLDVER_FILE = mydir / 'oldver'
 NEWVER_FILE = mydir / 'newver'
 
 class NvResult(NamedTuple):
-  oldver: Optional[str]
-  newver: Optional[str]
+  oldver: str
+  newver: str
+
+class NvResults(UserList):
+  @property
+  def oldver(self) -> Optional[str]:
+    if self:
+      return self[0].older
+    return None
+
+  @property
+  def newver(self) -> Optional[str]:
+    if self:
+      return self[0].newer
+    return None
 
 def _gen_config_from_mods(
   mods: LilacMods,
@@ -49,7 +62,7 @@ def _gen_config_from_mods(
 
 def packages_need_update(
   repo: Repo,
-) -> Tuple[Dict[str, NvResult], Set[str], Set[str]]:
+) -> Tuple[Dict[str, NvResults], Set[str], Set[str]]:
   newconfig, unknown = _gen_config_from_mods(repo.mods)
 
   if not OLDVER_FILE.exists():
@@ -77,12 +90,15 @@ def packages_need_update(
   os.close(wfd)
 
   output = os.fdopen(rfd)
-  nvdata = {}
+  nvdata: Dict[str, NvResults] = {}
   errors: Dict[Optional[str], List[Dict[str, Any]]] = defaultdict(list)
   rebuild = set()
   for l in output:
     j = json.loads(l)
     pkg = j.get('name')
+    if pkg not in nvdata:
+      nvdata[pkg] = NvResults()
+
     if pkg and ':' in pkg:
       pkg, i = pkg.split(':', 1)
       i = int(i)
@@ -90,13 +106,11 @@ def packages_need_update(
       i = 0
     event = j['event']
     if event == 'updated':
-      if i == 0:
-        nvdata[pkg] = NvResult(j['old_version'], j['version'])
-      else:
+      nvdata[pkg].append(NvResult(j['old_version'], j['version']))
+      if i != 0:
         rebuild.add(pkg)
     elif event == 'up-to-date':
-      if i == 0:
-        nvdata[pkg] = NvResult(j['version'], j['version'])
+      nvdata[pkg].append(NvResult(j['version'], j['version']))
     elif j['level'] in ['warning', 'warn', 'error', 'exception', 'critical']:
       errors[pkg].append(j)
 
@@ -137,7 +151,7 @@ def packages_need_update(
     if name not in nvdata:
       # we know nothing about these versions
       # maybe nvchecker has failed
-      nvdata[name] = NvResult(None, None)
+      nvdata[name] = NvResults()
 
   return nvdata, unknown, rebuild
 

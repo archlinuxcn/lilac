@@ -13,6 +13,8 @@
 * `makepkg_args`: 传递给 `makepkg` 的额外参数。可选。自带 `--holdver` 。
 
 ## 提供的信息
-* `_G.oldver`: 旧版本号。可能为 `None`。
+* `_G.oldver`: 旧版本号。可能为 `None`。当被非第一项 `update_on` 触发（rebuild）时，也可能与新版本号相同。
 * `_G.newver`: 新版本号。可能为 `None`。
+* `_G.oldvers`: 对应的 `update_on` 项目的旧版本号列表。
+* `_G.newvers`: 对应的 `update_on` 项目的新版本号列表。
 * `lilac.yaml` 中的信息（如 `repo_depends`、`maintainers`，已进行基本的解析）

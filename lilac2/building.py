@@ -9,6 +9,7 @@ from . import pkgbuild
 from .typing import LilacMod, Cmd
 from .cmd import run_cmd
 from .packages import Dependency
+from .nvchecker import NvResults
 
 if TYPE_CHECKING:
   from .repo import Repo
@@ -30,8 +31,7 @@ def lilac_build(
   mod: LilacMod,
   repo: Optional['Repo'],
   build_prefix: Optional[str] = None,
-  oldver: Optional[str] = None,
-  newver: Optional[str] = None,
+  update_info: NvResults = NvResults(),
   accept_noupdate: bool = False,
   depends: Iterable[Dependency] = (),
   bindmounts: List[str] = [],
@@ -43,9 +43,17 @@ def lilac_build(
   build_output = None
 
   try:
+    oldver = update_info.oldver
+    newver = update_info.newver
+
     if not hasattr(mod, '_G'):
       # fill nvchecker result unless already filled (e.g. by hand)
-      mod._G = SimpleNamespace(oldver = oldver, newver = newver)
+      mod._G = SimpleNamespace(
+        oldver = oldver,
+        newver = newver,
+        oldvers = [x.oldver for x in update_info],
+        newvers = [x.newver for x in update_info],
+      )
 
     prepare = getattr(mod, 'prepare', None)
     if prepare is not None:
