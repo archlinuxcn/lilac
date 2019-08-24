@@ -97,7 +97,7 @@ def packages_need_update(
   os.close(wfd)
 
   output = os.fdopen(rfd)
-  nvdata: Dict[str, NvResults] = {}
+  nvdata_unord: Dict[str, Dict[int, NvResult]] = {}
   errors: Dict[Optional[str], List[Dict[str, Any]]] = defaultdict(list)
   rebuild = set()
   for l in output:
@@ -108,16 +108,16 @@ def packages_need_update(
       i = int(i)
     else:
       i = 0
-    if pkg not in nvdata:
-      nvdata[pkg] = NvResults()
+    if pkg not in nvdata_unord:
+      nvdata_unord[pkg] = {}
 
     event = j['event']
     if event == 'updated':
-      nvdata[pkg].append(NvResult(j['old_version'], j['version']))
+      nvdata_unord[pkg][i] = NvResult(j['old_version'], j['version'])
       if i != 0:
         rebuild.add(pkg)
     elif event == 'up-to-date':
-      nvdata[pkg].append(NvResult(j['version'], j['version']))
+      nvdata_unord[pkg][i] = NvResult(j['version'], j['version'])
     elif j['level'] in ['warning', 'warn', 'error', 'exception', 'critical']:
       errors[pkg].append(j)
 
@@ -153,6 +153,18 @@ def packages_need_update(
       msg += '在更新检查时出现了一些错误：\n\n' + '\n'.join(
         _format_error(e) for e in errors[None]) + '\n'
     repo.send_repo_mail(subject, msg)
+
+  nvdata: Dict[str, NvResults] = {}
+
+  for name, d in nvdata_unord.items():
+    nrs = nvdata[name] = NvResults()
+    for i, (j, nr) in enumerate(sorted(d.items())):
+      if i != j:
+        logger.error('mismatched nvdata_unord item for %s: %d != %d in %r', 
+                     name, i, j, d)
+        nrs.append(NvResult('(error)', '(error)'))
+      else:
+        nrs.append(nr)
 
   for name in repo.mods:
     if name not in nvdata:
