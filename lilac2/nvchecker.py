@@ -101,14 +101,14 @@ def packages_need_update(
   for l in output:
     j = json.loads(l)
     pkg = j.get('name')
-    if pkg not in nvdata:
-      nvdata[pkg] = NvResults()
-
     if pkg and ':' in pkg:
       pkg, i = pkg.split(':', 1)
       i = int(i)
     else:
       i = 0
+    if pkg not in nvdata:
+      nvdata[pkg] = NvResults()
+
     event = j['event']
     if event == 'updated':
       nvdata[pkg].append(NvResult(j['old_version'], j['version']))
