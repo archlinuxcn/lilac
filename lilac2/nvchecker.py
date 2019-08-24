@@ -29,16 +29,18 @@ class NvResult(NamedTuple):
   newver: str
 
 class NvResults(UserList):
+  data: List[NvResult]
+
   @property
   def oldver(self) -> Optional[str]:
-    if self:
-      return self[0].older
+    if self.data:
+      return self.data[0].oldver
     return None
 
   @property
   def newver(self) -> Optional[str]:
-    if self:
-      return self[0].newer
+    if self.data:
+      return self.data[0].newver
     return None
 
 def _gen_config_from_mods(
