@@ -2,7 +2,7 @@ import pathlib
 from typing import Dict, Any
 import importlib.resources
 
-import yamlutils
+import yaml
 
 from . import api
 
@@ -11,13 +11,13 @@ ALIASES: Dict[str, Any]
 def _load_aliases() -> None:
   global ALIASES
   data = importlib.resources.read_text('lilac2', 'aliases.yaml')
-  ALIASES = yamlutils.load(data)
+  ALIASES = yaml.safe_load(data)
 
 _load_aliases()
 
 def load_lilac_yaml(dir: pathlib.Path) -> Dict[str, Any]:
   with open(dir / 'lilac.yaml') as f:
-    conf = yamlutils.load(f)
+    conf = yaml.safe_load(f)
 
   update_on = conf.get('update_on')
   if update_on:
