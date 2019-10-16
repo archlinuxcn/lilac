@@ -173,7 +173,7 @@ def build_package(package: str, mod: LilacMod) -> bool:
 def sign_and_copy() -> None:
   if not DESTDIR:
     return
-  pkgs = [x for x in os.listdir() if x.endswith('.pkg.tar.xz', '.pkg.tar.zst')]
+  pkgs = [x for x in os.listdir() if x.endswith(('.pkg.tar.xz', '.pkg.tar.zst'))]
   for pkg in pkgs:
     run_cmd(['gpg', '--pinentry-mode', 'loopback', '--passphrase', '',
              '--detach-sign', '--', pkg])

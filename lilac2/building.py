@@ -103,7 +103,7 @@ def lilac_build(
 
     call_build_cmd(
       build_prefix, depend_packages, bindmounts, build_args, makechrootpkg_args, makepkg_args)
-    pkgs = [x for x in os.listdir() if x.endswith('.pkg.tar.xz', '.pkg.tar.zst')]
+    pkgs = [x for x in os.listdir() if x.endswith(('.pkg.tar.xz', '.pkg.tar.zst'))]
     if not pkgs:
       raise Exception('no package built')
     post_build = getattr(mod, 'post_build', None)

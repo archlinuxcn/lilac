@@ -49,7 +49,7 @@ class Dependency(_DependencyTuple):
 
   def _find_local_package(self) -> Path:
     files = [x for x in self.pkgdir.iterdir()
-             if x.name.endswith('.pkg.tar.xz', '.pkg.tar.zst')]
+             if x.name.endswith(('.pkg.tar.xz', '.pkg.tar.zst'))]
     pkgs = []
     for x in files:
       info = archpkg.PkgNameInfo.parseFilename(x.name)
