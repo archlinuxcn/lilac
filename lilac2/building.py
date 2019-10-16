@@ -62,7 +62,7 @@ def lilac_build(
       if isinstance(msg, str):
         raise SkipBuild(msg)
 
-    run_cmd(["sh", "-c", "rm -f -- *.pkg.tar.xz *.pkg.tar.xz.sig *.src.tar.gz"])
+    run_cmd(["sh", "-c", "rm -f -- *.pkg.tar.xz *.pkg.tar.xz.sig *.pkg.tar.zst *.pkg.tar.zst.sig *.src.tar.gz"])
     pre_build = getattr(mod, 'pre_build', None)
     if pre_build is not None:
       logger.debug('accept_noupdate=%r, oldver=%r, newver=%r', accept_noupdate, oldver, newver)
@@ -103,7 +103,7 @@ def lilac_build(
 
     call_build_cmd(
       build_prefix, depend_packages, bindmounts, build_args, makechrootpkg_args, makepkg_args)
-    pkgs = [x for x in os.listdir() if x.endswith('.pkg.tar.xz')]
+    pkgs = [x for x in os.listdir() if x.endswith('.pkg.tar.xz', '.pkg.tar.zst')]
     if not pkgs:
       raise Exception('no package built')
     post_build = getattr(mod, 'post_build', None)
