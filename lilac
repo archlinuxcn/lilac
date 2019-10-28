@@ -303,7 +303,7 @@ def main_may_raise(D: Dict[str, Any], pkgs_to_build: List[str]) -> None:
 
   git_reset_hard()
   git_pull()
-  failed = REPO.load_all_lilac_and_report()
+  failed = REPO.load_managed_lilac_and_report()
 
   depman = DependencyManager(REPO.repodir)
   DEPMAP = get_dependency_map(depman, REPO.mods)

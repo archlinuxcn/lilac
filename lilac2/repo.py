@@ -196,8 +196,8 @@ class Repo:
   def manages(self, dep) -> bool:
     return dep.pkgdir.name in self.mods
 
-  def load_all_lilac_and_report(self) -> Set[str]:
-    self.mods, errors = lilacpy.load_all(self.repodir)
+  def load_managed_lilac_and_report(self) -> Set[str]:
+    self.mods, errors = lilacpy.load_managed(self.repodir)
     failed = set(errors)
     for name, exc_info in errors.items():
       tb_lines = traceback.format_exception(*exc_info)

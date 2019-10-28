@@ -7,6 +7,11 @@ from typing import Generator, cast, Dict, Tuple
 from .typing import LilacMod, LilacMods, ExcInfo
 from .lilacyaml import load_lilac_yaml, ALIASES
 
+def load_managed(repodir: Path) -> Tuple[LilacMods, Dict[str, ExcInfo]]:
+  mods, errors = load_all(repodir)
+  mods = {k: v for k, v in mods.items() if getattr(v, 'managed', True)}
+  return mods, errors
+
 def load_all(repodir: Path) -> Tuple[LilacMods, Dict[str, ExcInfo]]:
   mods: LilacMods = {}
   errors = {}
@@ -20,8 +25,7 @@ def load_all(repodir: Path) -> Tuple[LilacMods, Dict[str, ExcInfo]]:
 
     try:
       with load_lilac(x) as mod:
-        if getattr(mod, 'managed', True):
-          mods[x.name] = mod
+        mods[x.name] = mod
       if hasattr(mod, 'time_limit_hours') and mod.time_limit_hours < 0:
         raise ValueError('time_limit_hours should be positive.')
     except FileNotFoundError:
