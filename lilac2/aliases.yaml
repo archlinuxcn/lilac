@@ -26,3 +26,7 @@ protobuf:
   # soname changes with patch versions too; see https://www.archlinux.org/todo/protobuf-361-rebuild/
   archpkg: protobuf
   strip-release: true
+jsoncpp:
+  archpkg: jsoncpp
+  provided: libjsoncpp.so
+  strip-release: true
