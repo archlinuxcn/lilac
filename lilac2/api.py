@@ -44,12 +44,15 @@ def _unquote_item(s: str) -> Optional[str]:
 def _add_into_array(line: str, values: Iterable[str]) -> str:
   l = line.find('(')
   r = line.rfind(')')
-  arr_str = line[l+1:r].strip()
-  arr = {_unquote_item(x) for x in arr_str.split(' ')}.union(values)
+  if r != -1:
+    line_l, line_m, line_r = line[:l+1], line[l+1:r], line[r:]
+  else:
+    line_l, line_m, line_r = line[:l+1], line[l+1:], ''
+  arr = {_unquote_item(x) for x in line_m.split(' ')}.union(values)
   arr_nonone = [i for i in arr if i is not None]
   arr_nonone.sort()
-  arr_str = "('{}')".format("' '".join(arr_nonone))
-  line = line[:l] + arr_str
+  arr_elems_str = "'{}'".format("' '".join(arr_nonone))
+  line = line_l + arr_elems_str + line_r
   return line
 
 def add_into_array(which: str, extra_deps: Iterable[str]) -> None:
