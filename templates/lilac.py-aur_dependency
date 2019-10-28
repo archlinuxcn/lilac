@@ -13,7 +13,7 @@
 # p.s. Please also report to upstream.
 #
 # `add_depends()` and `add_makedepends()` are provided in
-# `lilac2/pkgbuild.py`, based upon `edit_file`
+# `lilac2/api.py`, based upon `edit_file()`
 #
 
 from lilaclib import *
