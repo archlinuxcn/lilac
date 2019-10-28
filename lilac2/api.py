@@ -48,7 +48,7 @@ def _add_into_array(line: str, values: Iterable[str]) -> str:
   arr = {_unquote_item(x) for x in arr_str.split(' ')}.union(values)
   arr_nonone = [i for i in arr if i is not None]
   arr_nonone.sort()
-  arr_str = "('%s')" % "' '".join(arr_nonone)
+  arr_str = "('{}')".format("' '".join(arr_nonone))
   line = line[:l] + arr_str
   return line
 
@@ -70,13 +70,13 @@ def add_into_array(which: str, extra_deps: Iterable[str]) -> None:
       line = _add_into_array(line, extra_deps)
       f.write(line + '\n')
 
-def add_arch(extra_arches):
+def add_arch(extra_arches: Iterable[str]) -> None:
   add_into_array('arch', extra_arches)
 
-def add_depends(extra_deps):
+def add_depends(extra_deps: Iterable[str]) -> None:
   add_into_array('depends', extra_deps)
 
-def add_makedepends(extra_deps):
+def add_makedepends(extra_deps: Iterable[str]) -> None:
   add_into_array('makedepends', extra_deps)
 
 def edit_file(filename: str) -> Iterator[str]:
