@@ -61,8 +61,9 @@ def add_into_array(which: str, extra_deps: Iterable[str]) -> None:
   '''
   field_appeared = False
 
+  pattern = re.compile(r'\s*' + re.escape(which) + r'=')
   for line in edit_file('PKGBUILD'):
-    if line.strip().startswith(which):
+    if pattern.match(line):
       line = _add_into_array(line, extra_deps)
       field_appeared = True
     print(line)
