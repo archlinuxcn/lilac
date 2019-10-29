@@ -1,10 +1,4 @@
-import pathlib
-import sys
-
 import pytest
-
-this_dir = pathlib.Path(__file__).resolve()
-sys.path.insert(0, str(this_dir.parents[1]))
 
 from lilac2.api import (
     _unquote_item,

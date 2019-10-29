@@ -1,19 +1,10 @@
-import pathlib
-import sys
-
 import pytest
-
-# sys.path does not support `Path`s yet
-this_dir = pathlib.Path(__file__).resolve()
-sys.path.insert(0, str(this_dir.parents[1]))
-sys.path.insert(0, str(this_dir.parents[1] / 'pylib'))
 
 from lilaclib import (
   update_pkgrel,
 )
 
 from myutils import at_dir
-
 
 @pytest.mark.parametrize('pkgbuild, expected_pkgbuild, kwargs', [
   ('pkgrel=1', 'pkgrel=2', {}),
