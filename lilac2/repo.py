@@ -49,7 +49,7 @@ class Repo:
 
     userinfo = self.gh.get_user_info(username)
     if userinfo['email']:
-      return Maintainer(userinfo['name'], userinfo['email'], username)
+      return Maintainer(userinfo['name'] or username, userinfo['email'], username)
     else:
       return None
 
