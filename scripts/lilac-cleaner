@@ -1,0 +1,111 @@
+#!/usr/bin/python3
+
+# clean up our git repository used by lilac
+
+import os
+import pathlib
+import subprocess
+from collections import defaultdict
+import shutil
+import sys
+import time
+
+# repodir = pathlib.Path('/ldata/src/archgitrepo/archlinuxcn').expanduser()
+repodir = pathlib.Path('~/archgitrepo/archlinuxcn').expanduser()
+
+DRY_RUN = True
+
+def get_git_managed():
+  cmd = ['git', 'ls-files']
+  out = subprocess.check_output(cmd, text = True)
+
+  pkgbase_to_files = defaultdict(list)
+  for line in out.splitlines():
+    if line == '.gitignore':
+      continue
+
+    pkgbase, file = line.split('/', 1)
+    pkgbase_to_files[pkgbase].append(file)
+
+  return pkgbase_to_files
+
+def rmdir(d):
+  if DRY_RUN:
+    print('Would remove dir ', d)
+  else:
+    print('Removing dir ', d)
+    shutil.rmtree(d, ignore_errors=True)
+
+def rmfile(f):
+  if DRY_RUN:
+    print('Would remove file', f)
+  else:
+    print('Removing file', f)
+    f.unlink()
+
+def is_vcs(dir):
+  files = [f.name for f in dir.iterdir()]
+  return any(x in files for x in ['.git', '.hg', '.svn'])
+
+def process(dir, git_files):
+  files = list(dir.iterdir())
+  mtimes = {f: f.stat().st_mtime for f in files}
+
+  # don't delete files touched near last update
+  try:
+    protected_mtime = max(x for x in (
+      y for f, y in mtimes.items() if f.name in git_files)
+    ) - 86400
+  except ValueError: # max() arg is an empty sequence
+    protected_mtime = time.time()
+
+  for file in files:
+    if file.name == '__pycache__':
+      continue
+
+    if file.name.endswith('.log'):
+      # logs are being handled by find -delete using crontab
+      # and keeped longer than source code
+      continue
+
+    is_dir = file.is_dir()
+
+    if is_dir and is_vcs(file):
+      continue
+
+    if file.name in git_files:
+      continue
+
+    if mtimes[file] > protected_mtime:
+      continue
+
+    if is_dir:
+      rmdir(file)
+    else:
+      rmfile(file)
+
+def main():
+  global DRY_RUN
+
+  if '-f' in sys.argv:
+    DRY_RUN = False
+
+  os.chdir(repodir)
+  pkgbase_to_files = get_git_managed()
+
+  for dir in repodir.iterdir():
+    if dir.name == '.gitignore':
+      continue
+
+    if not dir.is_dir():
+      rmfile(dir)
+      continue
+
+    if not (dir / 'lilac.yaml').exists() and dir.name not in pkgbase_to_files:
+      rmdir(dir)
+      continue
+
+    process(dir, pkgbase_to_files[dir.name])
+
+if __name__ == '__main__':
+  main()
