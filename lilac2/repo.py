@@ -211,6 +211,6 @@ class Repo:
       self.send_error_report(name, exc=(exc, tb),
                              subject='为软件包 %s 载入 lilac.py 时失败')
       build_logger_old.error('%s failed', name)
-      build_logger.exception('lilac.py error', pkgbase = name)
+      build_logger.exception('lilac.py error', pkgbase = name, exc_info=exc_info)
 
     return failed

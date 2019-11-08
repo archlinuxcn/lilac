@@ -77,6 +77,7 @@ def setup_build_logger() -> None:
 
   processors = [
     slogconf.exc_info,
+    slogconf.add_timestamp,
     structlog.processors.format_exc_info,
     slogconf.json_renderer,
   ]
