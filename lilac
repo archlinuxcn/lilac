@@ -364,9 +364,11 @@ def main_may_raise(D: Dict[str, Any], pkgs_to_build: List[str]) -> None:
   update_succeeded: Set[str] = set()
 
   try:
+    build_logger.info('build start')
     start_build(REPO, failed, update_succeeded)
     D['last_commit'] = git_last_commit()
   finally:
+    build_logger.info('build end')
     # handle what has been processed even on exception
     failed_info.update({k: nvdata[k].newver for k in failed if k in nvdata})
 
