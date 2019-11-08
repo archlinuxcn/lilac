@@ -4,13 +4,15 @@ A Tornado-inspired logging formatter, with displayed time with millisecond accur
 FYI: pyftpdlib also has a Tornado-style logger.
 '''
 
+from __future__ import annotations
+
 import sys
 import time
 import logging
 
 class TornadoLogFormatter(logging.Formatter):
   def __init__(self, color, *args, **kwargs):
-    super().__init__(self, *args, **kwargs)
+    super().__init__(*args, **kwargs)
     self._color = color
     if color:
       import curses

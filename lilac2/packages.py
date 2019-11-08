@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from collections import defaultdict, namedtuple
 from pathlib import Path
 from typing import Dict, Union, Tuple, Set, Optional

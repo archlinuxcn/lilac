@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import os, sys
 import re
 import datetime
@@ -61,6 +63,8 @@ def humantime(t: int) -> str:
     ret += '%dm' % m
   if s:
     ret += '%ds' % s
+  if not ret:
+    ret = '0s'
   return ret
 
 def dehumantime(s: str) -> int:

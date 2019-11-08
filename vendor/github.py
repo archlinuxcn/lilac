@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import datetime
 import weakref
 
@@ -27,8 +29,16 @@ class GitHub(requestsutils.RequestsBase):
 
     if data:
       kwargs['json'] = data
+      if method == 'get':
+        method = 'post'
 
     return self.request(path, method=method, *args, **kwargs)
+
+  def get_issue(self, repo: str, issue_nr: int) -> 'Issue':
+    r = self.api_request(
+      f'/repos/{repo}/issues/{issue_nr}')
+    j = r.json()
+    return Issue(j, self)
 
   def get_repo_issues(self, repo, *, state='open', labels=''):
     params = {'state': state}

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import structlog
 
 def exc_info(logger, level, event):

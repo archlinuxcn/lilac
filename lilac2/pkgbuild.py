@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 # PKGBUILD related stuff that lilac uses (excluding APIs)
 
 import os
