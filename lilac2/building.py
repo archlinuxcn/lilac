@@ -69,7 +69,8 @@ def lilac_build(
     if pre_build is not None:
       logger.debug('accept_noupdate=%r, oldver=%r, newver=%r', accept_noupdate, oldver, newver)
       pre_build()
-    pkgbuild.check_srcinfo()
+    with logfile.open('wb') as f:
+      pkgbuild.check_srcinfo(cast(BinaryIO, f))
     run_cmd(['recv_gpg_keys'])
 
     need_build_first = set()

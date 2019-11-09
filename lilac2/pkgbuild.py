@@ -4,7 +4,9 @@ from __future__ import annotations
 
 import os
 import subprocess
-from typing import Dict, List, Optional, Set, Tuple
+from typing import (
+  Dict, List, Optional, Set, Tuple, BinaryIO,
+)
 
 import pyalpm
 
@@ -57,8 +59,8 @@ def init_data(dbpath: os.PathLike, *, quiet: bool = False) -> None:
 def get_official_packages() -> Set[str]:
   return _official_packages
 
-def check_srcinfo() -> None:
-  srcinfo = get_srcinfo()
+def check_srcinfo(logfile: BinaryIO) -> None:
+  srcinfo = get_srcinfo(logfile)
   bad_groups = []
   bad_packages = []
   pkgnames = []
@@ -93,17 +95,17 @@ def check_srcinfo() -> None:
   if bad_groups or bad_packages:
     raise ConflictWithOfficialError(bad_groups, bad_packages)
 
-def get_srcinfo() -> List[str]:
+def get_srcinfo(logfile: BinaryIO) -> List[str]:
   out = subprocess.check_output(
     ['makepkg', '--printsrcinfo'],
-    universal_newlines = True,
+    stderr = logfile,
   )
-  return out.splitlines()
+  return out.decode('utf-8').splitlines()
 
 def _get_package_version(srcinfo: List[str]) -> Tuple[Optional[str], str, str]:
   epoch = pkgver = pkgrel = None
 
-  for line in get_srcinfo():
+  for line in srcinfo:
     line = line.strip()
     if not epoch and line.startswith('epoch = '):
       epoch = line.split()[-1]
