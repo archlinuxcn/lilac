@@ -373,7 +373,7 @@ def single_main(build_prefix: str = 'makepkg') -> None:
   enable_pretty_logging('DEBUG')
   with lilacpy.load_lilac(Path('.')) as mod:
     lilac_build(
-      mod, None,
+      mod, None, Path('.'),
       build_prefix = build_prefix,
       accept_noupdate = True,
     )

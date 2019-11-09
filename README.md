@@ -33,3 +33,4 @@ Python 库
 * pyyaml
 * pyalpm
 * structlog
+* prctl

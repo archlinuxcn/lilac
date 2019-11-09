@@ -4,14 +4,19 @@ import os
 import logging
 import subprocess
 from pathlib import Path
-from typing import Optional, Iterable, List, Set, TYPE_CHECKING
-from types import SimpleNamespace
+from typing import (
+  Optional, Iterable, List, Set, TYPE_CHECKING,
+  BinaryIO, cast,
+)
+from types import SimpleNamespace, FrameType
+import signal
 
 from . import pkgbuild
 from .typing import LilacMod, Cmd
 from .cmd import run_cmd
 from .packages import Dependency
 from .nvchecker import NvResults
+from .tools import kill_child_processes
 
 if TYPE_CHECKING:
   from .repo import Repo
@@ -19,8 +24,6 @@ if TYPE_CHECKING:
   del Repo
 
 logger = logging.getLogger(__name__)
-
-build_output: Optional[str] = None
 
 class MissingDependencies(Exception):
   def __init__(self, pkgs: Set[str]) -> None:
@@ -33,6 +36,7 @@ class SkipBuild(Exception):
 def lilac_build(
   mod: LilacMod,
   repo: Optional['Repo'],
+  logfile: Path,
   build_prefix: Optional[str] = None,
   update_info: NvResults = NvResults(),
   accept_noupdate: bool = False,
@@ -40,10 +44,6 @@ def lilac_build(
   bindmounts: List[str] = [],
 ) -> None:
   success = False
-
-  global build_output
-  # reset in case no one cleans it up
-  build_output = None
 
   try:
     oldver = update_info.oldver
@@ -103,8 +103,12 @@ def lilac_build(
     if hasattr(mod, 'makepkg_args'):
         makepkg_args = mod.makepkg_args
 
-    call_build_cmd(
-      build_prefix, depend_packages, bindmounts, build_args, makechrootpkg_args, makepkg_args)
+    with logfile.open('wb') as f:
+      call_build_cmd(
+        build_prefix, depend_packages, cast(BinaryIO, f),
+        bindmounts,
+        build_args, makechrootpkg_args, makepkg_args)
+
     pkgs = [x for x in os.listdir() if x.endswith(('.pkg.tar.xz', '.pkg.tar.zst'))]
     if not pkgs:
       raise Exception('no package built')
@@ -119,12 +123,12 @@ def lilac_build(
 
 def call_build_cmd(
   build_prefix: str, depends: List[Path],
+  logfile: BinaryIO,
   bindmounts: List[str] = [],
   build_args: List[str] = [],
   makechrootpkg_args: List[str] = [],
   makepkg_args: List[str] = [],
 ) -> None:
-  global build_output
   cmd: Cmd
   if build_prefix == 'makepkg':
     cmd = ['makepkg', '--holdver']
@@ -154,9 +158,55 @@ def call_build_cmd(
     cmd.extend(['--holdver'])
 
   # NOTE that Ctrl-C here may not succeed
-  try:
-    build_output = run_cmd(cmd, use_pty=True)
-  except subprocess.CalledProcessError:
-    build_output = None
-    raise
+  run_build_cmd(cmd, logfile)
 
+def run_build_cmd(cmd: Cmd, logfile: BinaryIO) -> None:
+  p = subprocess.Popen(
+    cmd,
+    # stdin = subprocess.DEVNULL,
+    stdout = logfile,
+    stderr = subprocess.STDOUT,
+  )
+  code = -1
+  exited = False
+
+  def wakeup(signum: int, sigframe: FrameType) -> None:
+    pass
+
+  signal.signal(signal.SIGCHLD, wakeup)
+  signal.signal(signal.SIGALRM, wakeup)
+  signal.setitimer(signal.ITIMER_REAL, 10, 10)
+
+  try:
+    while True:
+      try:
+        signal.pause()
+
+        while True:
+          st = os.waitid(
+            os.P_ALL, 0, os.WEXITED | os.WNOHANG)
+          if st is None:
+            break
+          if st.si_pid == p.pid:
+            code = st.si_status
+            kill_child_processes()
+            exited = True
+      except ChildProcessError:
+        # no more children
+        break
+      else:
+        if exited and code != 0:
+          raise subprocess.CalledProcessError(code, cmd)
+
+        if not exited:
+          st = os.stat(logfile.fileno())
+          if st.st_size > 1024 ** 3: # larger than 1G
+            kill_child_processes()
+            logfile.write(
+              '\n\n输出过多，已击杀。\n'.encode('utf-8'))
+  finally:
+    signal.signal(signal.SIGCHLD, signal.SIG_IGN)
+    signal.signal(signal.SIGALRM, signal.SIG_DFL)
+    signal.setitimer(signal.ITIMER_REAL, 0, 0)
+    # say goodbye to all our children
+    kill_child_processes()

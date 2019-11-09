@@ -11,13 +11,15 @@ import time
 from collections import defaultdict
 from typing import Set, Dict, List, Any
 import textwrap
+from pathlib import Path
 
+import prctl
 from toposort import toposort_flatten
 import structlog
 
-topdir = os.path.dirname(os.path.abspath(__file__))
-sys.path.append(topdir)
-sys.path.append(topdir+'/vendor')
+topdir = Path(__file__).resolve().parent
+sys.path.append(str(topdir))
+sys.path.append(str(topdir / 'vendor'))
 
 from myutils import at_dir, execution_timeout, lock_file
 from serializer import PickledData
@@ -38,7 +40,6 @@ from lilac2.nvchecker import packages_need_update, nvtake, NvResults
 from lilac2.typing import LilacMod
 from lilac2 import pkgbuild
 from lilac2.building import lilac_build, MissingDependencies, SkipBuild
-import lilac2.building as B
 from lilac2 import slogconf
 
 BIND_MOUNTS = [
@@ -47,11 +48,11 @@ BIND_MOUNTS = [
 
 config = configparser.ConfigParser()
 config.optionxform = lambda option: option # type: ignore
-config.read(topdir+'/config.ini')
+config.read(topdir / 'config.ini')
 
 # Setting up enviroment variables
 os.environ.update(config.items('enviroment variables'))
-os.environ['PATH'] = topdir + ':' + os.environ['PATH']
+os.environ['PATH'] = str(topdir) + ':' + os.environ['PATH']
 
 DESTDIR = os.path.expanduser(config.get('repository', 'destdir'))
 MYNAME = config.get('lilac', 'name')
@@ -65,6 +66,7 @@ logger = logging.getLogger(__name__)
 build_logger_old = logging.getLogger('build')
 build_logger = structlog.get_logger(logger_name='build')
 REPO = _G.repo = Repo(config)
+logdir: Path
 
 EMPTY_COMMIT = '4b825dc642cb6eb9a060e54bf8d69288fbee4904'
 
@@ -90,8 +92,9 @@ def setup_build_logger() -> None:
     logger_factory = logger_factory,
   )
 
-def build_package(package: str, mod: LilacMod) -> bool:
+def build_package(logdir: Path, package: str, mod: LilacMod) -> bool:
   logger.info('building %s', package)
+  logfile = logdir / f'{package}.log'
   start_time = time.time()
   try:
     _G.mod = mod
@@ -105,7 +108,7 @@ def build_package(package: str, mod: LilacMod) -> bool:
     try:
       with execution_timeout(time_limit_hours * 3600):
         lilac_build(
-          mod, REPO,
+          mod, REPO, logfile,
           update_info = update_info,
           depends = DEPENDS.get(package, ()),
           bindmounts = BIND_MOUNTS,
@@ -152,7 +155,7 @@ def build_package(package: str, mod: LilacMod) -> bool:
   except Exception as e:
     tb = traceback.format_exc()
     logger.exception('packaging error')
-    REPO.send_error_report(_G.mod, exc=(e, tb))
+    REPO.send_error_report(_G.mod, exc=(e, tb), logfile=logfile)
     build_logger_old.error(
       '%s %s [%s] failed after %ds',
       package, update_info.newver,
@@ -167,10 +170,6 @@ def build_package(package: str, mod: LilacMod) -> bool:
   finally:
     del _G.mod, _G.epoch, _G.pkgver, _G.pkgrel
 
-  if config.getboolean('lilac', 'save_buildlog'):
-    with open('lilac-%s.log' % (update_info.newver or 'none').replace('/', '-'), 'w') as log:
-      log.write(B.build_output) # type: ignore
-  B.build_output = None
   return built_successfully
 
 def sign_and_copy() -> None:
@@ -253,7 +252,7 @@ def start_build(repo: Repo, failed: Set[str], built: Set[str]) -> None:
       path = repo.repodir / pkg
       with at_dir(path):
         try:
-          if build_package(pkg, repo.mods[pkg]):
+          if build_package(logdir, pkg, repo.mods[pkg]):
             built.add(pkg)
           else:
             failed.add(pkg)
@@ -394,7 +393,7 @@ def main_may_raise(D: Dict[str, Any], pkgs_to_build: List[str]) -> None:
       git_push()
 
 def main(pkgs_to_build: List[str]) -> None:
-  store = os.path.join(mydir, 'store')
+  store = mydir / 'store'
   with PickledData(store, default={}) as D:
     try:
       main_may_raise(D, pkgs_to_build)
@@ -406,9 +405,13 @@ def main(pkgs_to_build: List[str]) -> None:
       REPO.report_error(subject, msg)
 
 def setup() -> None:
+  prctl.set_child_subreaper(1)
+  global logdir
+
   if config.getboolean('lilac', 'log_to_file'):
-    os.makedirs(os.path.join(mydir, 'log'), exist_ok=True)
-    logfile = os.path.join(mydir, 'log', time.strftime('%Y-%m-%dT%H:%M:%S'))
+    logdir = mydir / 'log' / time.strftime('%Y-%m-%dT%H:%M:%S')
+    logdir.mkdir(parents=True, exist_ok=True)
+    logfile = logdir / 'lilac-main.log'
     fd = os.open(logfile, os.O_WRONLY | os.O_CREAT, 0o644)
     os.dup2(fd, 1)
     os.dup2(fd, 2)

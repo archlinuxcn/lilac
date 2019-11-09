@@ -15,7 +15,6 @@ from .mail import MailService
 from .typing import LilacMod, Maintainer
 from .tools import ansi_escape_re
 from . import api, lilacpy
-from .building import build_output
 from .typing import LilacMods
 
 logger = logging.getLogger(__name__)
@@ -136,6 +135,7 @@ class Repo:
     msg: Optional[str] = None,
     exc: Optional[Tuple[Exception, str]] = None,
     subject: Optional[str] = None,
+    logfile: Optional[Path] = None,
   ) -> None:
     if msg is None and exc is None:
       raise TypeError('send_error_report received inefficient args')
@@ -174,8 +174,11 @@ class Repo:
     if '%s' in subject_real:
       subject_real = subject_real % pkgbase
 
-    if build_output:
-      msgs.append('编译命令输出如下：\n\n' + build_output)
+    if logfile:
+      with logfile.open(errors='surrogateescape') as f:
+        build_output = f.read()
+      if build_output:
+        msgs.append('编译命令输出如下：\n\n' + build_output)
 
     msg = '\n'.join(msgs)
     if self.trim_ansi_codes:
