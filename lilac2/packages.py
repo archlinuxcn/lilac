@@ -13,9 +13,9 @@ from .api import run_cmd
 from .typing import LilacMods
 
 def get_dependency_map(
-  depman: 'DependencyManager', mods: LilacMods,
-) -> Dict[str, Set['Dependency']]:
-  map: Dict[str, Set['Dependency']] = defaultdict(set)
+  depman: DependencyManager, mods: LilacMods,
+) -> Dict[str, Set[Dependency]]:
+  map: Dict[str, Set[Dependency]] = defaultdict(set)
   shallow_map: Dict[str, Set[str]] = defaultdict(set)
   rmap: Dict[str, Set[str]] = defaultdict(set)
 

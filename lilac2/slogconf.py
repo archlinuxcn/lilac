@@ -16,7 +16,7 @@ def exc_info(
 _renderer = structlog.processors.JSONRenderer(
   ensure_ascii=False)
 
-def json_renderer(logger, level, event: LogEvent) -> str:
+def json_renderer(logger, level: str, event: LogEvent) -> str:
   event['level'] = level
   return _renderer(logger, level, event)
 

@@ -28,7 +28,7 @@ class Maintainer(NamedTuple):
   email: str
   github: Optional[str]
 
-  def __str__(self):
+  def __str__(self) -> str:
     return f'{self.name} <{self.email}>'
 
   @classmethod

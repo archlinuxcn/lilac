@@ -192,11 +192,18 @@ def update_pkgrel(
     f.write(pkgbuild)
   logger.info('pkgrel updated to %s', rel)
 
-def pypi_pre_build(depends=None, python2=False, pypi_name=None, arch=None,
-                   makedepends=None, depends_setuptools=True,
-                   provides=None, check=None,
-                   optdepends=None, license=None,
-                  ):
+def pypi_pre_build(
+  depends: Optional[List[str]] = None,
+  python2: bool = False,
+  pypi_name: Optional[str] = None,
+  arch: Optional[Iterable[str]] = None,
+  makedepends: Optional[List[str]] = None,
+  depends_setuptools: bool = True,
+  provides: Optional[Iterable[str]] = None,
+  check: Optional[str] = None, # TODO 3.8: use Literal
+  optdepends: Optional[List[str]] = None,
+  license: Optional[str] = None,
+) -> None:
   if os.path.exists('PKGBUILD'):
     pkgver, pkgrel = get_pkgver_and_pkgrel()
   else:
@@ -279,7 +286,7 @@ check() {
   if pkgver and pkgver == new_pkgver:
     update_pkgrel()
 
-def pypi_post_build():
+def pypi_post_build() -> None:
   git_add_files('PKGBUILD')
   git_commit()
 
@@ -310,7 +317,7 @@ def git_commit(*, check_status: bool = True) -> None:
     os.path.split(os.getcwd())[1])])
 
 class AurDownloadError(Exception):
-  def __init__(self, pkgname):
+  def __init__(self, pkgname: str) -> None:
     self.pkgname = pkgname
 
 def _update_aur_repo_real(pkgname: str) -> None:

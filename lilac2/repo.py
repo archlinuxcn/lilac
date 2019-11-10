@@ -2,20 +2,26 @@ from __future__ import annotations
 
 import subprocess
 from pathlib import Path
-from typing import Optional, Tuple, List, Union, Dict, Set
+from typing import (
+  Optional, Tuple, List, Union, Dict, Set,
+  TYPE_CHECKING,
+)
 import logging
 from functools import lru_cache
 import traceback
 import configparser
 
-from github import GitHub
 import structlog
+from github import GitHub
 
 from .mail import MailService
 from .typing import LilacMod, Maintainer
 from .tools import ansi_escape_re
 from . import api, lilacpy
 from .typing import LilacMods
+if TYPE_CHECKING:
+  from .packages import Dependency
+  del Dependency
 
 logger = logging.getLogger(__name__)
 build_logger_old = logging.getLogger('build')
@@ -201,7 +207,7 @@ class Repo:
   def send_repo_mail(self, subject: str, msg: str) -> None:
     self.ms.sendmail(self.repomail, subject, msg)
 
-  def manages(self, dep) -> bool:
+  def manages(self, dep: Dependency) -> bool:
     return dep.pkgdir.name in self.mods
 
   def load_managed_lilac_and_report(self) -> Set[str]:

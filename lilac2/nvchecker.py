@@ -17,7 +17,6 @@ from .typing import LilacMods, PathLike
 
 if TYPE_CHECKING:
   from .repo import Repo, Maintainer
-  assert Repo, Maintainer # make pyflakes happy
   del Repo, Maintainer
 
 logger = logging.getLogger(__name__)
@@ -70,7 +69,7 @@ def _gen_config_from_mods(
   return newconfig, unknown
 
 def packages_need_update(
-  repo: 'Repo',
+  repo: Repo,
 ) -> Tuple[Dict[str, NvResults], Set[str], Set[str]]:
   newconfig, unknown = _gen_config_from_mods(repo.mods)
 
@@ -127,7 +126,7 @@ def packages_need_update(
   if ret != 0:
     raise subprocess.CalledProcessError(ret, cmd)
 
-  error_owners: Dict['Maintainer', List[Dict[str, Any]]] = defaultdict(list)
+  error_owners: Dict[Maintainer, List[Dict[str, Any]]] = defaultdict(list)
   for pkg, pkgerrs in errors.items():
     if pkg is None:
       continue
