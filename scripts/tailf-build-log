@@ -17,9 +17,9 @@ def c(n):
   return f'\x1b[38;5;{n}m'
 
 FMT = {
-  'successful': f'[{c(12)}%(ts)s{c(7)}] {c(15)}%(pkgbase)s {c(7)}%(nv_version)s %(action)s{c(7)} as {c(15)}%(pkg_version)s{c(7)} in {c(6)}%(elapsed)s\n',
-  'failed': f'[{c(12)}%(ts)s{c(7)}] {c(15)}%(pkgbase)s {c(7)}%(nv_version)s %(action)s{c(7)} to build as {c(15)}%(pkg_version)s{c(7)} in {c(6)}%(elapsed)s%(exception)s\n',
-  'skipped': f'[{c(12)}%(ts)s{c(7)}] {c(15)}%(pkgbase)s {c(7)}%(nv_version)s %(action)s{c(7)} because {c(15)}%(msg)s\n',
+  'successful': f'[{c(12)}%(ts)s{c(7)}] {c(15)}%(pkgbase)s{c(7)} %(nv_version)s %(action)s{c(7)} as {c(15)}%(pkg_version)s{c(7)} in {c(6)}%(elapsed)s\n',
+  'failed': f'[{c(12)}%(ts)s{c(7)}] {c(15)}%(pkgbase)s{c(7)} %(nv_version)s %(action)s{c(7)} to build as {c(15)}%(pkg_version)s{c(7)} in {c(6)}%(elapsed)s%(exception)s\n',
+  'skipped': f'[{c(12)}%(ts)s{c(7)}] {c(15)}%(pkgbase)s{c(7)} %(nv_version)s %(action)s{c(7)} because {c(15)}%(msg)s\n',
   'lilac.py error': f'[{c(12)}%(ts)s{c(7)}] {c(9)}lilac.py error{c(7)} with {c(15)}%(pkgbase)s%(exception)s\n',
   '_': f'[{c(12)}%(ts)s{c(7)}] {c(14)}%(event)s\n'
 }
