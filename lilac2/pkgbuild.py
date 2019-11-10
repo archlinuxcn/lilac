@@ -5,7 +5,7 @@ from __future__ import annotations
 import os
 import subprocess
 from typing import (
-  Dict, List, Optional, Set, Tuple, BinaryIO,
+  Dict, List, Optional, Set, Tuple,
 )
 
 import pyalpm
@@ -59,8 +59,8 @@ def init_data(dbpath: os.PathLike, *, quiet: bool = False) -> None:
 def get_official_packages() -> Set[str]:
   return _official_packages
 
-def check_srcinfo(logfile: BinaryIO) -> None:
-  srcinfo = get_srcinfo(logfile)
+def check_srcinfo() -> None:
+  srcinfo = get_srcinfo()
   bad_groups = []
   bad_packages = []
   pkgnames = []
@@ -95,10 +95,9 @@ def check_srcinfo(logfile: BinaryIO) -> None:
   if bad_groups or bad_packages:
     raise ConflictWithOfficialError(bad_groups, bad_packages)
 
-def get_srcinfo(logfile: BinaryIO) -> List[str]:
+def get_srcinfo() -> List[str]:
   out = subprocess.check_output(
     ['makepkg', '--printsrcinfo'],
-    stderr = logfile,
   )
   return out.decode('utf-8').splitlines()
 

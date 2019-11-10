@@ -6,7 +6,6 @@ import subprocess
 from pathlib import Path
 from typing import (
   Optional, Iterable, List, Set, TYPE_CHECKING,
-  BinaryIO, cast,
 )
 from types import SimpleNamespace
 
@@ -35,7 +34,6 @@ class SkipBuild(Exception):
 def lilac_build(
   mod: LilacMod,
   repo: Optional['Repo'],
-  logfile: Path,
   build_prefix: Optional[str] = None,
   update_info: NvResults = NvResults(),
   accept_noupdate: bool = False,
@@ -68,8 +66,7 @@ def lilac_build(
     if pre_build is not None:
       logger.debug('accept_noupdate=%r, oldver=%r, newver=%r', accept_noupdate, oldver, newver)
       pre_build()
-    with logfile.open('wb') as f:
-      pkgbuild.check_srcinfo(cast(BinaryIO, f))
+      pkgbuild.check_srcinfo()
     run_cmd(['recv_gpg_keys'])
 
     need_build_first = set()
@@ -103,11 +100,10 @@ def lilac_build(
     if hasattr(mod, 'makepkg_args'):
         makepkg_args = mod.makepkg_args
 
-    with logfile.open('wb') as f:
-      call_build_cmd(
-        build_prefix, depend_packages, cast(BinaryIO, f),
-        bindmounts,
-        build_args, makechrootpkg_args, makepkg_args)
+    call_build_cmd(
+      build_prefix, depend_packages, bindmounts,
+      build_args, makechrootpkg_args, makepkg_args,
+    )
 
     pkgs = [x for x in os.listdir() if x.endswith(('.pkg.tar.xz', '.pkg.tar.zst'))]
     if not pkgs:
@@ -123,7 +119,6 @@ def lilac_build(
 
 def call_build_cmd(
   build_prefix: str, depends: List[Path],
-  logfile: BinaryIO,
   bindmounts: List[str] = [],
   build_args: List[str] = [],
   makechrootpkg_args: List[str] = [],
@@ -158,14 +153,12 @@ def call_build_cmd(
     cmd.extend(['--holdver'])
 
   # NOTE that Ctrl-C here may not succeed
-  run_build_cmd(cmd, logfile)
+  run_build_cmd(cmd)
 
-def run_build_cmd(cmd: Cmd, logfile: BinaryIO) -> None:
+def run_build_cmd(cmd: Cmd) -> None:
   p = subprocess.Popen(
     cmd,
     stdin = subprocess.DEVNULL,
-    stdout = logfile,
-    stderr = subprocess.STDOUT,
   )
 
   try:
@@ -173,11 +166,10 @@ def run_build_cmd(cmd: Cmd, logfile: BinaryIO) -> None:
       try:
         code = p.wait(10)
       except subprocess.TimeoutExpired:
-        st = os.stat(logfile.fileno())
+        st = os.stat(1)
         if st.st_size > 1024 ** 3: # larger than 1G
           kill_child_processes()
-          logfile.write(
-            '\n\n输出过多，已击杀。\n'.encode('utf-8'))
+          logger.error('\n\n输出过多，已击杀。')
       else:
         if code != 0:
           raise subprocess.CalledProcessError(code, cmd)

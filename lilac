@@ -33,7 +33,7 @@ from lilac2.cmd import (
   run_cmd, git_pull, git_push, pkgrel_changed, git_reset_hard,
   get_git_branch,
 )
-from lilac2.tools import kill_child_processes
+from lilac2.tools import kill_child_processes, redirect_output
 from lilac2.repo import Repo
 from lilac2.const import mydir, _G
 from lilac2.nvchecker import packages_need_update, nvtake, NvResults
@@ -106,9 +106,11 @@ def build_package(logdir: Path, package: str, mod: LilacMod) -> bool:
     os.environ['PACKAGER'] = '%s (on behalf of %s) <%s>' % (
       MYNAME, maintainer.name, maintainer.email)
     try:
-      with execution_timeout(time_limit_hours * 3600):
+      with logfile.open('wb') as f, \
+          redirect_output(f.fileno()), \
+          execution_timeout(time_limit_hours * 3600):
         lilac_build(
-          mod, REPO, logfile,
+          mod, REPO,
           update_info = update_info,
           depends = DEPENDS.get(package, ()),
           bindmounts = BIND_MOUNTS,
