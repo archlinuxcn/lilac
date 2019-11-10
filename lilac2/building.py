@@ -165,7 +165,6 @@ def run_build_cmd(cmd: Cmd) -> None:
     while True:
       try:
         code = p.wait(10)
-        break
       except subprocess.TimeoutExpired:
         st = os.stat(1)
         if st.st_size > 1024 ** 3: # larger than 1G
@@ -174,6 +173,7 @@ def run_build_cmd(cmd: Cmd) -> None:
       else:
         if code != 0:
           raise subprocess.CalledProcessError(code, cmd)
+        break
   finally:
     # say goodbye to all our children
     kill_child_processes()
