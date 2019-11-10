@@ -165,6 +165,7 @@ def run_build_cmd(cmd: Cmd) -> None:
     while True:
       try:
         code = p.wait(10)
+        break
       except subprocess.TimeoutExpired:
         st = os.stat(1)
         if st.st_size > 1024 ** 3: # larger than 1G
