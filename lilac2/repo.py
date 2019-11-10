@@ -175,10 +175,13 @@ class Repo:
       subject_real = subject_real % pkgbase
 
     if logfile:
-      with logfile.open(errors='surrogateescape') as f:
-        build_output = f.read()
-      if build_output:
-        msgs.append('编译命令输出如下：\n\n' + build_output)
+      try:
+        with logfile.open(errors='surrogateescape') as f:
+          build_output = f.read()
+        if build_output:
+          msgs.append('编译命令输出如下：\n\n' + build_output)
+      except FileNotFoundError:
+        pass
 
     msg = '\n'.join(msgs)
     if self.trim_ansi_codes:
