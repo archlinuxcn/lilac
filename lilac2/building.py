@@ -8,8 +8,7 @@ from typing import (
   Optional, Iterable, List, Set, TYPE_CHECKING,
   BinaryIO, cast,
 )
-from types import SimpleNamespace, FrameType
-import signal
+from types import SimpleNamespace
 
 from . import pkgbuild
 from .typing import LilacMod, Cmd
@@ -164,50 +163,24 @@ def call_build_cmd(
 def run_build_cmd(cmd: Cmd, logfile: BinaryIO) -> None:
   p = subprocess.Popen(
     cmd,
-    # stdin = subprocess.DEVNULL,
+    stdin = subprocess.DEVNULL,
     stdout = logfile,
     stderr = subprocess.STDOUT,
   )
-  code = -1
-  exited = False
-
-  def wakeup(signum: int, sigframe: FrameType) -> None:
-    pass
-
-  signal.signal(signal.SIGCHLD, wakeup)
-  signal.signal(signal.SIGALRM, wakeup)
-  signal.setitimer(signal.ITIMER_REAL, 10, 10)
 
   try:
     while True:
       try:
-        signal.pause()
-
-        while True:
-          st = os.waitid(
-            os.P_ALL, 0, os.WEXITED | os.WNOHANG)
-          if st is None:
-            break
-          if st.si_pid == p.pid:
-            code = st.si_status
-            kill_child_processes()
-            exited = True
-      except ChildProcessError:
-        # no more children
-        break
+        code = p.wait(10)
+      except subprocess.TimeoutExpired:
+        st = os.stat(logfile.fileno())
+        if st.st_size > 1024 ** 3: # larger than 1G
+          kill_child_processes()
+          logfile.write(
+            '\n\n输出过多，已击杀。\n'.encode('utf-8'))
       else:
-        if exited and code != 0:
+        if code != 0:
           raise subprocess.CalledProcessError(code, cmd)
-
-        if not exited:
-          st = os.stat(logfile.fileno())
-          if st.st_size > 1024 ** 3: # larger than 1G
-            kill_child_processes()
-            logfile.write(
-              '\n\n输出过多，已击杀。\n'.encode('utf-8'))
   finally:
-    signal.signal(signal.SIGCHLD, signal.SIG_IGN)
-    signal.signal(signal.SIGALRM, signal.SIG_DFL)
-    signal.setitimer(signal.ITIMER_REAL, 0, 0)
     # say goodbye to all our children
     kill_child_processes()
