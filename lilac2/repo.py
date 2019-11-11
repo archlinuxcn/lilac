@@ -161,9 +161,10 @@ class Repo:
       exception, tb = exc
       if isinstance(exception, subprocess.CalledProcessError):
         subject_real = subject or '在编译软件包 %s 时发生错误'
-        msgs.append('命令执行失败！\n\n命令 %r 返回了错误号 %d。' \
-                    '命令的输出如下：\n\n%s' % (
-                      exception.cmd, exception.returncode, exception.output))
+        msgs.append('命令执行失败！\n\n命令 %r 返回了错误号 %d。' % (
+          exception.cmd, exception.returncode))
+        if exception.output:
+          msgs.append('命令的输出如下：\n\n%s' % exception.output)
         msgs.append('调用栈如下：\n\n' + tb)
       elif isinstance(exception, api.AurDownloadError):
         subject_real = subject or '在获取AUR包 %s 时发生错误'
@@ -185,7 +186,7 @@ class Repo:
         with logfile.open(errors='surrogateescape') as f:
           build_output = f.read()
         if build_output:
-          msgs.append('编译命令输出如下：\n\n' + build_output)
+          msgs.append('打包日志：\n\n' + build_output)
       except FileNotFoundError:
         pass
 
