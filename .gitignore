@@ -3,3 +3,5 @@ __pycache__/
 *.sw*
 .pytest_cache/
 config.ini
+venv
+.idea
