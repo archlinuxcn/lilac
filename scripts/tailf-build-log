@@ -45,7 +45,8 @@ def pretty_print(line):
 
   if 'exception' in log:
     # multiple line highlight doesn't work well with less
-    log['exception'] = ''.join(f'\n{c(8)}    {x}' for x in log['exception'].splitlines())
+    x = log['exception'].splitlines()[-1]
+    log['exception'] = f'\n{c(8)}{x}'
   else:
     log['exception'] = ''
 
