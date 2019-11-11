@@ -42,8 +42,11 @@ from lilac2 import pkgbuild
 from lilac2.building import lilac_build, MissingDependencies, SkipBuild
 from lilac2 import slogconf
 
+# Note that source dirs need to be created in advance
 BIND_MOUNTS = [
-  os.path.expanduser('~/.cargo') + ':' + '/build/.cargo',
+  os.path.expanduser('~/.cargo') + ':/build/.cargo',
+  os.path.expanduser('~/go') + ':/build/go',
+  os.path.expanduser('~/.cache/go-build') + ':/build/.cache/go-build',
 ]
 
 config = configparser.ConfigParser()
