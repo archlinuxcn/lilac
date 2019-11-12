@@ -11,7 +11,7 @@
 命令
 ----
 
-* Python >= 3.6
+* Python >= 3.7
 * curl
 * git
 * makepkg
@@ -20,7 +20,7 @@
 * gpg (batch)
 * Local MTA (batch)
 * devtools (batch)
-* pid_children (batch) (a program to find out descendant processes by pid)
+* [kill_children](https://github.com/lilydjwg/pid_children) (batch) (a suid program to kill all descendant processes of its parent)
 * fakeroot (batch)
 
 Python 库
