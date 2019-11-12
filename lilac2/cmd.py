@@ -16,10 +16,18 @@ from .tools import kill_child_processes
 logger = logging.getLogger(__name__)
 
 def git_pull() -> bool:
+  """
+  git pull from upstream
+  :return: false if already up to date, true otherwise
+  """
   output = run_cmd(['git', 'pull', '--no-edit'])
   return 'up-to-date' not in output
 
 def git_push() -> None:
+  """
+  pushes changes to upstream, rebase if upstream has changed
+  :return:
+  """
   while True:
     try:
       run_cmd(['git', 'push'])
@@ -31,9 +39,17 @@ def git_push() -> None:
         raise
 
 def git_reset_hard() -> None:
+  """
+  hard resets git repo to HEAD
+  :return:
+  """
   run_cmd(['git', 'reset', '--hard'])
 
 def get_git_branch() -> str:
+  """
+  gets the current git branch
+  :return:
+  """
   out = subprocess.check_output(
     ['git', 'branch', '--no-color'], universal_newlines = True)
   for line in out.splitlines():
@@ -44,6 +60,14 @@ def get_git_branch() -> str:
 
 def run_cmd(cmd: Cmd, *, use_pty: bool = False, silent: bool = False,
             cwd: Optional[os.PathLike] = None) -> str:
+  """
+  runs the command
+  :param cmd: command (List with the first elem being exe path and the rest being args)
+  :param use_pty:
+  :param silent:
+  :param cwd: command working directory
+  :return:
+  """
   logger.debug('running %r, %susing pty,%s showing output', cmd,
                '' if use_pty else 'not ',
                ' not' if silent else '')
@@ -115,6 +139,13 @@ def run_cmd(cmd: Cmd, *, use_pty: bool = False, silent: bool = False,
       os.close(rfd)
 
 def pkgrel_changed(from_: str, to: str, pkgname: str) -> bool:
+  """
+  check if the package's pkgrel has been changed between commits
+  :param from_: older commit
+  :param to: newer commit
+  :param pkgname: name of the package
+  :return: true if pkgrel has been changed, false otherwise
+  """
   cmd = ["git", "diff", "-p", from_, to, '--', pkgname + '/PKGBUILD']
   r = run_cmd(cmd, silent=True).splitlines()
   return any(x.startswith('+pkgrel=') for x in r)

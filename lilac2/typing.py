@@ -8,6 +8,9 @@ from typing import (
 from pathlib import Path
 
 class LilacMod(types.ModuleType):
+  """
+  A module to be built by lilac
+  """
   time_limit_hours: float
   pkgbase: str
   _G: types.SimpleNamespace
@@ -17,18 +20,29 @@ class LilacMod(types.ModuleType):
   update_on: List[Dict[str, str]]
 
 LilacMods = Dict[str, LilacMod]
+""" dict from module name(str) to LilacMod object """
 
 ExcInfo = Tuple[Type[BaseException], BaseException, types.TracebackType]
+""" exception info """
 
 Cmd = Sequence[Union[str, Path]]
+""" command to be executed """
 PathLike = Union[str, Path]
+""" path or str """
 
 class Maintainer(NamedTuple):
+  """
+  Maintainer object, contains info about a maintainer
+  """
   name: str
   email: str
   github: Optional[str]
 
   def __str__(self) -> str:
+    """
+    format maintainer
+    :return: $name <$email>
+    """
     return f'{self.name} <{self.email}>'
 
   @classmethod
@@ -45,3 +59,4 @@ class Maintainer(NamedTuple):
     return cls(name, email, github)
 
 PkgRel = Union[int, str]
+""" pkgrel, either a int or a string """

@@ -7,6 +7,7 @@ import contextlib
 from typing import Generator
 
 ansi_escape_re = re.compile(r'\x1B(\[[0-?]*[ -/]*[@-~]|\(B)')
+""" matches ascii escape code """
 
 def kill_child_processes() -> None:
   subprocess.run(['kill_children'])

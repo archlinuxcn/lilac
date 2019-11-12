@@ -40,6 +40,17 @@ def lilac_build(
   depends: Iterable[Dependency] = (),
   bindmounts: List[str] = [],
 ) -> None:
+  """
+  build a lilac module
+  :param mod: the module to be built
+  :param repo: the repository
+  :param build_prefix: see call_build_cmd
+  :param update_info: result of nvchecker
+  :param accept_noupdate:
+  :param depends: dependencies of this module
+  :param bindmounts:
+  :return:
+  """
   success = False
 
   try:
@@ -124,6 +135,17 @@ def call_build_cmd(
   makechrootpkg_args: List[str] = [],
   makepkg_args: List[str] = [],
 ) -> None:
+  """
+  run the build command to build a package
+  :param build_prefix: the prefix of the script/program to be called,
+  set to makepkg when using PKGBUILD script
+  :param depends: dependencies supplied to the script/program
+  :param bindmounts:
+  :param build_args:
+  :param makechrootpkg_args:
+  :param makepkg_args:
+  :return:
+  """
   cmd: Cmd
   if build_prefix == 'makepkg':
     cmd = ['makepkg', '--holdver']
@@ -156,6 +178,11 @@ def call_build_cmd(
   run_build_cmd(cmd)
 
 def run_build_cmd(cmd: Cmd) -> None:
+  """
+
+  :param cmd:
+  :return:
+  """
   p = subprocess.Popen(
     cmd,
     stdin = subprocess.DEVNULL,

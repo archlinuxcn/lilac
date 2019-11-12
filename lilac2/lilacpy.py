@@ -10,11 +10,21 @@ from .typing import LilacMod, LilacMods, ExcInfo
 from .lilacyaml import load_lilac_yaml, ALIASES
 
 def load_managed(repodir: Path) -> Tuple[LilacMods, Dict[str, ExcInfo]]:
+  """
+  loads all managed package in the repo as LilacMods
+  :param repodir: path to the repo
+  :return: tuple of LilacMods and a dict from package name to info of the exception caused by that package while loading
+  """
   mods, errors = load_all(repodir)
   mods = {k: v for k, v in mods.items() if getattr(v, 'managed', True)}
   return mods, errors
 
 def load_all(repodir: Path) -> Tuple[LilacMods, Dict[str, ExcInfo]]:
+  """
+  loads all package in the repo as LilacMods
+  :param repodir: path to the repo
+  :return: tuple of LilacMods and a dict from package name to info of the exception caused by that package while loading
+  """
   mods: LilacMods = {}
   errors = {}
 
@@ -39,6 +49,11 @@ def load_all(repodir: Path) -> Tuple[LilacMods, Dict[str, ExcInfo]]:
 
 @contextlib.contextmanager
 def load_lilac(dir: Path) -> Generator[LilacMod, None, None]:
+  """
+  loads a package as a LilacMod
+  :param dir: the path to the package
+  :return: LilacMod
+  """
   try:
     spec = importlib.util.spec_from_file_location(
       'lilac.py', dir / 'lilac.py')

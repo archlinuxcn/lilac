@@ -15,6 +15,12 @@ from .typing import LilacMods
 def get_dependency_map(
   depman: DependencyManager, mods: LilacMods,
 ) -> Dict[str, Set[Dependency]]:
+  """
+
+  :param depman: a DependencyManager instance
+  :param mods: the list of modules to be built by lilac
+  :return:
+  """
   map: Dict[str, Set[Dependency]] = defaultdict(set)
   shallow_map: Dict[str, Set[str]] = defaultdict(set)
   rmap: Dict[str, Set[str]] = defaultdict(set)
@@ -43,13 +49,24 @@ _DependencyTuple = namedtuple(
   '_DependencyTuple', 'pkgdir pkgname')
 
 class Dependency(_DependencyTuple):
+  """
+  Dependency object resembles a package
+  """
   def resolve(self) -> Optional[Path]:
+    """
+    resolves the location to the local package, returns None if fails
+    :return: the path to the local package or none
+    """
     try:
       return self._find_local_package()
     except FileNotFoundError:
       return None
 
   def _find_local_package(self) -> Path:
+    """
+    finds the newest local package for this dependency
+    :return: the path to the local package
+    """
     files = [x for x in self.pkgdir.iterdir()
              if x.name.endswith(('.pkg.tar.xz', '.pkg.tar.zst'))]
     pkgs = []
@@ -72,8 +89,15 @@ class DependencyManager:
 
   def __init__(self, repodir: Path) -> None:
     self.repodir = repodir
+    """ the dir to git repo """
 
   def get(self, what: Union[str, Tuple[str, str]]) -> Dependency:
+    """
+    Gets a package as a Dependency object
+    :param what: either a tuple (package base dir name, package name)
+    or just the name (if package base dir name is the same as package name)
+    :return: Dependency object of that package
+    """
     if isinstance(what, tuple):
       pkgbase, pkgname = what
     else:
@@ -85,6 +109,12 @@ class DependencyManager:
     return self._CACHE[pkgname]
 
 def get_changed_packages(from_: str, to: str) -> Set[str]:
+  """
+  gets the changed packages between 2 git commits
+  :param from_: older commit
+  :param to: newer commit
+  :return: changed packages
+  """
   cmd = ["git", "diff", "--name-only", '--relative', from_, to]
   r = run_cmd(cmd).splitlines()
   ret = {x.split('/', 1)[0] for x in r}

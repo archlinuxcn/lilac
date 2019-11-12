@@ -11,6 +11,10 @@ from . import api
 ALIASES: Dict[str, Any]
 
 def _load_aliases() -> None:
+  """
+  leads aliases from lilac2 and aliases.yaml
+  :return:
+  """
   global ALIASES
   data = importlib.resources.read_text('lilac2', 'aliases.yaml')
   ALIASES = yaml.safe_load(data)
@@ -18,6 +22,11 @@ def _load_aliases() -> None:
 _load_aliases()
 
 def load_lilac_yaml(dir: pathlib.Path) -> Dict[str, Any]:
+  """
+  read yaml config (lilac.yaml) from path
+  :param dir: the dir of lilac.yaml
+  :return: configuration object, as specified in lilac-yaml-schema.py
+  """
   with open(dir / 'lilac.yaml') as f:
     conf = yaml.safe_load(f)
 

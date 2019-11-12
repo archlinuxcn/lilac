@@ -8,16 +8,27 @@ from mailutils import assemble_mail
 SMTPClient = Union[smtplib.SMTP, smtplib.SMTP_SSL]
 
 class MailService:
+  """
+  mailing services
+  """
   def __init__(self, config) -> None:
     self.config = config
+    """ the config object """
     self.mailtag = config.get('lilac', 'name')
+    """ the prefix of subject """
     self.send_email = config.getboolean('lilac', 'send_email')
+    """ whether to send mail """
 
     myname = config.get('lilac', 'name')
     myaddress = config.get('lilac', 'email')
     self.from_ = f'{myname} <{myaddress}>'
+    """ the from field in email """
 
   def smtp_connect(self) -> SMTPClient:
+    """
+    connects to SMTP server using the config
+    :return: SMTP or SMTPS client
+    """
     config = self.config
     host = config.get('smtp', 'host', fallback='')
     port = config.getint('smtp', 'port', fallback=0)
@@ -38,6 +49,13 @@ class MailService:
 
   def sendmail(self, to: Union[str, List[str]],
                subject: str, msg: str) -> None:
+    """
+    sends mail
+    :param to: email address receiver
+    :param subject: subject field of the email
+    :param msg: content of the email
+    :return:
+    """
     if not self.send_email:
       return
 

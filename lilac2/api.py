@@ -37,6 +37,11 @@ s = requests.Session()
 s.headers['User-Agent'] = UserAgent
 
 def _unquote_item(s: str) -> Optional[str]:
+  """
+  unquote string
+  :param s:
+  :return:
+  """
   m = re.search(r'''[ \t'"]*([^ '"]+)[ \t'"]*''', s)
   if m is not None:
     return m.group(1)
@@ -44,6 +49,12 @@ def _unquote_item(s: str) -> Optional[str]:
     return None
 
 def _add_into_array(line: str, values: Iterable[str]) -> str:
+  """
+  add entries into a shell array ("(...)")
+  :param line: the shell array (in string)
+  :param values: the values to be added
+  :return: the processed shell array
+  """
   l = line.find('(')
   r = line.rfind(')')
   if r != -1:
@@ -58,9 +69,12 @@ def _add_into_array(line: str, values: Iterable[str]) -> str:
   return line
 
 def add_into_array(which: str, extra_deps: Iterable[str]) -> None:
-  '''
-  Add more values into the shell array
-  '''
+  """
+  add entries into PKGBUILD's array
+  :param which: which field in PKGBUILD to add to
+  :param extra_deps: the entries
+  :return:
+  """
   field_appeared = False
 
   pattern = re.compile(r'\s*' + re.escape(which) + r'=')
@@ -77,24 +91,46 @@ def add_into_array(which: str, extra_deps: Iterable[str]) -> None:
       f.write(line + '\n')
 
 def add_arch(extra_arches: Iterable[str]) -> None:
+  """
+  Add architectures to PKGBUILD
+  :param extra_arches:
+  :return:
+  """
   add_into_array('arch', extra_arches)
 
 def add_depends(extra_deps: Iterable[str]) -> None:
+  """
+  Add dependencies to PKGBUILD
+  :param extra_deps:
+  :return:
+  """
   add_into_array('depends', extra_deps)
 
 def add_makedepends(extra_deps: Iterable[str]) -> None:
+  """
+  Add build dependencies to PKGBUILD
+  :param extra_deps:
+  :return:
+  """
   add_into_array('makedepends', extra_deps)
 
 def edit_file(filename: str) -> Iterator[str]:
+  """
+  open a file as an iterator
+  :param filename: name of the file
+  :return: iterator of lines
+  """
   with fileinput.input(files=(filename,), inplace=True) as f:
     for line in f:
       yield line.rstrip('\n')
 
 def obtain_array(name: str) -> Optional[List[str]]:
-  '''
-  Obtain an array variable from PKGBUILD.
+  """
+  Parses the PKGBUILD for an array with a specific name
   Works by calling bash to source PKGBUILD, writing the array to a temporary file, and reading from the file.
-  '''
+  :param name: the name of the variable
+  :return: a list of string, if parse succeeded, None otherwise
+  """
   with tempfile.NamedTemporaryFile() as output_file:
     command_write_array_out = """printf "%s\\0" "${{{}[@]}}" > {}""" \
         .format(name, output_file.name)
@@ -109,14 +145,27 @@ def obtain_array(name: str) -> Optional[List[str]]:
     return variable
 
 def obtain_depends() -> Optional[List[str]]:
+  """
+  gets the 'depends' field of the PKGBUILD
+  :return: list of 'depends'
+  """
   return obtain_array('depends')
 
 def obtain_makedepends() -> Optional[List[str]]:
+  """
+  gets the 'makedepends' field of the PKGBUILD
+  :return: list of 'makedepends'
+  """
   return obtain_array('makedepends')
 
 def obtain_optdepends(
   parse_dict: bool=True
 ) -> Optional[Union[Dict[str, str], List[str]]]:
+  """
+  gets the 'optdepends' field of the PKGBUILD
+  :param parse_dict: whether to parse the descriptions of optdepends into a dict
+  :return: dict from optdepends to descriptions or list of unparsed optdepends
+  """
   obtained_array = obtain_array('optdepends')
   if not obtained_array:
     return obtained_array
@@ -127,6 +176,10 @@ def obtain_optdepends(
     return obtained_array
 
 def vcs_update() -> None:
+  """
+  update the vcs repo by removing 'src' and using makepkg to repull it
+  :return:
+  """
   # clean up the old source tree
   shutil.rmtree('src', ignore_errors=True)
   run_cmd(['makepkg', '-od', '--noprepare'], use_pty=True)
@@ -149,6 +202,11 @@ def get_pkgver_and_pkgrel(
   return pkgver, pkgrel
 
 def _next_pkgrel(rel: PkgRel) -> int:
+  """
+  bump pkgrel
+  :param rel: the current pkgrel
+  :return: updated pkgrel
+  """
   if isinstance(rel, int):
     return rel + 1
 
@@ -157,6 +215,12 @@ def _next_pkgrel(rel: PkgRel) -> int:
 
 def update_pkgver_and_pkgrel(
   newver: str, *, updpkgsums: bool = True) -> None:
+  """
+  update pkgver and pkgrel of a PKGBUILD script
+  :param newver: the new pkgver
+  :param updpkgsums: whether to update the checksum of files
+  :return:
+  """
 
   pkgver, pkgrel = get_pkgver_and_pkgrel()
   assert pkgver is not None and pkgrel is not None
@@ -178,6 +242,11 @@ def update_pkgver_and_pkgrel(
 def update_pkgrel(
   rel: Optional[PkgRel] = None,
 ) -> None:
+  """
+  update pkgrel of a PKGBUILD
+  :param rel: new pkgrel, set to None if you just want to bump it
+  :return:
+  """
   with open('PKGBUILD') as f:
     pkgbuild = f.read()
 
@@ -204,6 +273,20 @@ def pypi_pre_build(
   optdepends: Optional[List[str]] = None,
   license: Optional[str] = None,
 ) -> None:
+  """
+  pre build hook for pypi based packages
+  :param depends: dependencies of this package
+  :param python2: whether this is a python2 package/module
+  :param pypi_name: the pypi name of this package
+  :param arch: the architectures it supports
+  :param makedepends: build dependencies
+  :param depends_setuptools: whether this package depends on 'python-setuptools'
+  :param provides: the packages that this package provides
+  :param check: checkdepends of this package
+  :param optdepends: optional dependencies of this package
+  :param license: the license type of this package
+  :return:
+  """
   if os.path.exists('PKGBUILD'):
     pkgver, pkgrel = get_pkgver_and_pkgrel()
   else:
@@ -287,12 +370,22 @@ check() {
     update_pkgrel()
 
 def pypi_post_build() -> None:
+  """
+  post build hook of pypi based packages, updates the pkgbuild
+  :return:
+  """
   git_add_files('PKGBUILD')
   git_commit()
 
 def git_add_files(
   files: Union[str, List[str]], *, force: bool = False,
 ) -> None:
+  """
+  Track specified files in git repo
+  :param files: files to be tracked
+  :param force: whether to use the -f flag
+  :return:
+  """
   if isinstance(files, str):
     files = [files]
   try:
@@ -306,6 +399,12 @@ def git_add_files(
     raise
 
 def git_commit(*, check_status: bool = True) -> None:
+  """
+  Commit a repo
+  :param check_status: whether to check if there are any untracked files in the current directory
+  refuses to commit if there are any
+  :return:
+  """
   if check_status:
     ret = [x for x in
            run_cmd(["git", "status", "-s", "."]).splitlines()
@@ -321,6 +420,11 @@ class AurDownloadError(Exception):
     self.pkgname = pkgname
 
 def _update_aur_repo_real(pkgname: str) -> None:
+  """
+  updates the aur repo of a specific package
+  :param pkgname: name of the package
+  :return:
+  """
   aurpath = const.AUR_REPO_DIR / pkgname
   if not aurpath.is_dir():
     logger.info('cloning AUR repo: %s', aurpath)
@@ -351,6 +455,10 @@ def _update_aur_repo_real(pkgname: str) -> None:
     run_cmd(['git', 'push'])
 
 def update_aur_repo() -> None:
+  """
+  updates the aur repo
+  :return:
+  """
   pkgbase = _G.mod.pkgbase
   try:
     _update_aur_repo_real(pkgbase)
@@ -363,15 +471,28 @@ def update_aur_repo() -> None:
     )
 
 def git_pkgbuild_commit() -> None:
+  """
+  track and commit the PKGBUILD file in current dir
+  :return:
+  """
   git_add_files('PKGBUILD')
   git_commit()
 
 def _prepend_self_path() -> None:
+  """
+  adds this dir to the PATH environment variable
+  :return:
+  """
   mydir = Path(__file__).resolve().parent.parent
   path = os.environ['PATH']
   os.environ['PATH'] = str(mydir / path)
 
 def single_main(build_prefix: str = 'makepkg') -> None:
+  """
+  build a single package located at this directory
+  :param build_prefix: see call_build_cmd
+  :return:
+  """
   from nicelogger import enable_pretty_logging
   from . import lilacpy
   from .building import lilac_build
@@ -386,7 +507,10 @@ def single_main(build_prefix: str = 'makepkg') -> None:
     )
 
 def clean_directory() -> List[str]:
-  '''clean all PKGBUILD and related files'''
+  """
+  unlink all files in the current directory
+  :return: list of all unlinked files
+  """
   files = run_cmd(['git', 'ls-files']).splitlines()
   logger.info('clean directory')
   ret = []
@@ -402,6 +526,11 @@ def clean_directory() -> List[str]:
   return ret
 
 def _try_aur_url(name: str) -> bytes:
+  """
+  download an aur tarball
+  :param name: name of the aur package
+  :return:
+  """
   aur4url = 'https://aur.archlinux.org/cgit/aur.git/snapshot/{name}.tar.gz'
   templates = [aur4url]
   urls = [url.format(first_two=name[:2], name=name) for url in templates]
@@ -414,6 +543,11 @@ def _try_aur_url(name: str) -> bytes:
   raise AurDownloadError(name)
 
 def _download_aur_pkgbuild(name: str) -> List[str]:
+  """
+  downloads the PKGBUILD of an aur pakcage
+  :param name: name of the aur package
+  :return:
+  """
   content = io.BytesIO(_try_aur_url(name))
   files = []
   with tarfile.open(
@@ -431,12 +565,23 @@ def _download_aur_pkgbuild(name: str) -> List[str]:
   return files
 
 def git_rm_files(files: List[str]) -> None:
+  """
+  remove files from git stage
+  :param files: the files to be removed
+  :return:
+  """
   if files:
     run_cmd(['git', 'rm', '--cached', '--'] + files)
 
 def aur_pre_build(
   name: Optional[str] = None, *, do_vcs_update: Optional[bool] = None,
 ) -> None:
+  """
+  aur package pre build hook, update vcs and PKGBUILD script
+  :param name: name of the aur package
+  :param do_vcs_update: whether to update vcs repo
+  :return:
+  """
   if os.path.exists('PKGBUILD'):
     pkgver, pkgrel = get_pkgver_and_pkgrel()
   else:
@@ -465,6 +610,10 @@ def aur_pre_build(
         update_pkgrel(pkgrel)
 
 def aur_post_build() -> None:
+  """
+  aur package post build hook, commits the updated PKGBUILD script
+  :return:
+  """
   git_rm_files(_g.aur_pre_files)
   git_add_files(_g.aur_building_files, force=True)
   output = run_cmd(["git", "status", "-s", "."]).strip()
@@ -473,6 +622,11 @@ def aur_post_build() -> None:
   del _g.aur_pre_files, _g.aur_building_files
 
 def download_official_pkgbuild(name: str) -> List[str]:
+  """
+  downloads the PKGBUILD script of a package in official repo
+  :param name: name of the package
+  :return: list of PKGBUILDs
+  """
   url = 'https://www.archlinux.org/packages/search/json/?name=' + name
   logger.info('download PKGBUILD for %s.', name)
   info = s.get(url).json()

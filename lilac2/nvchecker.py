@@ -189,6 +189,12 @@ def _format_error(error) -> str:
   return ret
 
 def nvtake(L: Iterable[str], mods: LilacMods) -> None:
+  """
+  runs nvtake to update version records
+  :param L: list of software
+  :param mods:
+  :return:
+  """
   names: List[str] = []
   for name in L:
     confs = getattr(mods[name], 'update_on', None)

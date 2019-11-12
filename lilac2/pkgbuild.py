@@ -13,8 +13,11 @@ import pyalpm
 from .const import _G
 
 _official_repos = ['core', 'extra', 'community', 'multilib']
+""" Archlinux official repos """
 _official_packages: Set[str] = set()
+""" packages in official repos """
 _official_groups: Set[str] = set()
+""" groups in official repos """
 _repo_package_versions: Dict[str, str] = {}
 
 class ConflictWithOfficialError(Exception):
@@ -29,6 +32,13 @@ class DowngradingError(Exception):
     self.repo_version = repo_version
 
 def init_data(dbpath: os.PathLike, *, quiet: bool = False) -> None:
+  """
+  loads the versions and names of installed packages from pacman database
+  into _repo_package_versions
+  :param dbpath: path to pacman database
+  :param quiet: whether redirect stdout to /dev/null
+  :return:
+  """
   global _repo_package_versions
 
   if quiet:
@@ -57,12 +67,22 @@ def init_data(dbpath: os.PathLike, *, quiet: bool = False) -> None:
     _repo_package_versions = {p.name: p.version for p in db.pkgcache}
 
 def get_official_packages() -> Set[str]:
+  """
+  gets a list of packages in Archlinux official repos
+  :return:
+  """
   return _official_packages
 
 def check_srcinfo() -> None:
+  """
+  checks if the PKGBUILD script is well defined (not conflicting with official repo)
+  :raises DowngradingException: There is a newer version of this package installed
+  :raises ConflictWithOfficialError: The PKGBUILD conflicts with either groups or packages in the official repo
+  :return:
+  """
   srcinfo = get_srcinfo()
-  bad_groups = []
-  bad_packages = []
+  bad_groups = []    # list of conflicting group names
+  bad_packages = []  # list of conflicting package names
   pkgnames = []
 
   for line in srcinfo:
@@ -96,12 +116,21 @@ def check_srcinfo() -> None:
     raise ConflictWithOfficialError(bad_groups, bad_packages)
 
 def get_srcinfo() -> List[str]:
+  """
+  gets .SRCINFO of a PKGBUILD script using makepkg
+  :return: .SRCINFO, split into list of string
+  """
   out = subprocess.check_output(
     ['makepkg', '--printsrcinfo'],
   )
   return out.decode('utf-8').splitlines()
 
 def _get_package_version(srcinfo: List[str]) -> Tuple[Optional[str], str, str]:
+  """
+  gets the version of a PKGBUILD script from .SRCINFO
+  :param srcinfo: .SRCINFO, split into list of string
+  :return: tuple (epoch, pkgver, pkgrel), epoch might be None
+  """
   epoch = pkgver = pkgrel = None
 
   for line in srcinfo:

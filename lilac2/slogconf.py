@@ -23,6 +23,13 @@ def json_renderer(logger, level: str, event: LogEvent) -> str:
 def add_timestamp(
   logger, level: str, event: LogEvent,
 ) -> LogEvent:
+  """
+  adds a timestamp to a LogEvent
+  :param logger:
+  :param level:
+  :param event:
+  :return: event with timestamp set
+  """
   event['ts'] = time.time()
   return event
 

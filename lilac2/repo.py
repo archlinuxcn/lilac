@@ -29,18 +29,26 @@ build_logger = structlog.get_logger(logger_name='build')
 
 class Repo:
   gh: Optional[GitHub]
+  """ github api caller """
 
   def __init__(self, config: configparser.ConfigParser):
     self.myaddress = config.get('lilac', 'email')
+    """ email address of lilac (from subject) """
     self.mymaster = config.get('lilac', 'master')
+    """ lilac's maintainer's email address """
     self.repomail = config.get('repository', 'email')
+    """  """
     self.name = config.get('repository', 'name')
+    """ name of the repository """
     self.trim_ansi_codes = not config.getboolean(
       'smtp', 'use_ansi', fallback=False)
+    """ whether to trim ansi escaped codes or not """
 
     self.repodir = Path(config.get('repository', 'repodir')).expanduser()
+    """ path to the repository """
 
     self.ms = MailService(config)
+    """ mailing service object """
     github_token = config.get('lilac', 'github_token', fallback=None)
     if github_token:
       self.gh = GitHub(config.get('lilac', 'github_token', fallback=None))
@@ -51,6 +59,12 @@ class Repo:
 
   @lru_cache()
   def maintainer_from_github(self, username: str) -> Optional[Maintainer]:
+    """
+    gets the maintainer by hes/hers github username
+    :param username: github username
+    :raises ValueError: if github token is not set
+    :return: Maintainer object if succeeded, None otherwise
+    """
     if self.gh is None:
       raise ValueError('未设置 github token，无法从 GitHub 取得用户 Email 地址')
 
@@ -62,6 +76,11 @@ class Repo:
 
   @lru_cache()
   def find_maintainers(self, mod: LilacMod) -> List[Maintainer]:
+    """
+    gets the maintainers of a certain LilacMod (module/package)
+    :param mod: the LilacMod
+    :return: a list of Maintainer object
+    """
     ret = []
     errors = []
 
@@ -112,6 +131,12 @@ class Repo:
     dir: Path = Path('.'),
     file: str = '*',
   ) -> Maintainer:
+    """
+    finds the maintainer responsible of a file in a specific directory
+    :param dir: the directory
+    :param file: the file
+    :return: a Maintainer object
+    """
 
     me = self.myaddress
 
@@ -133,6 +158,12 @@ class Repo:
       p.terminate()
 
   def report_error(self, subject: str, msg: str) -> None:
+    """
+    sends an simple error report to the maintainer of lilac
+    :param subject: the subject field of the email
+    :param msg: the message to be sent
+    :return:
+    """
     self.ms.sendmail(self.mymaster, subject, msg)
 
   def send_error_report(
@@ -143,6 +174,15 @@ class Repo:
     subject: Optional[str] = None,
     logfile: Optional[Path] = None,
   ) -> None:
+    """
+    sends an error report the the maintainer responsible of the package that caused the error
+    :param mod: the module that caused the error, either a module or the name
+    :param msg: the message to be prepended before the error report
+    :param exc: the exception caused by the package/module
+    :param subject: subject field of the email
+    :param logfile: the log file of the building process
+    :return:
+    """
     if msg is None and exc is None:
       raise TypeError('send_error_report received inefficient args')
 
@@ -201,6 +241,13 @@ class Repo:
 
   def sendmail(self, who: Union[str, List[str], Maintainer],
                subject: str, msg: str) -> None:
+    """
+    sends mail to a maintainer or a list of maintainers
+    :param who: the receiver(s)
+    :param subject: subject filed of the email
+    :param msg: content of the email
+    :return:
+    """
     if isinstance(who, Maintainer):
       who = str(who)
     self.ms.sendmail(who, subject, msg)
@@ -209,6 +256,11 @@ class Repo:
     self.ms.sendmail(self.repomail, subject, msg)
 
   def manages(self, dep: Dependency) -> bool:
+    """
+    checks whether a dependency is in this repo
+    :param dep: the Dependency object
+    :return:
+    """
     return dep.pkgdir.name in self.mods
 
   def load_managed_lilac_and_report(self) -> Set[str]:
