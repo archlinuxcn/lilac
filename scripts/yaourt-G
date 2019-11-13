@@ -1,0 +1,20 @@
+#!/usr/bin/python3
+
+import sys
+import os
+import pathlib
+
+topdir = pathlib.Path(__file__).resolve().parent.parent
+sys.path.append(str(topdir))
+sys.path.append(str(topdir / 'vendor'))
+
+from lilac2.api import download_official_pkgbuild
+
+def main():
+  name = sys.argv[1]
+  os.mkdir(name)
+  os.chdir(name)
+  download_official_pkgbuild(name)
+
+if __name__ == '__main__':
+  main()
