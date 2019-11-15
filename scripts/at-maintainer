@@ -1,0 +1,33 @@
+#!/usr/bin/python3
+
+import sys
+import pathlib
+import re
+
+from lilac2.lilacpy import load_all
+
+REPOPATH = pathlib.Path('/ldata/src/archgitrepo/archlinuxcn')
+
+PkgPattern = re.compile(r'[\w.+-]+')
+
+def main():
+  mods, _errors = load_all(REPOPATH)
+
+  for line in sys.stdin:
+    m = PkgPattern.search(line)
+    if not m:
+      sys.stdout.write(line)
+      continue
+
+    pkg = m.group(0)
+    if pkg not in mods:
+      sys.stdout.write(line)
+      continue
+
+    m = mods[pkg]
+    maints = [x['github'] for x in m.maintainers]
+    line = line.rstrip() + ' (%s)\n' % ' '.join(f'@{x}' for x in maints)
+    sys.stdout.write(line)
+
+if __name__ == '__main__':
+  main()
