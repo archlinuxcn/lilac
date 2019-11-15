@@ -47,6 +47,7 @@ BIND_MOUNTS = [
   os.path.expanduser('~/.cargo') + ':/build/.cargo',
   os.path.expanduser('~/go') + ':/build/go',
   os.path.expanduser('~/.cache/go-build') + ':/build/.cache/go-build',
+  os.path.expanduser('~/.cache/pip') + ':/build/.cache/pip',
 ]
 
 config = configparser.ConfigParser()
