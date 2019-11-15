@@ -449,9 +449,12 @@ def aur_pre_build(
 
   aur_pkgver, aur_pkgrel = get_pkgver_and_pkgrel()
   if pkgver and pkgver == aur_pkgver:
-    # change to larger pkgrel
     if pyalpm.vercmp(f'1-{pkgrel}', f'1-{aur_pkgrel}') > 0:
+      # change to larger pkgrel
       update_pkgrel(pkgrel)
+    elif pkgrel == aur_pkgver:
+      # update for rebuild
+      update_pkgrel()
 
   if do_vcs_update is None:
     do_vcs_update = name.endswith(('-git', '-hg', '-svn', '-bzr'))
@@ -463,6 +466,9 @@ def aur_pre_build(
     if pkgver and pkgver == new_pkgver:
       if pyalpm.vercmp(f'1-{pkgrel}', f'1-{new_pkgrel}') > 0:
         update_pkgrel(pkgrel)
+      elif pkgrel == new_pkgver:
+        # update for rebuild
+        update_pkgrel()
 
 def aur_post_build() -> None:
   git_rm_files(_g.aur_pre_files)
