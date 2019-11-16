@@ -284,7 +284,8 @@ check() {
 
   new_pkgver = get_pkgver_and_pkgrel()[0]
   if pkgver and pkgver == new_pkgver:
-    update_pkgrel()
+    assert pkgrel is not None
+    update_pkgrel(_next_pkgrel(pkgrel))
 
 def pypi_post_build() -> None:
   git_add_files('PKGBUILD')
