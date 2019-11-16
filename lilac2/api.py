@@ -214,8 +214,8 @@ def pypi_pre_build(
   else:
     pkgver = None
 
-  pkgname = os.path.basename(os.getcwd())
   if pypi_name is None:
+    pkgname = os.path.basename(os.getcwd())
     pypi_name = pkgname.split('-', 1)[-1]
 
   new_pkgver, pkgbuild = gen_pkgbuild(
