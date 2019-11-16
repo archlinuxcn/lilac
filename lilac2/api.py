@@ -25,6 +25,7 @@ from .cmd import run_cmd, git_pull, git_push, git_reset_hard
 from . import const
 from .const import _G, SPECIAL_FILES
 from .typing import PkgRel
+from .pypi2pkgbuild import gen_pkgbuild
 
 git_push
 
@@ -200,10 +201,14 @@ def pypi_pre_build(
   makedepends: Optional[List[str]] = None,
   depends_setuptools: bool = True,
   provides: Optional[Iterable[str]] = None,
-  check: Optional[str] = None, # TODO 3.8: use Literal
+  check: Optional[str] = None,
   optdepends: Optional[List[str]] = None,
   license: Optional[str] = None,
+  license_file: Optional[str] = None,
 ) -> None:
+  if python2:
+    raise ValueError('pypi_pre_build no longer supports python2')
+
   if os.path.exists('PKGBUILD'):
     pkgver, pkgrel = get_pkgver_and_pkgrel()
   else:
@@ -212,77 +217,23 @@ def pypi_pre_build(
   pkgname = os.path.basename(os.getcwd())
   if pypi_name is None:
     pypi_name = pkgname.split('-', 1)[-1]
-  pkgbuild = run_cmd(['pypi2pkgbuild', pypi_name], silent=True)
 
-  if depends_setuptools:
-    if depends is None:
-      depends = ['python-setuptools']
-    else:
-      depends.append('python-setuptools')
-  elif makedepends is None:
-    makedepends = ['python-setuptools']
-  elif makedepends:
-    makedepends.append('python-setuptools')
+  new_pkgver, pkgbuild = gen_pkgbuild(
+    pypi_name,
+    depends = depends,
+    arch = arch,
+    makedepends = makedepends,
+    depends_setuptools = depends_setuptools,
+    provides = provides,
+    check = check,
+    optdepends = optdepends,
+    license = license,
+    license_file = license_file,
+  )
 
-  pkgbuild = re.sub(r'^pkgname=.*', f'pkgname={pkgname}',
-                    pkgbuild, flags=re.MULTILINE)
-
-  if license:
-    pkgbuild = re.sub(r'^license=.*', f'license=({license})',
-                      pkgbuild, flags=re.MULTILINE)
-
-  if depends:
-    pkgbuild = pkgbuild.replace(
-      "depends=('python')",
-      "depends=('python' %s)" % ' '.join(f"'{x}'" for x in depends))
-
-  if check is not None:
-    if check == 'nose':
-      pkgbuild = pkgbuild.replace(
-        '\nsource=',
-        "\ncheckdepends=('python-nose')\nsource=",
-      )
-    else:
-      raise ValueError(f'check={check} not recognized')
-
-    pkgbuild = pkgbuild.replace(
-      '# vim:set sw=2 et:',
-      '''\
-check() {
-  cd $pkgname-$pkgver
-  python -m unittest discover tests
-}
-
-# vim:set sw=2 et:''')
-
-  if makedepends:
-    pkgbuild = pkgbuild.replace(
-      '\nsource=',
-      '\nmakedepends=(%s)\nsource=' %
-      ' '.join("'%s'" % x for x in makedepends))
-
-  if optdepends:
-    pkgbuild = pkgbuild.replace(
-      '\nsource=',
-      '\noptdepends=(%s)\nsource=' %
-      ' '.join("'%s'" % x for x in optdepends))
-
-  if provides:
-    pkgbuild = pkgbuild.replace(
-      '\nsource=',
-      '\nprovides=(%s)\nsource=' %
-      ' '.join("'%s'" % x for x in provides))
-
-  if python2:
-    pkgbuild = re.sub(r'\bpython3?(?!\.)', 'python2', pkgbuild)
-  if arch is not None:
-    pkgbuild = pkgbuild.replace(
-      "arch=('any')",
-      "arch=(%s)" % ' '.join("'%s'" % x for x in arch))
   with open('PKGBUILD', 'w') as f:
     f.write(pkgbuild)
 
-  new_pkgver = get_pkgver_and_pkgrel()[0]
   if pkgver and pkgver == new_pkgver:
     assert pkgrel is not None
     update_pkgrel(_next_pkgrel(pkgrel))
