@@ -30,7 +30,7 @@ package() {{
 '''
 
 pkg_tmpl = '''\
-  cd "$srcdir/$_pkgname-$pkgver"
+  cd "$srcdir/$_name-$pkgver"
   python3 setup.py install --root=$pkgdir --optimize=1 --skip-build
 '''
 
@@ -109,11 +109,11 @@ def gen_pkgbuild(
     r = source_release[-1]
     source_line = 'source=("https://files.pythonhosted.org/packages/source/${_name::1}/${_name}/${_name}-${pkgver}.tar.gz")'
     build_code = '''\
-  cd "$srcdir/$_pkgname-$pkgver"
+  cd "$srcdir/$_name-$pkgver"
   python3 setup.py build
 '''
     package_code = '''\
-  cd "$srcdir/$_pkgname-$pkgver"
+  cd "$srcdir/$_name-$pkgver"
   python3 setup.py install --root=$pkgdir --optimize=1 --skip-build
 '''
     if license_file:
@@ -142,7 +142,7 @@ check() {
     check_code = ''
 
   vars1 = {
-    'name': pypi_name,
+    'name': j['info']['name'],
     'pkgname': pkgname or f'python-{pypi_name.lower()}',
     'pkgver': version,
     'summary': j['info']['summary'],
