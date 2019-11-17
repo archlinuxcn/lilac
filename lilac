@@ -414,14 +414,13 @@ def setup() -> None:
   prctl.set_child_subreaper(1)
   global logdir
 
-  if config.getboolean('lilac', 'log_to_file'):
-    logdir = mydir / 'log' / time.strftime('%Y-%m-%dT%H:%M:%S')
-    logdir.mkdir(parents=True, exist_ok=True)
-    logfile = logdir / 'lilac-main.log'
-    fd = os.open(logfile, os.O_WRONLY | os.O_CREAT, 0o644)
-    os.dup2(fd, 1)
-    os.dup2(fd, 2)
-    os.close(fd)
+  logdir = mydir / 'log' / time.strftime('%Y-%m-%dT%H:%M:%S')
+  logdir.mkdir(parents=True, exist_ok=True)
+  logfile = logdir / 'lilac-main.log'
+  fd = os.open(logfile, os.O_WRONLY | os.O_CREAT, 0o644)
+  os.dup2(fd, 1)
+  os.dup2(fd, 2)
+  os.close(fd)
 
   enable_pretty_logging('DEBUG')
   if 'MAKEFLAGS' not in os.environ:
