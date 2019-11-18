@@ -87,13 +87,15 @@ def gen_pkgbuild(
   if not source_release and license_file:
     raise PyPIException('no source code available so cannot install license_file')
 
-  depends2 = depends or ['python']
-  if depends_setuptools:
-    depends2.append('python-setuptools')
-
   makedepends2 = makedepends or []
   if whl_release:
     makedepends2.append('python-pip')
+
+  depends2 = depends or ['python']
+  if depends_setuptools:
+    depends2.append('python-setuptools')
+  else:
+    makedepends2.append('python-setuptools')
 
   depends_str = []
   if depends2:
