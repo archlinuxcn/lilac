@@ -404,7 +404,7 @@ def aur_pre_build(
     if pyalpm.vercmp(f'1-{pkgrel}', f'1-{aur_pkgrel}') > 0:
       # change to larger pkgrel
       update_pkgrel(pkgrel)
-    elif pkgrel == aur_pkgver:
+    elif pkgrel == aur_pkgrel:
       # update for rebuild
       update_pkgrel()
 
@@ -418,7 +418,7 @@ def aur_pre_build(
     if pkgver and pkgver == new_pkgver:
       if pyalpm.vercmp(f'1-{pkgrel}', f'1-{new_pkgrel}') > 0:
         update_pkgrel(pkgrel)
-      elif pkgrel == new_pkgver:
+      elif pkgrel == new_pkgrel:
         # update for rebuild
         update_pkgrel()
 
