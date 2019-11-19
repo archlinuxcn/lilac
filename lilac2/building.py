@@ -96,9 +96,9 @@ def lilac_build(
     if hasattr(mod, 'makechrootpkg_args'):
         makechrootpkg_args = mod.makechrootpkg_args
 
-    makepkg_args: List[str] = []
+    makepkg_args = ['--noprogressbar']
     if hasattr(mod, 'makepkg_args'):
-        makepkg_args = mod.makepkg_args
+        makepkg_args.extend(mod.makepkg_args)
 
     call_build_cmd(
       build_prefix, depend_packages, bindmounts,
