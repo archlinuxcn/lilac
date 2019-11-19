@@ -45,7 +45,7 @@ def rmfile(f):
 
 def is_vcs(dir):
   files = [f.name for f in dir.iterdir()]
-  return any(x in files for x in ['.git', '.hg', '.svn'])
+  return any(x in files for x in ['.git', '.hg', '.svn', 'packed-refs'])
 
 def process(dir, git_files):
   files = list(dir.iterdir())
