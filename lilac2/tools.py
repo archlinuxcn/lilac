@@ -6,7 +6,13 @@ import subprocess
 import contextlib
 from typing import Generator
 
-ansi_escape_re = re.compile(r'\x1B(\[[0-?]*[ -/]*[@-~]|\(B)')
+ansi_escape_re = re.compile(r'''
+    \x1B    # ESC
+    [@-_]   # 7-bit C1 Fe
+    [0-?]*  # Parameter bytes
+    [ -/]*  # Intermediate bytes
+    [@-~]   # Final byte
+''', re.VERBOSE)
 
 def kill_child_processes() -> None:
   subprocess.run(['kill_children'])
