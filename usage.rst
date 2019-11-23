@@ -56,7 +56,7 @@ lilac 是由百合仙子（a.k.a. `依云 <https://github.com/lilydjwg>`_\ ）�
 -------------
 如果你已经完成了 ``lilac.py`` 的编写，并正确配置了 lilac 的运行环境，则可以在 ``lilac.py`` 最后加入以下代码进行测试： ::
 
-  if __name__ == '__main__'
+  if __name__ == '__main__':
     single_main()
 
 保存并运行 ``lilac.py``\ ： ::
