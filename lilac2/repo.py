@@ -144,7 +144,7 @@ class Repo:
     logfile: Optional[Path] = None,
   ) -> None:
     if msg is None and exc is None:
-      raise TypeError('send_error_report received inefficient args')
+      raise TypeError('send_error_report received insufficient args')
 
     if isinstance(mod, str):
       maintainers = [self.find_maintainer_by_git(file=mod)]
