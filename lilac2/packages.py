@@ -79,10 +79,11 @@ class DependencyManager:
     else:
       pkgbase = pkgname = what
 
-    if pkgname not in self._CACHE:
-      self._CACHE[pkgname] = Dependency(
+    key = '/'.join((pkgbase, pkgname))
+    if key not in self._CACHE:
+      self._CACHE[key] = Dependency(
         self.repodir / pkgbase, pkgname)
-    return self._CACHE[pkgname]
+    return self._CACHE[key]
 
 def get_changed_packages(from_: str, to: str) -> Set[str]:
   cmd = ["git", "diff", "--name-only", '--relative', from_, to]
