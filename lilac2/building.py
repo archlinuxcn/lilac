@@ -126,7 +126,7 @@ def call_build_cmd(
 ) -> None:
   cmd: Cmd
   if build_prefix == 'makepkg':
-    cmd = ['makepkg', '--holdver']
+    cmd = ['makepkg']
   else:
     cmd = ['%s-build' % build_prefix]
     cmd.extend(build_args)
@@ -150,7 +150,6 @@ def call_build_cmd(
     cmd.extend(makechrootpkg_args)
     cmd.extend(['--'])
     cmd.extend(makepkg_args)
-    cmd.extend(['--holdver'])
 
   # NOTE that Ctrl-C here may not succeed
   run_build_cmd(cmd)
