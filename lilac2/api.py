@@ -130,6 +130,7 @@ def obtain_optdepends(
 def vcs_update() -> None:
   # clean up the old source tree
   shutil.rmtree('src', ignore_errors=True)
+  run_cmd(['makepkg', '-od', '--noprepare'], use_pty=True)
 
 def get_pkgver_and_pkgrel(
 ) -> Tuple[Optional[str], Optional[PkgRel]]:
