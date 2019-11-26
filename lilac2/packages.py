@@ -25,8 +25,8 @@ def get_dependency_map(
     ds = [depman.get(d) for d in depends]
     if ds:
       for d in ds:
-        shallow_map[name].add(d.pkgname)
-        rmap[d.pkgname].add(name)
+        shallow_map[name].add(d.pkgdir)
+        rmap[d.pkgdir].add(name)
       map[name].update(ds)
 
   dep_order = toposort_flatten(shallow_map)
