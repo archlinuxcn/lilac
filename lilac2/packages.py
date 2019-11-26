@@ -15,25 +15,30 @@ from .typing import LilacMods
 def get_dependency_map(
   depman: DependencyManager, mods: LilacMods,
 ) -> Dict[str, Set[Dependency]]:
+  '''compute ordered, complete dependency relations between pkgbases (the directory names)
+
+  This function does not make use of pkgname because they maybe the same for
+  different pkgdir. Those are carried by Dependency and used elsewhere.
+  '''
   map: Dict[str, Set[Dependency]] = defaultdict(set)
-  shallow_map: Dict[str, Set[str]] = defaultdict(set)
+  pkgdir_map: Dict[str, Set[str]] = defaultdict(set)
   rmap: Dict[str, Set[str]] = defaultdict(set)
 
-  for name, mod in mods.items():
+  for pkgbase, mod in mods.items():
     depends = getattr(mod, 'repo_depends', ())
 
     ds = [depman.get(d) for d in depends]
     if ds:
       for d in ds:
-        shallow_map[name].add(d.pkgname)
-        rmap[d.pkgname].add(name)
-      map[name].update(ds)
+        pkgdir_map[pkgbase].add(d.pkgdir.name)
+        rmap[d.pkgdir.name].add(pkgbase)
+      map[pkgbase].update(ds)
 
-  dep_order = toposort_flatten(shallow_map)
-  for name in dep_order:
-    if name in rmap:
-      deps = map[name]
-      dependers = rmap[name]
+  dep_order = toposort_flatten(pkgdir_map)
+  for pkgbase in dep_order:
+    if pkgbase in rmap:
+      deps = map[pkgbase]
+      dependers = rmap[pkgbase]
       for dd in dependers:
         map[dd].update(deps)
 
@@ -43,13 +48,10 @@ _DependencyTuple = namedtuple(
   '_DependencyTuple', 'pkgdir pkgname')
 
 class Dependency(_DependencyTuple):
-  def resolve(self) -> Optional[Path]:
-    try:
-      return self._find_local_package()
-    except FileNotFoundError:
-      return None
+  pkgdir: Path
+  pkgname: str
 
-  def _find_local_package(self) -> Path:
+  def resolve(self) -> Optional[Path]:
     files = [x for x in self.pkgdir.iterdir()
              if x.name.endswith(('.pkg.tar.xz', '.pkg.tar.zst'))]
     pkgs = []
@@ -61,7 +63,7 @@ class Dependency(_DependencyTuple):
     if len(pkgs) == 1:
       return pkgs[0]
     elif not pkgs:
-      raise FileNotFoundError
+      return None
     else:
       ret = sorted(
         pkgs, reverse=True, key=lambda x: x.stat().st_mtime)[0]
