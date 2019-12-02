@@ -52,8 +52,12 @@ class Dependency(_DependencyTuple):
   pkgname: str
 
   def resolve(self) -> Optional[Path]:
-    files = [x for x in self.pkgdir.iterdir()
-             if x.name.endswith(('.pkg.tar.xz', '.pkg.tar.zst'))]
+    try:
+      files = [x for x in self.pkgdir.iterdir()
+              if x.name.endswith(('.pkg.tar.xz', '.pkg.tar.zst'))]
+    except FileNotFoundError:
+      return None
+
     pkgs = []
     for x in files:
       info = archpkg.PkgNameInfo.parseFilename(x.name)
