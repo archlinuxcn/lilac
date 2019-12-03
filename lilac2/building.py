@@ -12,6 +12,7 @@ from types import SimpleNamespace
 from . import pkgbuild
 from .typing import LilacMod, Cmd
 from .cmd import run_cmd
+from .api import vcs_update
 from .packages import Dependency
 from .nvchecker import NvResults
 from .tools import kill_child_processes
@@ -66,6 +67,7 @@ def lilac_build(
     if pre_build is not None:
       logger.debug('accept_noupdate=%r, oldver=%r, newver=%r', accept_noupdate, oldver, newver)
       pre_build()
+    vcs_update()
     pkgbuild.check_srcinfo()
     run_cmd(['recv_gpg_keys'])
 
