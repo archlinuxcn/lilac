@@ -23,8 +23,8 @@ clang:
   from_pattern: ^(\d+)\..*
   to_pattern: \1
 protobuf:
-  # soname changes with patch versions too; see https://www.archlinux.org/todo/protobuf-361-rebuild/
   archpkg: protobuf
+  provided: libprotobuf.so
   strip-release: true
 jsoncpp:
   archpkg: jsoncpp
