@@ -46,6 +46,7 @@ from lilac2 import slogconf
 BIND_MOUNTS = [
   os.path.expanduser('~/.cargo') + ':/build/.cargo',
   os.path.expanduser('~/go') + ':/build/go',
+  os.path.expanduser('~/.cache/archbuild-bind-cache') + ':/build/.cache',
   os.path.expanduser('~/.cache/go-build') + ':/build/.cache/go-build',
   os.path.expanduser('~/.cache/pip') + ':/build/.cache/pip',
 ]
