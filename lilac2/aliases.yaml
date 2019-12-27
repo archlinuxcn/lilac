@@ -30,3 +30,7 @@ jsoncpp:
   archpkg: jsoncpp
   provided: libjsoncpp.so
   strip-release: true
+mediawiki:
+  archpkg: mediawiki
+  from_pattern: '^(\d+\.\d+)\..*'
+  to_pattern: '\1'
