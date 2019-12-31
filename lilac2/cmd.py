@@ -45,7 +45,7 @@ def git_pull_override() -> bool:
   except subprocess.CalledProcessError as e:
     if 'would be overwritten by merge:' in e.output:
       files = [line.strip()
-                for line in output.splitlines()
+                for line in e.output.splitlines()
                 if line.startswith('\t')]
       gitroot = _find_gitroot()
       for f in files:
