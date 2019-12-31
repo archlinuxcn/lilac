@@ -30,8 +30,8 @@ from lilac2.packages import (
   Dependency,
 )
 from lilac2.cmd import (
-  run_cmd, git_pull, git_push, pkgrel_changed, git_reset_hard,
-  get_git_branch,
+  run_cmd, git_pull_override, git_push, pkgrel_changed,
+  git_reset_hard, get_git_branch,
 )
 from lilac2.tools import kill_child_processes, redirect_output
 from lilac2.repo import Repo
@@ -311,7 +311,7 @@ def main_may_raise(D: Dict[str, Any], pkgs_to_build: List[str]) -> None:
     raise Exception('repo not on master, aborting.')
 
   git_reset_hard()
-  git_pull()
+  git_pull_override()
   failed = REPO.load_managed_lilac_and_report()
 
   depman = DependencyManager(REPO.repodir)

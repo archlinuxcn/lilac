@@ -9,14 +9,37 @@ import re
 from subprocess import CalledProcessError
 from typing import Optional
 import types
+from pathlib import Path
 
 from .typing import Cmd
 from .tools import kill_child_processes
 
 logger = logging.getLogger(__name__)
 
+def _find_gitroot() -> Path:
+  d = Path('.').resolve(strict=True)
+  while d != d.parent:
+    if (d / '.git').exists():
+      return d
+    else:
+      d = d.parent
+
+  raise Exception('failed to find git root')
+
 def git_pull() -> bool:
   output = run_cmd(['git', 'pull', '--no-edit'])
+  return 'up-to-date' not in output
+
+def git_pull_override() -> bool:
+  output = run_cmd(['git', 'pull', '--no-edit'])
+  if 'would be overwritten by merge:' in output:
+    files = [line.strip()
+              for line in output.splitlines()
+              if line.startswith('\t')]
+    gitroot = _find_gitroot()
+    for f in files:
+      (gitroot / f).unlink()
+    output = run_cmd(['git', 'pull', '--no-edit'])
   return 'up-to-date' not in output
 
 def git_push() -> None:
