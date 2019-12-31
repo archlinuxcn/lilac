@@ -31,15 +31,20 @@ def git_pull() -> bool:
   return 'up-to-date' not in output
 
 def git_pull_override() -> bool:
-  output = run_cmd(['git', 'pull', '--no-edit'])
-  if 'would be overwritten by merge:' in output:
-    files = [line.strip()
-              for line in output.splitlines()
-              if line.startswith('\t')]
-    gitroot = _find_gitroot()
-    for f in files:
-      (gitroot / f).unlink()
+  try:
     output = run_cmd(['git', 'pull', '--no-edit'])
+  except subprocess.CalledProcessError as e:
+    if 'would be overwritten by merge:' in e.output:
+      files = [line.strip()
+                for line in output.splitlines()
+                if line.startswith('\t')]
+      gitroot = _find_gitroot()
+      for f in files:
+        (gitroot / f).unlink()
+      output = run_cmd(['git', 'pull', '--no-edit'])
+    else:
+      raise
+
   return 'up-to-date' not in output
 
 def git_push() -> None:
