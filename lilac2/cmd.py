@@ -7,7 +7,7 @@ import signal
 import sys
 import re
 from subprocess import CalledProcessError
-from typing import Optional
+from typing import Optional, Dict
 import types
 from pathlib import Path
 
@@ -32,7 +32,16 @@ def git_pull() -> bool:
 
 def git_pull_override() -> bool:
   try:
-    output = run_cmd(['git', 'pull', '--no-edit'])
+    env = os.environ.copy()
+    env['LANG'] = 'en_US.UTF-8'
+    try:
+      del env['LANGUAGE']
+    except KeyError:
+      pass
+    output = run_cmd(
+      ['git', 'pull', '--no-edit'],
+      env = env,
+    )
   except subprocess.CalledProcessError as e:
     if 'would be overwritten by merge:' in e.output:
       files = [line.strip()
@@ -70,8 +79,13 @@ def get_git_branch() -> str:
 
   return '(unknown branch)'
 
-def run_cmd(cmd: Cmd, *, use_pty: bool = False, silent: bool = False,
-            cwd: Optional[os.PathLike] = None) -> str:
+def run_cmd(
+  cmd: Cmd, *,
+  use_pty: bool = False,
+  silent: bool = False,
+  cwd: Optional[os.PathLike] = None,
+  env: Optional[Dict[str, str]] = None,
+) -> str:
   logger.debug('running %r, %susing pty,%s showing output', cmd,
                '' if use_pty else 'not ',
                ' not' if silent else '')
@@ -92,8 +106,9 @@ def run_cmd(cmd: Cmd, *, use_pty: bool = False, silent: bool = False,
     old_hdl = signal.signal(signal.SIGCHLD, child_exited)
 
     p = subprocess.Popen(
-      cmd, stdin = stdin, stdout = stdout, stderr = subprocess.STDOUT,
-      cwd = cwd,
+      cmd, stdin = stdin,
+      stdout = stdout, stderr = subprocess.STDOUT,
+      cwd = cwd, env = env,
     )
     if use_pty:
       os.close(stdout)
