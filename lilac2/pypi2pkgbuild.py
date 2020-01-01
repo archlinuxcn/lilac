@@ -24,6 +24,10 @@ build() {{
 
 package() {{
 {package}
+
+  # make sure we don't install annoying files
+  local _site_packages=$(python -c "import site; print(site.getsitepackages()[0])")
+  rm -rf "$pkgdir/$_site_packages/tests/"
 }}
 
 {check}
