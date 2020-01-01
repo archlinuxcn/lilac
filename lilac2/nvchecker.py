@@ -122,6 +122,9 @@ def packages_need_update(
     elif j['level'] in ['warning', 'warn', 'error', 'exception', 'critical']:
       errors[pkg].append(j)
 
+  # don't rebuild if part of its checks have failed
+  rebuild -= errors.keys()
+
   ret = process.wait()
   if ret != 0:
     raise subprocess.CalledProcessError(ret, cmd)
@@ -147,12 +150,10 @@ def packages_need_update(
     repo.sendmail(who, 'nvchecker 错误报告',
                   '\n'.join(_format_error(e) for e in their_errors))
 
-  if None in errors:
+  if None in errors: # errors belong to unknown packages
     subject = 'nvchecker 问题'
-    msg = ''
-    if None in errors:
-      msg += '在更新检查时出现了一些错误：\n\n' + '\n'.join(
-        _format_error(e) for e in errors[None]) + '\n'
+    msg = '在更新检查时出现了一些错误：\n\n' + '\n'.join(
+      _format_error(e) for e in errors[None]) + '\n'
     repo.send_repo_mail(subject, msg)
 
   nvdata: Dict[str, NvResults] = {}
@@ -161,9 +162,10 @@ def packages_need_update(
     nrs = nvdata[name] = NvResults()
     for i, (j, nr) in enumerate(sorted(d.items())):
       if i != j:
-        logger.error('mismatched nvdata_unord item for %s: %d != %d in %r', 
-                     name, i, j, d)
-        nrs.append(NvResult('(error)', '(error)'))
+        logger.warning('mismatched nvdata_unord item for %s: %d != %d in %r', 
+                       name, i, j, d)
+        # maybe previous items have failed; insert a dummy one
+        nrs.append(NvResult(None, None))
       else:
         nrs.append(nr)
 
