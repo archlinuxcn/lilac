@@ -26,8 +26,8 @@ OLDVER_FILE = mydir / 'oldver'
 NEWVER_FILE = mydir / 'newver'
 
 class NvResult(NamedTuple):
-  oldver: str
-  newver: str
+  oldver: Optional[str]
+  newver: Optional[str]
 
 class NvResults(UserList):
   data: List[NvResult]
