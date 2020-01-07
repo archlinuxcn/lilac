@@ -160,7 +160,7 @@ class Repo:
     if exc is not None:
       exception, tb = exc
       if isinstance(exception, subprocess.CalledProcessError):
-        subject_real = subject or '在编译软件包 %s 时发生错误'
+        subject_real = subject or '在打包软件包 %s 时发生错误'
         msgs.append('命令执行失败！\n\n命令 %r 返回了错误号 %d。' % (
           exception.cmd, exception.returncode))
         if exception.output:
@@ -170,8 +170,10 @@ class Repo:
         subject_real = subject or '在获取AUR包 %s 时发生错误'
         msgs.append('获取AUR包失败！\n\n')
         msgs.append('调用栈如下：\n\n' + tb)
+      elif isinstance(exception, TimeoutError):
+        subject_real = subject or '打包软件包 %s 超时'
       else:
-        subject_real = subject or '在编译软件包 %s 时发生未知错误'
+        subject_real = subject or '在打包软件包 %s 时发生未知错误'
         msgs.append('发生未知错误！调用栈如下：\n\n' + tb)
     else:
       if subject is None:
