@@ -10,8 +10,8 @@ import shutil
 import sys
 import time
 
-# repodir = pathlib.Path('/ldata/src/archgitrepo/archlinuxcn').expanduser()
-repodir = pathlib.Path('~/archgitrepo/archlinuxcn').expanduser()
+repodir = pathlib.Path('/ldata/src/archgitrepo/archlinuxcn').expanduser()
+# repodir = pathlib.Path('~/archgitrepo/archlinuxcn').expanduser()
 
 DRY_RUN = True
 
@@ -24,7 +24,11 @@ def get_git_managed():
     if line == '.gitignore':
       continue
 
-    pkgbase, file = line.split('/', 1)
+    try:
+      pkgbase, file = line.split('/', 1)
+    except ValueError:
+      # skip subproject commits
+      continue
     pkgbase_to_files[pkgbase].append(file)
 
   return pkgbase_to_files
