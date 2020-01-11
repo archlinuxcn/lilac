@@ -14,10 +14,9 @@ arch=({arch})
 url="{home_page}"
 license=({license})
 {depends}
-{provides}
-{source}
+{provides}{source}
 sha256sums=('{sha256sum}')
-
+{prepare}
 build() {{
 {build}
 }}
@@ -29,7 +28,6 @@ package() {{
   local _site_packages=$(python -c "import site; print(site.getsitepackages()[0])")
   rm -rf "$pkgdir/$_site_packages/tests/"
 }}
-
 {check}
 '''
 
@@ -72,6 +70,7 @@ def gen_pkgbuild(
   provides: Optional[Iterable[str]] = None,
   license: Optional[str] = None,
   license_file: Optional[str] = None,
+  prepare: Optional[str] = None,
 ) -> Tuple[str, str]:
   j = get_pypi_info(pypi_name)
   version = j['info']['version']
@@ -137,7 +136,7 @@ def gen_pkgbuild(
   if check is not None:
     if check == 'nose':
       depends_str.append("checkdepends=('python-nose')")
-      check_code = '''\
+      check_code = '''
 check() {
   cd $pkgname-$pkgver
   python -m unittest discover tests
@@ -146,6 +145,16 @@ check() {
       raise ValueError('unrecognized check value', check)
   else:
     check_code = ''
+
+  if prepare is not None:
+    prepare_code = f'''
+prepare() {{
+  cd "$srcdir/$_name-$pkgver"
+{prepare}
+}}
+'''
+  else:
+    prepare_code = ''
 
   vars1 = {
     'name': j['info']['name'],
@@ -156,12 +165,13 @@ check() {
     'home_page': j['info']['home_page'],
     'license': license or j['info']['license'],
     'depends': '\n'.join(depends_str),
-    'provides': to_sharray(provides) if provides else '',
+    'provides': to_sharray(provides) + '\n' if provides else '',
     'source': source_line,
     'sha256sum': r['digests']['sha256'],
     'build': build_code.rstrip(),
     'package': package_code.rstrip(),
     'check': check_code.rstrip(),
+    'prepare': prepare_code,
   }
 
   pkgbuild = template.format_map(vars1)
