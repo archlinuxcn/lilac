@@ -10,8 +10,8 @@ import shutil
 import sys
 import time
 
-repodir = pathlib.Path('/ldata/src/archgitrepo/archlinuxcn').expanduser()
-# repodir = pathlib.Path('~/archgitrepo/archlinuxcn').expanduser()
+# repodir = pathlib.Path('/ldata/src/archgitrepo/archlinuxcn').expanduser()
+repodir = pathlib.Path('~/archgitrepo/archlinuxcn').expanduser()
 
 DRY_RUN = True
 
