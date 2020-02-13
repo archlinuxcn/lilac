@@ -187,7 +187,7 @@ def sign_and_copy() -> None:
     run_cmd(['gpg', '--pinentry-mode', 'loopback', '--passphrase', '',
              '--detach-sign', '--', pkg])
   for f in os.listdir():
-    if not f.endswith(('.pkg.tar.xz', '.pkg.tar.xz.sig', '.pkg.tar.zst', '.pkg.tar.zst.sig', '.src.tar.gz')):
+    if not f.endswith(('.pkg.tar.xz', '.pkg.tar.xz.sig', '.pkg.tar.zst', '.pkg.tar.zst.sig')):
       continue
     try:
       os.link(f, os.path.join(DESTDIR, f))

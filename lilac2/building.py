@@ -62,7 +62,7 @@ def lilac_build(
       if isinstance(msg, str):
         raise SkipBuild(msg)
 
-    run_cmd(["sh", "-c", "rm -f -- *.pkg.tar.xz *.pkg.tar.xz.sig *.pkg.tar.zst *.pkg.tar.zst.sig *.src.tar.gz"])
+    run_cmd(["sh", "-c", "rm -f -- *.pkg.tar.xz *.pkg.tar.xz.sig *.pkg.tar.zst *.pkg.tar.zst.sig"])
     pre_build = getattr(mod, 'pre_build', None)
     if pre_build is not None:
       logger.debug('accept_noupdate=%r, oldver=%r, newver=%r', accept_noupdate, oldver, newver)
