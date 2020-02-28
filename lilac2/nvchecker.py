@@ -82,7 +82,9 @@ def packages_need_update(
   }
 
   new = configparser.ConfigParser(
-    dict_type=dict, allow_no_value=True)
+    dict_type=dict, allow_no_value=True,
+    interpolation=None,
+  )
   new.read_dict(newconfig)
   with open(NVCHECKER_FILE, 'w') as f:
     new.write(f)
