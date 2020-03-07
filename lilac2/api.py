@@ -348,10 +348,10 @@ def clean_directory() -> List[str]:
   for f in files:
     if f in SPECIAL_FILES:
       continue
+    logger.debug('unlink file %s', f)
+    ret.append(f)
     try:
-      logger.debug('unlink file %s', f)
       os.unlink(f)
-      ret.append(f)
     except FileNotFoundError:
       pass
   return ret
