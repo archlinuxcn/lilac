@@ -68,7 +68,7 @@ def lilac_build(
       logger.debug('accept_noupdate=%r, oldver=%r, newver=%r', accept_noupdate, oldver, newver)
       pre_build()
     run_cmd(['recv_gpg_keys'])
-    vcs_update()
+    vcs_update(keep_version=True)
     pkgbuild.check_srcinfo()
 
     need_build_first = set()

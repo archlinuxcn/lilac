@@ -127,10 +127,25 @@ def obtain_optdepends(
   else:
     return obtained_array
 
-def vcs_update() -> None:
+def vcs_update(*, keep_version: bool = False) -> None:
   # clean up the old source tree
   shutil.rmtree('src', ignore_errors=True)
+
+  if os.path.exists('PKGBUILD'):
+    pkgver, pkgrel = get_pkgver_and_pkgrel()
+  else:
+    pkgver = None
+
   run_cmd(['makepkg', '-od', '--noprepare'], use_pty=True)
+
+  if keep_version:
+    return
+
+  new_pkgver, new_pkgrel = get_pkgver_and_pkgrel()
+  if pkgver and pkgver == new_pkgver \
+     and pkgrel == new_pkgrel:
+    # update for rebuild
+    update_pkgrel()
 
 def get_pkgver_and_pkgrel(
 ) -> Tuple[Optional[str], Optional[PkgRel]]:
@@ -421,9 +436,6 @@ def aur_pre_build(
     if pkgver and pkgver == new_pkgver:
       if pyalpm.vercmp(f'1-{pkgrel}', f'1-{new_pkgrel}') > 0:
         update_pkgrel(pkgrel)
-      elif pkgrel == new_pkgrel:
-        # update for rebuild
-        update_pkgrel()
 
 def aur_post_build() -> None:
   git_rm_files(_g.aur_pre_files)

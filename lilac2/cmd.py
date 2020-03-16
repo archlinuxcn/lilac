@@ -113,6 +113,7 @@ def run_cmd(
     if use_pty:
       os.close(stdout)
     else:
+      assert p.stdout
       rfd = p.stdout.fileno()
     out = []
     outlen = 0

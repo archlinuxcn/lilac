@@ -124,8 +124,10 @@ class Repo:
     )
 
     try:
+      stdout = p.stdout
+      assert stdout
       while True:
-        line = p.stdout.readline()
+        line = stdout.readline()
         commit, author = line.rstrip().split(None, 1)
         if me not in author:
           return Maintainer.from_email_address(author)
