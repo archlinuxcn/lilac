@@ -163,7 +163,7 @@ prepare() {{
     'summary': j['info']['summary'],
     'arch': to_sharray(arch) if arch else 'any',
     'home_page': j['info']['home_page'],
-    'license': license or j['info']['license'],
+    'license': license or "'%s'" % j['info']['license'],
     'depends': '\n'.join(depends_str),
     'provides': to_sharray(provides) + '\n' if provides else '',
     'source': source_line,
