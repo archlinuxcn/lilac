@@ -9,7 +9,7 @@ from toposort import toposort_flatten
 
 import archpkg
 
-from .api import run_cmd
+from .api import run_cmd, obtain_pkgname
 from .typing import LilacMods
 
 def get_dependency_map(
@@ -103,26 +103,6 @@ def get_all_managed_packages(repodir: Path) -> Set[Tuple[str, str]]:
   packages: Set[Tuple[str, str]] = set()
   for pkg in repodir.glob('*/PKGBUILD'):
     pkgbase = pkg.parent.name
-
-    pkgfile = pkg.with_name('package.list')
-    if pkgfile.exists():
-      with open(pkgfile) as f:
-        packages.update((pkgbase, x) for x in f.read().split())
-        continue
-
-    found = False
-    with open(pkg) as f:
-      for l in f:
-        l = l.strip()
-        m = _re_package.match(l)
-        if m:
-          found = True
-          if m.group(1):
-            packages.add((pkgbase, m.group(1)))
-          else:
-            packages.add((pkgbase, pkgbase))
-    if not found:
-      packages.add((pkgbase, pkgbase))
-
+    pkgnames = obtain_pkgname(pkg.parent)
+    packages.update((pkgbase, pkgname) for pkgname in pkgnames)
   return packages
-

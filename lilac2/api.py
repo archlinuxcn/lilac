@@ -4,12 +4,12 @@ import logging
 import shutil
 import re
 import os
+import pwd
 import subprocess
 import traceback
 from typing import Dict, List, Union
 from typing import Tuple, Optional, Iterable, Iterator
 import fileinput
-import tempfile
 from pathlib import Path
 from types import SimpleNamespace
 import tarfile
@@ -91,23 +91,23 @@ def edit_file(filename: str) -> Iterator[str]:
     for line in f:
       yield line.rstrip('\n')
 
-def obtain_array(name: str) -> Optional[List[str]]:
+def drop_root_privilege() -> None:
+  if os.getuid() == 0:
+    pw = pwd.getpwnam('nobody')
+    os.setgid(pw.pw_gid)
+    os.setuid(pw.pw_uid)
+
+def obtain_array(name: str, cwd: Optional[os.PathLike] = None) -> Optional[List[str]]:
   '''
   Obtain an array variable from PKGBUILD.
-  Works by calling bash to source PKGBUILD, writing the array to a temporary file, and reading from the file.
+  Works by calling bash to source PKGBUILD.
   '''
-  with tempfile.NamedTemporaryFile() as output_file:
-    command_write_array_out = """printf "%s\\0" "${{{}[@]}}" > {}""" \
-        .format(name, output_file.name)
-    command_export_array = ['bash', '-c', "source PKGBUILD && {}".format(
-      command_write_array_out)]
-    subprocess.run(command_export_array, stderr=subprocess.PIPE,
-                   check=True)
-    res = output_file.read().decode()
-    if res == '\0':
-      return None
-    variable = res.split('\0')[:-1]
-    return variable
+  res = subprocess.check_output(['sh', '-c', f'source PKGBUILD && printf "%s\\0" "${{{name}[@]}}"'],
+    stderr=subprocess.PIPE, cwd=cwd, preexec_fn=drop_root_privilege)
+  return None if res == b'\0' else res.decode().split('\0')[:-1]
+
+def obtain_pkgname(cwd: Optional[os.PathLike] = None) -> Optional[List[str]]:
+  return obtain_array('pkgname', cwd)
 
 def obtain_depends() -> Optional[List[str]]:
   return obtain_array('depends')
@@ -471,4 +471,3 @@ def download_official_pkgbuild(name: str) -> List[str]:
       data = s.get(blob_url).content
       f.write(data)
   return files
-
