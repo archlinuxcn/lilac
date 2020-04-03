@@ -16,6 +16,10 @@ class MailService:
     myname = config.get('lilac', 'name')
     myaddress = config.get('lilac', 'email')
     self.from_ = f'{myname} <{myaddress}>'
+    self.unsub = config.get(
+      'lilac', 'unsubscribe-address',
+      fallback = None,
+    )
 
   def smtp_connect(self) -> SMTPClient:
     config = self.config
@@ -47,6 +51,8 @@ class MailService:
           msg[-1024 ** 2:]
     mail = assemble_mail('[%s] %s' % (
       self.mailtag, subject), to, self.from_, text=msg)
+    if self.unsub:
+      mail['List-Unsubscribe'] = f'<mailto:{self.unsub}?subject=unsubscribe>'
     s.send_message(mail)
     s.quit()
 

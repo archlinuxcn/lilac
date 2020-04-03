@@ -18,6 +18,8 @@ destdir = /path/to/pkgdir
 name = lilac
 email = lilac@example.com
 master = Your Name <youremail@example.com>
+# Set and unsubscribe_address to receive unsubscribe requests
+# unsubscribe_address = unsubscribe@example.com
 # Set to yes to automatically rebuild packages which failed to build last time
 rebuild_failed_pkgs = yes
 git_push = no
