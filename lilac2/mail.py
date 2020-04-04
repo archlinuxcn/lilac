@@ -17,7 +17,7 @@ class MailService:
     myaddress = config.get('lilac', 'email')
     self.from_ = f'{myname} <{myaddress}>'
     self.unsub = config.get(
-      'lilac', 'unsubscribe-address',
+      'lilac', 'unsubscribe_address',
       fallback = None,
     )
 
