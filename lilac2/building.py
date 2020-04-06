@@ -161,6 +161,8 @@ def call_build_cmd(
     may_need_cleanup()
 
 def run_build_cmd(cmd: Cmd) -> None:
+  logger.info('Running build command: %r', cmd)
+
   p = subprocess.Popen(
     cmd,
     stdin = subprocess.DEVNULL,
