@@ -144,7 +144,10 @@ def packages_need_update(
   for pkg in unknown:
     maintainers = repo.find_maintainers(repo.mods[pkg])
     for maintainer in maintainers:
-      error_owners[maintainer].extend(pkgerrs)
+      error_owners[maintainer].extend({
+        'name': pkg,
+        'event': 'package without `update_on` config',
+      })
 
   for who, their_errors in error_owners.items():
     logger.warning('send nvchecker report for %r packages to %s',
