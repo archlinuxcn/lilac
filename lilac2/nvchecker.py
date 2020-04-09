@@ -144,7 +144,7 @@ def packages_need_update(
   for pkg in unknown:
     maintainers = repo.find_maintainers(repo.mods[pkg])
     for maintainer in maintainers:
-      error_owners[maintainer].extend({
+      error_owners[maintainer].append({
         'name': pkg,
         'event': 'package without `update_on` config',
       })
