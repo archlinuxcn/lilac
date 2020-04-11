@@ -16,7 +16,6 @@ import tarfile
 import io
 
 import requests
-import pyalpm
 
 from myutils import at_dir
 from htmlutils import parse_document_from_requests
@@ -407,6 +406,10 @@ def git_rm_files(files: List[str]) -> None:
 def aur_pre_build(
   name: Optional[str] = None, *, do_vcs_update: Optional[bool] = None,
 ) -> None:
+  # import pyalpm here so that lilac can be easily used on non-Arch
+  # systems (e.g. Travis CI)
+  import pyalpm
+
   if os.path.exists('PKGBUILD'):
     pkgver, pkgrel = get_pkgver_and_pkgrel()
   else:
