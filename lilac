@@ -428,8 +428,8 @@ def setup() -> None:
   if cores is not None:
     if 'MAKEFLAGS' not in os.environ:
       os.environ['MAKEFLAGS'] = '-j{0} -l{0}'.format(cores)
-    if 'NINJA_FLAGS' not in os.environ:
-      os.environ['NINJA_FLAGS'] = '-l {0}'.format(cores)
+    if 'SAMUFLAGS' not in os.environ:
+      os.environ['SAMUFLAGS'] = '-j{0} -l{0}'.format(cores)
 
   lock_file(mydir / '.lock')
 
