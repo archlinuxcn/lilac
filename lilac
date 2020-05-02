@@ -424,10 +424,12 @@ def setup() -> None:
   os.close(fd)
 
   enable_pretty_logging('DEBUG')
-  if 'MAKEFLAGS' not in os.environ:
-    cores = os.cpu_count()
-    if cores is not None:
+  cores = os.cpu_count()
+  if cores is not None:
+    if 'MAKEFLAGS' not in os.environ:
       os.environ['MAKEFLAGS'] = '-j{0} -l{0}'.format(cores)
+    if 'NINJA_FLAGS' not in os.environ:
+      os.environ['NINJA_FLAGS'] = '-l {0}'.format(cores)
 
   lock_file(mydir / '.lock')
 
