@@ -427,7 +427,7 @@ def setup() -> None:
   if 'MAKEFLAGS' not in os.environ:
     cores = os.cpu_count()
     if cores is not None:
-      os.environ['MAKEFLAGS'] = '-j{0} -l{0}'.format(cores)
+      os.environ['MAKEFLAGS'] = '-j{0}'.format(cores)
 
   lock_file(mydir / '.lock')
 
