@@ -245,10 +245,6 @@ def start_build(repo: Repo, failed: Set[str], built: Set[str]) -> None:
   # used to decide what to install when building
   DEPENDS = building_depmap
 
-  dbpath = mydir / 'pacmandb'
-  dbpath.mkdir(exist_ok=True)
-  pkgbuild.init_data(dbpath)
-
   try:
     logger.info('building these packages: %r', packages)
     for pkg in packages:
@@ -433,6 +429,10 @@ def setup() -> None:
 
   setup_build_logger()
   os.chdir(REPO.repodir)
+
+  dbpath = mydir / 'pacmandb'
+  dbpath.mkdir(exist_ok=True)
+  pkgbuild.init_data(dbpath)
 
 if __name__ == '__main__':
   try:
