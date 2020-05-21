@@ -1,0 +1,13 @@
+diff --git a/PKGBUILD b/PKGBUILD
+index daabf2b..ff2c899 100644
+--- a/PKGBUILD
++++ b/PKGBUILD
+@@ -2,7 +2,7 @@
+ 
+ _npmname=web-ext
+ pkgname=nodejs-$_npmname
+-pkgver=4.1.0
++pkgver=4.2.0
+ pkgrel=1
+ pkgdesc='A command line tool to help build, run, and test web extensions'
+ arch=(any)

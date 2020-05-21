@@ -36,6 +36,8 @@ UserAgent = 'lilac/0.2b (package auto-build bot, by lilydjwg)'
 s = requests.Session()
 s.headers['User-Agent'] = UserAgent
 
+VCS_SUFFIXES = ('-git', '-hg', '-svn', '-bzr')
+
 def _unquote_item(s: str) -> Optional[str]:
   m = re.search(r'''[ \t'"]*([^ '"]+)[ \t'"]*''', s)
   if m is not None:
@@ -289,6 +291,19 @@ class AurDownloadError(Exception):
   def __init__(self, pkgname: str) -> None:
     self.pkgname = pkgname
 
+def _allow_update_aur_repo(pkgname: str, diff: str):
+  is_vcs = pkgname.endswith(VCS_SUFFIXES)
+  for line in diff.splitlines():
+    if not line.startswith(('+', '-')) or line.startswith(('+++', '---')):
+        # Not a changed line
+        continue
+    line = line[1:]  # remove the +/- marker
+    if is_vcs and not line.startswith(('pkgver=', 'pkgrel=')):
+      return True
+    if not is_vcs and not line.startswith('pkgrel='):
+      return True
+  return False
+
 def _update_aur_repo_real(pkgname: str) -> None:
   aurpath = const.AUR_REPO_DIR / pkgname
   if not aurpath.is_dir():
@@ -309,6 +324,9 @@ def _update_aur_repo_real(pkgname: str) -> None:
     shutil.copy(f, aurpath)
 
   with at_dir(aurpath):
+    if not _allow_update_aur_repo(pkgname, run_cmd(['git', 'diff'])):
+      return
+
     with open('.SRCINFO', 'wb') as srcinfo:
       subprocess.run(
         ['makepkg', '--printsrcinfo'],
@@ -430,7 +448,7 @@ def aur_pre_build(
       update_pkgrel()
 
   if do_vcs_update is None:
-    do_vcs_update = name.endswith(('-git', '-hg', '-svn', '-bzr'))
+    do_vcs_update = name.endswith(VCS_SUFFIXES)
 
   if do_vcs_update:
     vcs_update()
