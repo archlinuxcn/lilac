@@ -291,12 +291,12 @@ class AurDownloadError(Exception):
   def __init__(self, pkgname: str) -> None:
     self.pkgname = pkgname
 
-def _allow_update_aur_repo(pkgname: str, diff: str):
+def _allow_update_aur_repo(pkgname: str, diff: str) -> bool:
   is_vcs = pkgname.endswith(VCS_SUFFIXES)
   for line in diff.splitlines():
     if not line.startswith(('+', '-')) or line.startswith(('+++', '---')):
-        # Not a changed line
-        continue
+      # Not a changed line
+      continue
     line = line[1:]  # remove the +/- marker
     if is_vcs and not line.startswith(('pkgver=', 'pkgrel=')):
       return True
