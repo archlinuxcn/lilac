@@ -110,17 +110,21 @@ def gen_pkgbuild(
     depends_str.append(
       f'optdepends=({to_sharray(optdepends)})')
 
+  src_dir = '$_name-$pkgver'
+
   if source_release:
     r = source_release[-1]
-    tarball = r['url'].rsplit('/')[-1]
+    tarball = r['filename']
+    src_dir = tarball.rsplit('.tar', 1)[0]
     # tarball name may be different from pypi name, e.g. django-post-office
+    # Use "predictable" URL instead of `r['url']` to make AUR users happy...
     source_line = 'source=("https://files.pythonhosted.org/packages/source/${_name::1}/${_name}/%s")' % tarball
-    build_code = '''\
-  cd "$srcdir/$_name-$pkgver"
+    build_code = f'''\
+  cd "$srcdir/{src_dir}"
   python3 setup.py build
 '''
-    package_code = '''\
-  cd "$srcdir/$_name-$pkgver"
+    package_code = f'''\
+  cd "$srcdir/{src_dir}"
   python3 setup.py install --root=$pkgdir --optimize=1 --skip-build
 '''
     if license_file:
@@ -138,9 +142,9 @@ def gen_pkgbuild(
   if check is not None:
     if check == 'nose':
       depends_str.append("checkdepends=('python-nose')")
-      check_code = '''
+      check_code = f'''
 check() {
-  cd $pkgname-$pkgver
+  cd "$srcdir/{src_dir}"
   python -m unittest discover tests
 }'''
     else:
@@ -151,7 +155,7 @@ check() {
   if prepare is not None:
     prepare_code = f'''
 prepare() {{
-  cd "$srcdir/$_name-$pkgver"
+  cd "$srcdir/{src_dir}"
 {prepare}
 }}
 '''
