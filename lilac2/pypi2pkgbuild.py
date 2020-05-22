@@ -112,7 +112,9 @@ def gen_pkgbuild(
 
   if source_release:
     r = source_release[-1]
-    source_line = 'source=("https://files.pythonhosted.org/packages/source/${_name::1}/${_name}/${_name}-${pkgver}.tar.gz")'
+    tarball = r['url'].rsplit('/')[-1]
+    # tarball name may be different from pypi name, e.g. django-post-office
+    source_line = 'source=("https://files.pythonhosted.org/packages/source/${_name::1}/${_name}/%s")' % tarball
     build_code = '''\
   cd "$srcdir/$_name-$pkgver"
   python3 setup.py build
