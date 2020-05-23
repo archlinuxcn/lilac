@@ -143,10 +143,10 @@ def gen_pkgbuild(
     if check == 'nose':
       depends_str.append("checkdepends=('python-nose')")
       check_code = f'''
-check() {
+check() {{
   cd "$srcdir/{src_dir}"
   python -m unittest discover tests
-}'''
+}}'''
     else:
       raise ValueError('unrecognized check value', check)
   else:
