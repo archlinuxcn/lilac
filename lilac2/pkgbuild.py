@@ -52,7 +52,7 @@ def _load_timed_dict(
 def _save_timed_dict(
   path: os.PathLike, data: Dict[str, int],
 ) -> None:
-  data_str = ''.join(f'{k} {v}\n' for k, v in data)
+  data_str = ''.join(f'{k} {v}\n' for k, v in data.items())
   safe_overwrite(str(path), data_str, mode='w')
 
 def init_data(dbpath: Path, *, quiet: bool = False) -> None:
