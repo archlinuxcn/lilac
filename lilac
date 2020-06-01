@@ -230,8 +230,8 @@ def start_build(repo: Repo, failed: Set[str], built: Set[str]) -> None:
 
   for name, deps in nonexistent.items():
     repo.send_error_report(
-      repo.mods[name], subject='软件包 %s 的 lilac.py 指定了不存在的依赖',
-      msg = f'''软件包 {name} 的 lilac.py 指定了 depends，然而其直接或者间接的依赖项 {deps!r} 并不在本仓库中。
+      repo.mods[name], subject='软件包 %s 的 lilac.{py,yaml} 指定了不存在的依赖',
+      msg = f'''软件包 {name} 的 lilac.py 或者 lilac.yaml 指定了 repo_depends，然而其直接或者间接的依赖项 {deps!r} 并不在本仓库中。
 ''')
 
   packages = toposort_flatten(dep_building_map)
