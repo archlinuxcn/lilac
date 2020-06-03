@@ -196,7 +196,7 @@ class Repo:
           build_output = f.read()
         if build_output:
           log_header = '打包日志：'
-          try
+          try:
             if self.logurl_template and len(logfile.parts) >= 2:
               # assume the directory name is the time stamp for now.
               logurl = string.Template(self.logurl_template).substitute(
