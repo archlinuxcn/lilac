@@ -11,6 +11,7 @@ from functools import lru_cache
 import traceback
 import configparser
 import contextlib
+import string
 
 import structlog
 from github import GitHub
@@ -35,6 +36,7 @@ class Repo:
   def __init__(self, config: configparser.ConfigParser):
     self.myaddress = config.get('lilac', 'email')
     self.mymaster = config.get('lilac', 'master')
+    self.logurl_template = config.get('lilac', 'logurl', fallback=None)
     self.repomail = config.get('repository', 'email')
     self.name = config.get('repository', 'name')
     self.trim_ansi_codes = not config.getboolean(
@@ -193,7 +195,17 @@ class Repo:
         with logfile.open(errors='surrogateescape') as f:
           build_output = f.read()
         if build_output:
-          msgs.append('打包日志：\n\n' + build_output)
+          log_header = '打包日志：'
+          try
+            if self.logurl_template and len(logfile.parts) >= 2:
+              # assume the directory name is the time stamp for now.
+              logurl = string.Template(self.logurl_template).substitute(
+                datetime=logfile.parts[-2], pkgbase=pkgbase)
+              log_header += ' ' + logurl
+          except (ValueError, KeyError): # invalid template or wrong key
+            pass
+          msgs.append(log_header)
+          msgs.append('\n' + build_output)
       except FileNotFoundError:
         pass
 

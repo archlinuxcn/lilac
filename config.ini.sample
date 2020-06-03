@@ -13,6 +13,8 @@ repodir = /path/to/gitrepo
 # The path where built packages and signatures are copied to
 # Leave it blank (e.g. destdir = ) if there's no need to copy built packages
 destdir = /path/to/pkgdir
+# Optional: template for log file URL. Used in package error emails
+logurl = https://example.com/${pkgbase}/${datetime}.html
 
 [lilac]
 name = lilac
