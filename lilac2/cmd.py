@@ -67,7 +67,7 @@ def git_push() -> None:
       else:
         raise
 
-def git_reset_hard(commit: Optional[str] = None) -> None:
+def git_reset_hard() -> None:
   run_cmd(['git', 'reset', '--hard'])
 
 def get_git_branch() -> str:
@@ -78,10 +78,6 @@ def get_git_branch() -> str:
       return line.split(None, 1)[-1]
 
   return '(unknown branch)'
-
-def git_last_commit() -> str:
-  cmd = ['git', 'log', '-1', '--format=%H']
-  return run_cmd(cmd).strip()
 
 def run_cmd(
   cmd: Cmd, *,

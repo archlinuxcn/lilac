@@ -4,13 +4,12 @@ import subprocess
 from pathlib import Path
 from typing import (
   Optional, Tuple, List, Union, Dict, Set,
-  TYPE_CHECKING, Generator,
+  TYPE_CHECKING,
 )
 import logging
 from functools import lru_cache
 import traceback
 import configparser
-import contextlib
 import string
 
 import structlog
@@ -21,7 +20,6 @@ from .typing import LilacMod, Maintainer
 from .tools import ansi_escape_re
 from . import api, lilacpy
 from .typing import LilacMods
-from . import cmd as CMD
 if TYPE_CHECKING:
   from .packages import Dependency
   del Dependency
@@ -41,7 +39,6 @@ class Repo:
     self.name = config.get('repository', 'name')
     self.trim_ansi_codes = not config.getboolean(
       'smtp', 'use_ansi', fallback=False)
-    self.do_git_push = config.getboolean('lilac', 'git_push')
 
     self.repodir = Path(config.get('repository', 'repodir')).expanduser()
 
@@ -246,34 +243,3 @@ class Repo:
       build_logger.exception('lilac.py error', pkgbase = name, exc_info=exc_info)
 
     return failed
-
-  @contextlib.contextmanager
-  def git_pusher(self, mod: LilacMod) -> Generator[None, None, None]:
-    if not self.do_git_push:
-      yield
-      return
-
-    CMD.git_reset_hard()
-    commit_from = CMD.git_last_commit()
-    try:
-      yield
-    finally:
-      try:
-        CMD.git_push()
-      except subprocess.CalledProcessError as e:
-        try:
-          patch = subprocess.check_output([
-            'git', 'show', f'{commit_from}..',
-          ], text=True)
-        finally:
-          CMD.git_reset_hard(commit_from)
-
-        tb = traceback.format_exc()
-        msg = '被丢弃的修改如下：\n\n' + patch
-        self.send_error_report(
-          mod,
-          msg = msg,
-          exc = (e, tb),
-          subject = '%s 的提交未能 git push 成功，修改已丢弃',
-        )
-
