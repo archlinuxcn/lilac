@@ -30,8 +30,8 @@ from lilac2.packages import (
   Dependency,
 )
 from lilac2.cmd import (
-  run_cmd, git_pull_override, git_push, pkgrel_changed,
-  git_reset_hard, get_git_branch,
+  run_cmd, git_pull_override, pkgrel_changed,
+  git_reset_hard, get_git_branch, git_last_commit,
 )
 from lilac2.tools import kill_child_processes, redirect_output
 from lilac2.repo import Repo
@@ -113,6 +113,7 @@ def build_package(logdir: Path, package: str, mod: LilacMod) -> bool:
     try:
       with logfile.open('wb') as f, \
           redirect_output(f.fileno()), \
+          REPO.git_pusher(mod), \
           execution_timeout(time_limit_hours * 3600):
         lilac_build(
           mod, REPO,
@@ -193,10 +194,6 @@ def sign_and_copy() -> None:
       os.link(f, os.path.join(DESTDIR, f))
     except FileExistsError:
       pass
-
-def git_last_commit() -> str:
-  cmd = ['git', 'log', '-1', '--format=%H']
-  return run_cmd(cmd).strip()
 
 def start_build(repo: Repo, failed: Set[str], built: Set[str]) -> None:
   # built is used to collect built package names
@@ -390,10 +387,6 @@ def main_may_raise(D: Dict[str, Any], pkgs_to_build: List[str]) -> None:
         built = update_succeeded | failed
         update_nv = built & (need_update | rebuild)
         nvtake(update_nv, REPO.mods)
-
-    git_reset_hard()
-    if config.getboolean('lilac', 'git_push'):
-      git_push()
 
 def main(pkgs_to_build: List[str]) -> None:
   store = mydir / 'store'
