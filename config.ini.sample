@@ -13,8 +13,6 @@ repodir = /path/to/gitrepo
 # The path where built packages and signatures are copied to
 # Leave it blank (e.g. destdir = ) if there's no need to copy built packages
 destdir = /path/to/pkgdir
-# Optional: template for log file URL. Used in package error emails
-logurl = https://example.com/${pkgbase}/${datetime}.html
 
 [lilac]
 name = lilac
@@ -26,7 +24,8 @@ master = Your Name <youremail@example.com>
 rebuild_failed_pkgs = yes
 git_push = no
 send_email = no
-save_buildlog = no
+# Optional: template for log file URL. Used in package error emails
+logurl = https://example.com/${pkgbase}/${datetime}.html
 # for searching github
 # github_token = xxx
 
