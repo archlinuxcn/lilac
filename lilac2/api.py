@@ -87,6 +87,21 @@ def add_depends(extra_deps: Iterable[str]) -> None:
 def add_makedepends(extra_deps: Iterable[str]) -> None:
   add_into_array('makedepends', extra_deps)
 
+def add_checkdepends(extra_deps: Iterable[str]) -> None:
+  add_into_array('checkdepends', extra_deps)
+
+def add_conflicts(extra_conflicts: Iterable[str]) -> None:
+  add_into_array('conflicts', extra_conflicts)
+
+def add_replaces(extra_replaces: Iterable[str]) -> None:
+  add_into_array('replaces', extra_replaces)
+
+def add_provides(extra_provides: Iterable[str]) -> None:
+  add_into_array('provides', extra_provides)
+
+def add_groups(extra_groups: Iterable[str]) -> None:
+  add_into_array('groups', extra_groups)
+
 def edit_file(filename: str) -> Iterator[str]:
   with fileinput.input(files=(filename,), inplace=True) as f:
     for line in f:
