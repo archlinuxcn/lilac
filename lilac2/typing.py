@@ -45,3 +45,7 @@ class Maintainer(NamedTuple):
     return cls(name, email, github)
 
 PkgRel = Union[int, str]
+
+class DepDesc(NamedTuple):
+  pkgbase: str
+  pkgname: str
