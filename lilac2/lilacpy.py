@@ -7,7 +7,9 @@ from pathlib import Path
 from typing import Generator, cast, Dict, Tuple
 
 from .typing import LilacMod, LilacMods, ExcInfo
-from .lilacyaml import load_lilac_yaml, ALIASES
+from .lilacyaml import (
+  load_lilac_yaml, ALIASES, iter_pkgdir,
+)
 
 def load_managed(repodir: Path) -> Tuple[LilacMods, Dict[str, ExcInfo]]:
   mods, errors = load_all(repodir)
@@ -18,13 +20,7 @@ def load_all(repodir: Path) -> Tuple[LilacMods, Dict[str, ExcInfo]]:
   mods: LilacMods = {}
   errors = {}
 
-  for x in repodir.iterdir():
-    if not x.is_dir():
-      continue
-
-    if x.name[0] == '.':
-      continue
-
+  for x in iter_pkgdir(repodir):
     try:
       with load_lilac(x) as mod:
         mods[x.name] = mod

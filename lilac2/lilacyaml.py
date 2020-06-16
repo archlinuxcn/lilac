@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import pathlib
-from typing import Dict, Any
+from typing import Dict, Any, Iterator, List
 import importlib.resources
 
 import yaml
@@ -16,6 +16,19 @@ def _load_aliases() -> None:
   ALIASES = yaml.safe_load(data)
 
 _load_aliases()
+
+def iter_pkgdir(
+  repodir: pathlib.Path,
+) -> Iterator[pathlib.Path]:
+
+  for x in repodir.iterdir():
+    if not x.is_dir():
+      continue
+
+    if x.name[0] == '.':
+      continue
+
+    yield x
 
 def load_lilac_yaml(dir: pathlib.Path) -> Dict[str, Any]:
   with open(dir / 'lilac.yaml') as f:
