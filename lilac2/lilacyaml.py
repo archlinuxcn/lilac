@@ -45,6 +45,8 @@ def load_lilac_yaml(dir: pathlib.Path) -> Dict[str, Any]:
     for i, entry in enumerate(depends):
       if isinstance(entry, dict):
         depends[i] = next(iter(entry.items()))
+      else:
+        depends[i] = (entry, entry)
 
   for func in ['pre_build', 'post_build', 'post_build_always']:
     name = conf.get(func)
