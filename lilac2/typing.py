@@ -34,7 +34,7 @@ class Maintainer(NamedTuple):
   @classmethod
   def from_email_address(
     cls, s: str, github: Optional[str] = None,
-  ) -> 'Maintainer':
+  ) -> Maintainer:
     if '<' in s:
       name, email = s.split('<', 1)
       name = name.strip('" ')
