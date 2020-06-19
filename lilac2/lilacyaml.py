@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import pathlib
-from typing import Dict, Any, Iterator, List
+from typing import Dict, Any, Iterator
 import importlib.resources
 
 import yaml
@@ -46,7 +46,7 @@ def load_lilac_yaml(dir: pathlib.Path) -> Dict[str, Any]:
       if isinstance(entry, dict):
         depends[i] = next(iter(entry.items()))
       else:
-        depends[i] = (entry, entry)
+        depends[i] = entry, entry
 
   for func in ['pre_build', 'post_build', 'post_build_always']:
     name = conf.get(func)

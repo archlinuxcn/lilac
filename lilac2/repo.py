@@ -62,34 +62,66 @@ class Repo:
     else:
       return None
 
-  @lru_cache()
-  def find_maintainers(self, mod: LilacMod) -> List[Maintainer]:
+  def parse_maintainers(
+    self,
+    ms: List[Dict[str, str]],
+  ) -> Tuple[List[Maintainer], List[str]]:
     ret = []
     errors = []
 
+    for m in ms:
+      if 'github' in m and 'email' in m:
+        ret.append(
+          Maintainer.from_email_address(m['email'], m['github'])
+        )
+      elif 'github' in m:
+        try:
+          u = self.maintainer_from_github(m['github'])
+        except Exception as e:
+          errors.append(f'从 GitHub 获取用户 Email 地址时出错：{e!r}')
+        else:
+          if u is None:
+            errors.append(f'GitHub 用户 {m["github"]} 未公开 Email 地址')
+          else:
+            ret.append(u)
+      else:
+        logger.error('unsupported maintainer info: %r', m)
+        errors.append(f'不支持的格式：{m!r}')
+        continue
+
+    return ret, errors
+
+  def find_dependents(
+    self, pkgbase: str,
+  ) -> List[LilacMod]:
+    ret = []
+
+    for mod in self.mods.values():
+      ds = getattr(mod, 'repo_depends', ())
+      if any(x == pkgbase for x, y in ds):
+        ret.append(mod)
+
+    return ret
+
+  @lru_cache()
+  def find_maintainers(
+    self, mod: LilacMod,
+    fallback_git: bool = True,
+  ) -> List[Maintainer]:
+    ret: List[Maintainer] = []
+    errors: List[str] = []
+
     maintainers: List[Dict[str, str]] = getattr(mod, 'maintainers', None)
     if maintainers is not None:
-      for m in maintainers:
-        if 'github' in m and 'email' in m:
-          ret.append(
-            Maintainer.from_email_address(m['email'], m['github'])
-          )
-        elif 'github' in m:
-          try:
-            u = self.maintainer_from_github(m['github'])
-          except Exception as e:
-            errors.append(f'从 GitHub 获取用户 Email 地址时出错：{e!r}')
-          else:
-            if u is None:
-              errors.append(f'GitHub 用户 {m["github"]} 未公开 Email 地址')
-            else:
-              ret.append(u)
-        else:
-          logger.error('unsupported maintainer info: %r', m)
-          errors.append(f'不支持的格式：{m!r}')
-          continue
+      if maintainers:
+        ret, errors = self.parse_maintainers(maintainers)
+      else:
+        dependents = self.find_dependents(mod.pkgbase)
+        for dmod in dependents:
+          dmaints = self.find_maintainers(dmod, fallback_git=False)
+          ret.extend(dmaints)
 
-    if not ret or errors:
+    if (not ret and fallback_git) or errors:
       # fallback to git
       dir = self.repodir / mod.pkgbase
       git_maintainer = self.find_maintainer_by_git(dir)
@@ -102,7 +134,7 @@ class Repo:
         msg = f"以下 maintainers 信息有误，请修正。\n\n{error_str}\n",
       )
 
-    if not ret:
+    if not ret and fallback_git:
       logger.warning("lilac doesn't give out maintainers for %s, "
                      "fallback to git.", mod.pkgbase)
       return [git_maintainer]
