@@ -6,6 +6,10 @@ ruby:
   archpkg: ruby
   from_pattern: ^(\d+\.\d+)\..*
   to_pattern: \1
+perl:
+  archpkg: perl
+  from_pattern: ^(\d+\.\d+)\..*
+  to_pattern: \1
 boost:
   archpkg: boost-libs
   from_pattern: ^(\d+\.\d+)\..*
