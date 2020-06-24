@@ -349,8 +349,14 @@ def _update_aur_repo_real(pkgname: str) -> None:
         check = True,
       )
     run_cmd(['git', 'add', '.'])
-    run_cmd(['bash', '-c', 'git diff-index --quiet HEAD || git commit -m "update by lilac"'])
-    run_cmd(['git', 'push'])
+    p = subprocess.run(['git', 'diff-index', '--quiet', 'HEAD'])
+    if p.returncode != 0:
+      pkgver, pkgrel = get_pkgver_and_pkgrel()
+      assert pkgver is not None
+      assert pkgrel is not None
+      msg = f'[lilac] updated to {pkgver}-{pkgrel}'
+      run_cmd(['git', 'commit', '-m', msg])
+      run_cmd(['git', 'push'])
 
 def update_aur_repo() -> None:
   pkgbase = _G.mod.pkgbase
