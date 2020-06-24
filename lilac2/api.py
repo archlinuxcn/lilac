@@ -25,6 +25,7 @@ from . import const
 from .const import _G, SPECIAL_FILES
 from .typing import PkgRel
 from .pypi2pkgbuild import gen_pkgbuild
+from .pkgbuild import format_package_version as _format_package_version
 
 git_push
 
@@ -300,10 +301,9 @@ def git_commit(*, check_status: bool = True) -> None:
       return
 
   pkgbase = os.path.split(os.getcwd())[1]
-  pkgver, pkgrel = get_pkgver_and_pkgrel()
-  assert pkgver is not None
-  assert pkgrel is not None
-  msg = f'{pkgbase}: auto updated to {pkgver}-{pkgrel}'
+  built_version = _format_package_version(
+    _G.epoch, _G.pkgver, _G.pkgrel)
+  msg = f'{pkgbase}: auto updated to {built_version}'
   run_cmd(['git', 'commit', '-m', msg])
 
 class AurDownloadError(Exception):
@@ -355,10 +355,9 @@ def _update_aur_repo_real(pkgname: str) -> None:
     run_cmd(['git', 'add', '.'])
     p = subprocess.run(['git', 'diff-index', '--quiet', 'HEAD'])
     if p.returncode != 0:
-      pkgver, pkgrel = get_pkgver_and_pkgrel()
-      assert pkgver is not None
-      assert pkgrel is not None
-      msg = f'[lilac] updated to {pkgver}-{pkgrel}'
+      built_version = _format_package_version(
+        _G.epoch, _G.pkgver, _G.pkgrel)
+      msg = f'[lilac] updated to {built_version}'
       run_cmd(['git', 'commit', '-m', msg])
       run_cmd(['git', 'push'])
 
