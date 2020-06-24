@@ -1,0 +1,4 @@
+#!/bin/bash -e
+
+pyflakes lilac2 lilac
+mypy lilac2 lilac
