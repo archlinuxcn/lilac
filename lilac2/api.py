@@ -299,8 +299,12 @@ def git_commit(*, check_status: bool = True) -> None:
     if not ret:
       return
 
-  run_cmd(['git', 'commit', '-m', 'auto update for package %s' % (
-    os.path.split(os.getcwd())[1])])
+  pkgbase = os.path.split(os.getcwd())[1]
+  pkgver, pkgrel = get_pkgver_and_pkgrel()
+  assert pkgver is not None
+  assert pkgrel is not None
+  msg = f'{pkgbase}: auto updated to {pkgver}-{pkgrel}'
+  run_cmd(['git', 'commit', '-m', msg])
 
 class AurDownloadError(Exception):
   def __init__(self, pkgname: str) -> None:
