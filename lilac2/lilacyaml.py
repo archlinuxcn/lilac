@@ -28,6 +28,10 @@ def iter_pkgdir(
     if x.name[0] == '.':
       continue
 
+    # leftover files, e.g. __pycache__ stuff
+    if not (x / 'lilac.yaml').is_file():
+      continue
+
     yield x
 
 def load_lilac_yaml(dir: pathlib.Path) -> Dict[str, Any]:
