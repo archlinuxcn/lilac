@@ -22,9 +22,6 @@ def iter_pkgdir(
 ) -> Iterator[pathlib.Path]:
 
   for x in repodir.iterdir():
-    if not x.is_dir():
-      continue
-
     if x.name[0] == '.':
       continue
 
