@@ -153,7 +153,7 @@ def vcs_update(*, keep_version: bool = False) -> None:
   else:
     pkgver = None
 
-  run_cmd(['makepkg', '-od', '--noprepare'], use_pty=True)
+  run_cmd(['makepkg', '-od', '--noprepare', '-A'], use_pty=True)
 
   if keep_version:
     return
