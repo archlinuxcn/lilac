@@ -35,6 +35,9 @@ def load_lilac_yaml(dir: pathlib.Path) -> Dict[str, Any]:
   with open(dir / 'lilac.yaml') as f:
     conf = yaml.safe_load(f)
 
+  if conf is None:
+    return {}
+
   update_on = conf.get('update_on')
   if update_on:
     for i, entry in enumerate(update_on):
