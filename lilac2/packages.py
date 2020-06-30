@@ -100,7 +100,7 @@ def get_changed_packages(from_: str, to: str) -> Set[str]:
 
 _re_package = re.compile(r'package(?:_(.+))?\s*\(')
 
-def get_all_managed_packages(repodir: Path) -> Set[Tuple[str, str]]:
+def get_all_pkgnames(repodir: Path) -> Set[Tuple[str, str]]:
   packages: Set[Tuple[str, str]] = set()
   for pkg in lilacyaml.iter_pkgdir(repodir):
     pkgbase = pkg.name
