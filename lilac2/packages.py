@@ -11,6 +11,7 @@ import archpkg
 
 from .api import run_cmd
 from .typing import LilacMods
+from . import lilacyaml
 
 def get_dependency_map(
   depman: DependencyManager, mods: LilacMods,
@@ -101,26 +102,29 @@ _re_package = re.compile(r'package(?:_(.+))?\s*\(')
 
 def get_all_managed_packages(repodir: Path) -> Set[Tuple[str, str]]:
   packages: Set[Tuple[str, str]] = set()
-  for pkg in repodir.glob('*/PKGBUILD'):
-    pkgbase = pkg.parent.name
+  for pkg in lilacyaml.iter_pkgdir(repodir):
+    pkgbase = pkg.name
 
-    pkgfile = pkg.with_name('package.list')
+    pkgfile = pkg / 'package.list'
     if pkgfile.exists():
       with open(pkgfile) as f:
         packages.update((pkgbase, x) for x in f.read().split())
         continue
 
     found = False
-    with open(pkg) as f:
-      for l in f:
-        l = l.strip()
-        m = _re_package.match(l)
-        if m:
-          found = True
-          if m.group(1):
-            packages.add((pkgbase, m.group(1)))
-          else:
-            packages.add((pkgbase, pkgbase))
+    try:
+      with open(pkg / 'PKGBUILD') as f:
+        for l in f:
+          l = l.strip()
+          m = _re_package.match(l)
+          if m:
+            found = True
+            if m.group(1):
+              packages.add((pkgbase, m.group(1)))
+            else:
+              packages.add((pkgbase, pkgbase))
+    except FileNotFoundError:
+      pass
     if not found:
       packages.add((pkgbase, pkgbase))
 
