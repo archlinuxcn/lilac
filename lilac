@@ -321,7 +321,9 @@ def main_may_raise(D: Dict[str, Any], pkgs_to_build: List[str]) -> None:
         REPO.mods[dep.pkgname] = all_mods[dep.pkgname]
       REPO.mods[pkg_to_build] = all_mods[pkg_to_build]
 
-  _nvdata, unknown, rebuild = packages_need_update(REPO)
+  proxy = config.get('nvchecker', 'proxy', fallback=None)
+  _nvdata, unknown, rebuild = packages_need_update(
+    REPO, proxy)
   nvdata.update(_nvdata)
 
   if pkgs_to_build:

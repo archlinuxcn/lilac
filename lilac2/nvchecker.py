@@ -70,6 +70,7 @@ def _gen_config_from_mods(
 
 def packages_need_update(
   repo: Repo,
+  proxy: Optional[str] = None,
 ) -> Tuple[Dict[str, NvResults], Set[str], Set[str]]:
   newconfig, unknown = _gen_config_from_mods(repo.mods)
 
@@ -80,6 +81,8 @@ def packages_need_update(
     'oldver': OLDVER_FILE,
     'newver': NEWVER_FILE,
   }
+  if proxy:
+    newconfig['__config__']['proxy'] = proxy
 
   new = configparser.ConfigParser(
     dict_type=dict, allow_no_value=True,
