@@ -144,25 +144,10 @@ def obtain_optdepends(
   else:
     return obtained_array
 
-def vcs_update(*, keep_version: bool = False) -> None:
+def vcs_update() -> None:
   # clean up the old source tree
   shutil.rmtree('src', ignore_errors=True)
-
-  if os.path.exists('PKGBUILD'):
-    pkgver, pkgrel = get_pkgver_and_pkgrel()
-  else:
-    pkgver = None
-
   run_cmd(['makepkg', '-od', '--noprepare', '-A'], use_pty=True)
-
-  if keep_version:
-    return
-
-  new_pkgver, new_pkgrel = get_pkgver_and_pkgrel()
-  if pkgver and pkgver == new_pkgver \
-     and pkgrel == new_pkgrel:
-    # update for rebuild
-    update_pkgrel()
 
 def get_pkgver_and_pkgrel(
 ) -> Tuple[Optional[str], Optional[PkgRel]]:
@@ -242,16 +227,11 @@ def pypi_pre_build(
   if python2:
     raise ValueError('pypi_pre_build no longer supports python2')
 
-  if os.path.exists('PKGBUILD'):
-    pkgver, pkgrel = get_pkgver_and_pkgrel()
-  else:
-    pkgver = None
-
   pkgname = os.path.basename(os.getcwd())
   if pypi_name is None:
     pypi_name = pkgname.split('-', 1)[-1]
 
-  new_pkgver, pkgbuild = gen_pkgbuild(
+  _new_pkgver, pkgbuild = gen_pkgbuild(
     pypi_name,
     pkgname = pkgname,
     depends = depends,
@@ -268,10 +248,6 @@ def pypi_pre_build(
 
   with open('PKGBUILD', 'w') as f:
     f.write(pkgbuild)
-
-  if pkgver and pkgver == new_pkgver:
-    assert pkgrel is not None
-    update_pkgrel(_next_pkgrel(pkgrel))
 
 def pypi_post_build() -> None:
   git_add_files('PKGBUILD')
