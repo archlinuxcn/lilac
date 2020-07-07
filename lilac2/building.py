@@ -6,13 +6,18 @@ import subprocess
 from pathlib import Path
 from typing import (
   Optional, Iterable, List, Set, TYPE_CHECKING,
+  Generator,
 )
 from types import SimpleNamespace
+import contextlib
 
 from . import pkgbuild
 from .typing import LilacMod, Cmd
 from .cmd import run_cmd
-from .api import vcs_update
+from .api import (
+  vcs_update, get_pkgver_and_pkgrel, update_pkgrel,
+  _next_pkgrel,
+)
 from .packages import Dependency
 from .nvchecker import NvResults
 from .tools import kill_child_processes
@@ -31,6 +36,21 @@ class MissingDependencies(Exception):
 class SkipBuild(Exception):
   def __init__(self, msg: str) -> None:
     self.msg = msg
+
+@contextlib.contextmanager
+def may_update_pkgrel() -> Generator[None, None, None]:
+  pkgver, pkgrel = get_pkgver_and_pkgrel()
+  yield
+
+  if pkgver is None or pkgrel is None:
+    return
+
+  pkgver2, pkgrel2 = get_pkgver_and_pkgrel()
+  if pkgver2 is None or pkgrel2 is None:
+    return
+
+  if pkgver == pkgver2 and pkgrel == pkgrel2:
+    update_pkgrel(_next_pkgrel(pkgrel))
 
 def lilac_build(
   mod: LilacMod,
@@ -64,11 +84,14 @@ def lilac_build(
 
     run_cmd(["sh", "-c", "rm -f -- *.pkg.tar.xz *.pkg.tar.xz.sig *.pkg.tar.zst *.pkg.tar.zst.sig"])
     pre_build = getattr(mod, 'pre_build', None)
-    if pre_build is not None:
-      logger.debug('accept_noupdate=%r, oldver=%r, newver=%r', accept_noupdate, oldver, newver)
-      pre_build()
-    run_cmd(['recv_gpg_keys'])
-    vcs_update(keep_version=True)
+
+    with may_update_pkgrel():
+      if pre_build is not None:
+        logger.debug('accept_noupdate=%r, oldver=%r, newver=%r', accept_noupdate, oldver, newver)
+        pre_build()
+      run_cmd(['recv_gpg_keys'])
+      vcs_update(keep_version=True)
+
     pkgbuild.check_srcinfo()
 
     need_build_first = set()
