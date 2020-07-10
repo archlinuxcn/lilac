@@ -153,16 +153,20 @@ def get_pkgver_and_pkgrel(
 ) -> Tuple[Optional[str], Optional[PkgRel]]:
   pkgrel = None
   pkgver = None
-  with open('PKGBUILD') as f:
-    for l in f:
-      if l.startswith('pkgrel='):
-        pkgrel = l.rstrip().split('=', 1)[-1].strip('\'"')
-        try:
-          pkgrel = int(pkgrel) # type: ignore
-        except (ValueError, TypeError):
-          pass
-      elif l.startswith('pkgver='):
-        pkgver = l.rstrip().split('=', 1)[-1]
+  try:
+    with open('PKGBUILD') as f:
+      for l in f:
+        if l.startswith('pkgrel='):
+          pkgrel = l.rstrip().split(
+            '=', 1)[-1].strip('\'"')
+          try:
+            pkgrel = int(pkgrel) # type: ignore
+          except (ValueError, TypeError):
+            pass
+        elif l.startswith('pkgver='):
+          pkgver = l.rstrip().split('=', 1)[-1]
+  except FileNotFoundError:
+    pass
 
   return pkgver, pkgrel
 
@@ -428,10 +432,7 @@ def aur_pre_build(
   # systems (e.g. Travis CI)
   import pyalpm
 
-  if os.path.exists('PKGBUILD'):
-    pkgver, pkgrel = get_pkgver_and_pkgrel()
-  else:
-    pkgver = None
+  pkgver, pkgrel = get_pkgver_and_pkgrel()
 
   _g.aur_pre_files = clean_directory()
   if name is None:
