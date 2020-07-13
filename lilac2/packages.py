@@ -100,33 +100,38 @@ def get_changed_packages(from_: str, to: str) -> Set[str]:
 
 _re_package = re.compile(r'package(?:_(.+))?\s*\(')
 
+def get_split_packages(pkg: Path) -> Set[Tuple[str, str]]:
+  packages: Set[Tuple[str, str]] = set()
+
+  pkgbase = pkg.name
+
+  pkgfile = pkg / 'package.list'
+  if pkgfile.exists():
+    with open(pkgfile) as f:
+      packages.update((pkgbase, x) for x in f.read().split())
+      return packages
+
+  found = False
+  try:
+    with open(pkg / 'PKGBUILD') as f:
+      for l in f:
+        l = l.strip()
+        m = _re_package.match(l)
+        if m:
+          found = True
+          if m.group(1):
+            packages.add((pkgbase, m.group(1)))
+          else:
+            packages.add((pkgbase, pkgbase))
+  except FileNotFoundError:
+    pass
+  if not found:
+    packages.add((pkgbase, pkgbase))
+  return packages
+
 def get_all_pkgnames(repodir: Path) -> Set[Tuple[str, str]]:
   packages: Set[Tuple[str, str]] = set()
   for pkg in lilacyaml.iter_pkgdir(repodir):
-    pkgbase = pkg.name
-
-    pkgfile = pkg / 'package.list'
-    if pkgfile.exists():
-      with open(pkgfile) as f:
-        packages.update((pkgbase, x) for x in f.read().split())
-        continue
-
-    found = False
-    try:
-      with open(pkg / 'PKGBUILD') as f:
-        for l in f:
-          l = l.strip()
-          m = _re_package.match(l)
-          if m:
-            found = True
-            if m.group(1):
-              packages.add((pkgbase, m.group(1)))
-            else:
-              packages.add((pkgbase, pkgbase))
-    except FileNotFoundError:
-      pass
-    if not found:
-      packages.add((pkgbase, pkgbase))
-
+    packages.update(get_split_packages(pkg))
   return packages
 
