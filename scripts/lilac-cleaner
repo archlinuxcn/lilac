@@ -72,6 +72,9 @@ def process(dir, git_files):
       # and keeped longer than source code
       continue
 
+    if file.name.endswith(('.pkg.tar.zst', '.pkg.tar.zst.sig')):
+      continue
+
     is_dir = file.is_dir()
 
     if is_dir and is_vcs(file):
