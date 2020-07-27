@@ -1,12 +1,13 @@
 from __future__ import annotations
 
-import pathlib
+from pathlib import Path
 from typing import Dict, Any, Iterator
 import importlib.resources
 
 import yaml
 
 from . import api
+from .cmd import run_cmd
 
 ALIASES: Dict[str, Any]
 
@@ -18,20 +19,17 @@ def _load_aliases() -> None:
 _load_aliases()
 
 def iter_pkgdir(
-  repodir: pathlib.Path,
-) -> Iterator[pathlib.Path]:
+  repodir: Path,
+) -> Iterator[Path]:
 
-  for x in repodir.iterdir():
-    if x.name[0] == '.':
+  for x in run_cmd(['git', 'ls-files'], cwd=repodir, silent=True).split('\n'):
+    if not x.endswith('lilac.yaml'):
       continue
-
-    # leftover files, e.g. __pycache__ stuff
-    if not (x / 'lilac.yaml').is_file():
-      continue
+    x = Path(x).parent
 
     yield x
 
-def load_lilac_yaml(dir: pathlib.Path) -> Dict[str, Any]:
+def load_lilac_yaml(dir: Path) -> Dict[str, Any]:
   with open(dir / 'lilac.yaml') as f:
     conf = yaml.safe_load(f)
 
