@@ -429,7 +429,7 @@ def git_rm_files(files: List[str]) -> None:
 
 def aur_pre_build(
   name: Optional[str] = None, *, do_vcs_update: Optional[bool] = None,
-  maintainers: Container[str] = (),
+  maintainers: Union[str, Container[str]] = (),
 ) -> None:
   # import pyalpm here so that lilac can be easily used on non-Arch
   # systems (e.g. Travis CI)
@@ -440,7 +440,12 @@ def aur_pre_build(
   if maintainers:
     info = s.get(AUR_URL, params={"v": 5, "type": "info", "arg[]": name}).json()
     maintainer = info['results'][0]['Maintainer']
-    if maintainer not in maintainers:
+    error = False
+    if isinstance(maintainers, str):
+      error = maintainer != maintainers
+    else:
+      error = maintainer not in maintainers
+    if error:
       raise Exception('unexpected AUR package maintainer', maintainer)
 
   pkgver, pkgrel = get_pkgver_and_pkgrel()
