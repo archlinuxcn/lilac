@@ -59,7 +59,10 @@ def load_lilac_yaml(dir: pathlib.Path) -> Dict[str, Any]:
       conf[func] = funcvalue
     script = conf.get(f'{func}_script')
     if script:
-      code = [f'def {func}:']
+      if func == 'post_build_always':
+        code = [f'def {func}(success):']
+      else:
+        code = [f'def {func}():']
       for line in script.splitlines():
         code.append(f'  {line}')
       g = dict(vars(api))
