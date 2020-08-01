@@ -57,5 +57,14 @@ def load_lilac_yaml(dir: pathlib.Path) -> Dict[str, Any]:
     if name:
       funcvalue = getattr(api, name)
       conf[func] = funcvalue
+    script = conf.get(f'{func}_script')
+    if script:
+      code = [f'def {func}:']
+      for line in script.splitlines():
+        code.append(f'  {line}')
+      g = dict(vars(api))
+      code_str = '\n'.join(code)
+      exec(code_str, g)
+      conf[func] = g[func]
 
   return conf
