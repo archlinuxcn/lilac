@@ -10,6 +10,7 @@ from .typing import LilacMod, LilacMods, ExcInfo
 from .lilacyaml import (
   load_lilac_yaml, ALIASES, iter_pkgdir,
 )
+from . import api
 
 def load_managed(repodir: Path) -> Tuple[LilacMods, Dict[str, ExcInfo]]:
   mods, errors = load_all(repodir)
@@ -42,8 +43,26 @@ def load_lilac(dir: Path) -> Generator[LilacMod, None, None]:
 
     try:
       yamlconf = load_lilac_yaml(dir)
+      g = None
       for k, v in yamlconf.items():
-        setattr(mod, k, v)
+        if k.endswith('_script'):
+          name = k[:-len('_script')]
+          if name == 'post_build_always':
+            code = [f'def {name}(success):']
+          else:
+            code = [f'def {name}():']
+          for line in v.splitlines():
+            code.append(f'  {line}')
+          if g is None:
+            g = vars(mod)
+            # "import" lilac2.api
+            g.update({a: b for a, b in api.__dict__.items()
+                      if not a.startswith('_')})
+          code_str = '\n'.join(code)
+          # run code in `mod` namespace
+          exec(code_str, g)
+        else:
+          setattr(mod, k, v)
     except FileNotFoundError:
       yamlconf = {}
 

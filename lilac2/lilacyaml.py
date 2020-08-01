@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import pathlib
-from typing import Dict, Any, Iterator
+from typing import Dict, Any, Iterator, List
 import importlib.resources
 
 import yaml
@@ -9,6 +9,9 @@ import yaml
 from . import api
 
 ALIASES: Dict[str, Any]
+FUNCTIONS: List[str] = [
+  'pre_build', 'post_build', 'post_build_always',
+]
 
 def _load_aliases() -> None:
   global ALIASES
@@ -52,22 +55,10 @@ def load_lilac_yaml(dir: pathlib.Path) -> Dict[str, Any]:
       else:
         depends[i] = entry, entry
 
-  for func in ['pre_build', 'post_build', 'post_build_always']:
+  for func in FUNCTIONS:
     name = conf.get(func)
     if name:
       funcvalue = getattr(api, name)
       conf[func] = funcvalue
-    script = conf.get(f'{func}_script')
-    if script:
-      if func == 'post_build_always':
-        code = [f'def {func}(success):']
-      else:
-        code = [f'def {func}():']
-      for line in script.splitlines():
-        code.append(f'  {line}')
-      g = dict(vars(api))
-      code_str = '\n'.join(code)
-      exec(code_str, g)
-      conf[func] = g[func]
 
   return conf
