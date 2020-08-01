@@ -14,6 +14,7 @@ from pathlib import Path
 from types import SimpleNamespace
 import tarfile
 import io
+from collections.abc import Container
 
 import requests
 
@@ -38,6 +39,7 @@ s = requests.Session()
 s.headers['User-Agent'] = UserAgent
 
 VCS_SUFFIXES = ('-git', '-hg', '-svn', '-bzr')
+AUR_URL = 'https://aur.archlinux.org/rpc/'
 
 def _unquote_item(s: str) -> Optional[str]:
   m = re.search(r'''[ \t'"]*([^ '"]+)[ \t'"]*''', s)
@@ -427,16 +429,22 @@ def git_rm_files(files: List[str]) -> None:
 
 def aur_pre_build(
   name: Optional[str] = None, *, do_vcs_update: Optional[bool] = None,
+  maintainers: Container[str] = (),
 ) -> None:
   # import pyalpm here so that lilac can be easily used on non-Arch
   # systems (e.g. Travis CI)
   import pyalpm
 
-  pkgver, pkgrel = get_pkgver_and_pkgrel()
-
-  _g.aur_pre_files = clean_directory()
   if name is None:
     name = os.path.basename(os.getcwd())
+  if maintainers:
+    info = s.get(AUR_URL, params={"v": 5, "type": "info", "arg[]": name}).json()
+    maintainer = info['results'][0]['Maintainer']
+    if maintainer not in maintainers:
+      raise Exception('unexpected AUR package maintainer', maintainer)
+
+  pkgver, pkgrel = get_pkgver_and_pkgrel()
+  _g.aur_pre_files = clean_directory()
   _g.aur_building_files = _download_aur_pkgbuild(name)
 
   aur_pkgver, aur_pkgrel = get_pkgver_and_pkgrel()
