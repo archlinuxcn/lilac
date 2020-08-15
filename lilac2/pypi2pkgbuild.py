@@ -14,7 +14,7 @@ arch=({arch})
 url="{home_page}"
 license=({license})
 {depends}
-{provides}{source}
+{conflicts}{provides}{source}
 sha256sums=('{sha256sum}')
 {prepare}
 build() {{
@@ -68,6 +68,7 @@ def gen_pkgbuild(
   depends_setuptools: bool = True,
   check: Optional[str] = None,
   provides: Optional[Iterable[str]] = None,
+  conflicts: Optional[Iterable[str]] = None,
   license: Optional[str] = None,
   license_file: Optional[str] = None,
   prepare: Optional[str] = None,
@@ -171,7 +172,8 @@ prepare() {{
     'home_page': j['info']['home_page'],
     'license': license or "'%s'" % j['info']['license'],
     'depends': '\n'.join(depends_str),
-    'provides': to_sharray(provides) + '\n' if provides else '',
+    'provides': f'provides=({to_sharray(provides)})\n' if provides else '',
+    'conflicts': f'conflicts=({to_sharray(conflicts)})\n' if conflicts else '',
     'source': source_line,
     'sha256sum': r['digests']['sha256'],
     'build': build_code.rstrip(),
