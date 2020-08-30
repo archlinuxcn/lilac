@@ -1,0 +1,18 @@
+Version Control System (VCS) (git, hg, svn, bzr)
+------------------------------------------------
+::
+
+  source = "vcs"
+
+Check a VCS repo for new commits. The version returned is currently not related to the version of the software and will increase whenever the referred VCS branch changes. This is mainly for Arch Linux.
+
+vcs
+  The url of the remote VCS repo, using the same syntax with a VCS url in PKGBUILD (`Pacman`_'s build script). The first VCS url found in the source array of the PKGBUILD will be used if this is left blank. (Note: for a blank ``vcs`` setting to work correctly, the PKGBUILD has to be in a directory with the name of the software under the path where nvchecker is run. Also, all the commands, if any, needed when sourcing the PKGBUILD need to be installed).
+
+use_max_tag
+  Set this to ``true`` to check for the max tag. Currently only supported for ``git``.
+  This option returns the biggest tag sorted by ``pkg_resources.parse_version``.
+
+This source supports `list options`_ when ``use_max_tag`` is set.
+
+.. _list options: https://github.com/lilydjwg/nvchecker#list-options
