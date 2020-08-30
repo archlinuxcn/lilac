@@ -16,7 +16,7 @@
 * git
 * makepkg
 * zsh (batch)
-* nvchecker (batch)
+* nvchecker (batch); 可选放置 keyfile 于 `~/.lilac/nvchecker_keyfile.toml`
 * gpg (batch)
 * Local MTA (batch)
 * devtools (batch)

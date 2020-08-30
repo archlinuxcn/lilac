@@ -24,6 +24,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 NVCHECKER_FILE: Path = mydir / 'nvchecker.toml'
+KEY_FILE: Path = mydir / 'nvchecker_keyfile.toml'
 OLDVER_FILE = mydir / 'oldver'
 NEWVER_FILE = mydir / 'newver'
 
@@ -79,8 +80,8 @@ def packages_need_update(
     open(OLDVER_FILE, 'a').close()
 
   newconfig['__config__'] = {
-    'oldver': OLDVER_FILE,
-    'newver': NEWVER_FILE,
+    'oldver': str(OLDVER_FILE),
+    'newver': str(NEWVER_FILE),
   }
   if proxy:
     newconfig['__config__']['proxy'] = proxy
@@ -93,6 +94,9 @@ def packages_need_update(
   cmd: List[Union[str, PathLike]] = [
     'nvchecker', '--logger', 'both', '--json-log-fd', str(wfd),
     '-c', NVCHECKER_FILE]
+  if KEY_FILE.exists():
+    cmd.extend(['--keyfile', KEY_FILE])
+
   logger.info('Running nvchecker...')
   process = subprocess.Popen(
     cmd, cwd=repo.repodir, pass_fds=(wfd,))
