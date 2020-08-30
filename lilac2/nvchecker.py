@@ -1,15 +1,17 @@
 from __future__ import annotations
 
-import configparser
 import os
 import logging
 from collections import defaultdict, UserList
 import subprocess
 import json
 from pathlib import Path
-from typing import List, NamedTuple, Tuple, Set, Dict
-from typing import Optional, Any, Union, Iterable
-from typing import TYPE_CHECKING
+from typing import (
+  List, NamedTuple, Tuple, Set, Dict,
+  Optional, Any, Union, Iterable, TYPE_CHECKING,
+)
+
+import toml
 
 from .cmd import run_cmd
 from .const import mydir
@@ -21,7 +23,7 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-NVCHECKER_FILE: Path = mydir / 'nvchecker.ini'
+NVCHECKER_FILE: Path = mydir / 'nvchecker.toml'
 OLDVER_FILE = mydir / 'oldver'
 NEWVER_FILE = mydir / 'newver'
 
@@ -84,19 +86,14 @@ def packages_need_update(
   if proxy:
     newconfig['__config__']['proxy'] = proxy
 
-  new = configparser.ConfigParser(
-    dict_type=dict, allow_no_value=True,
-    interpolation=None,
-  )
-  new.read_dict(newconfig)
   with open(NVCHECKER_FILE, 'w') as f:
-    new.write(f)
+    toml.dump(newconfig, f)
 
   # vcs source needs to be run in the repo, so cwd=...
   rfd, wfd = os.pipe()
   cmd: List[Union[str, PathLike]] = [
     'nvchecker', '--logger', 'both', '--json-log-fd', str(wfd),
-    NVCHECKER_FILE]
+    '-c', NVCHECKER_FILE]
   logger.info('Running nvchecker...')
   process = subprocess.Popen(
     cmd, cwd=repo.repodir, pass_fds=(wfd,))
@@ -208,7 +205,7 @@ def nvtake(L: Iterable[str], mods: LilacMods) -> None:
     else:
       names.append(name)
 
-  run_cmd(['nvtake', '--ignore-nonexistent', NVCHECKER_FILE] # type: ignore
+  run_cmd(['nvtake', '--ignore-nonexistent', '-c', NVCHECKER_FILE] # type: ignore
           + names) # type: ignore
   # mypy can't infer List[Union[str, Path]]
   # and can't understand List[str] is a subtype of it

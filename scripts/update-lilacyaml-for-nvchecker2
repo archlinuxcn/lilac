@@ -1,0 +1,83 @@
+#!/usr/bin/python3
+
+import pathlib
+
+from ruamel.yaml import round_trip_dump
+from ruamel.yaml.util import load_yaml_guess_indent
+from lilac2.lilacyaml import iter_pkgdir
+
+_handler_precedence = (
+  'github', 'aur', 'pypi', 'archpkg', 'debianpkg', 'ubuntupkg',
+  'gems', 'pacman',
+  'cmd', 'bitbucket', 'regex', 'manual', 'vcs',
+  'cratesio', 'npm', 'hackage', 'cpan', 'gitlab', 'packagist',
+  'repology', 'anitya', 'android_sdk', 'sparkle', 'gitea'
+)
+
+BOOL_KEYS = [
+  'strip_release', 'use_last_modified',
+  'use_latest_release', 'use_latest_tag',
+  'use_max_tag', 'use_pre_release',
+]
+
+INT_KEYS = [
+  'max_page',
+]
+
+def convert_entry(conf):
+  if isinstance(conf, str):
+    conf = {conf: None}
+
+  newconf = {}
+
+  for key in _handler_precedence:
+    if key not in conf:
+      continue
+    newconf['source'] = key
+    if conf.get(key):
+      newconf[key] = conf.get(key)
+    break
+
+  for k, v in conf.items():
+    if '-' in k:
+      newk = k.replace('-', '_')
+    else:
+      newk = k
+
+    if newk in BOOL_KEYS:
+      newconf[newk] = bool(conf[k])
+    elif newk in INT_KEYS:
+      newconf[newk] = int(conf[k])
+    elif v != '':
+      newconf[newk] = v
+
+  return newconf
+
+def update_lilacyaml(pkgdir: pathlib.Path) -> None:
+  # use ruamel.yaml for yaml manipulation with preserving indents and comments
+  lilac_yaml_path = pkgdir / 'lilac.yaml'
+
+  with open(lilac_yaml_path) as f:
+    lilac_yaml, indent, block_seq_indent = load_yaml_guess_indent(f.read())
+
+  update_on = lilac_yaml.get('update_on', [])
+  if not update_on:
+    return
+
+  for idx, entry in enumerate(update_on):
+    if 'alias' in entry:
+      continue
+
+    update_on[idx] = convert_entry(entry)
+
+  with open(lilac_yaml_path, 'w') as f:
+    round_trip_dump(lilac_yaml, stream=f, indent=indent,
+                    block_seq_indent=block_seq_indent)
+
+def main():
+  repodir = pathlib.Path('/ldata/src/archgitrepo/archlinuxcn')
+  for dir in iter_pkgdir(repodir):
+    update_lilacyaml(dir)
+
+if __name__ == '__main__':
+  main()

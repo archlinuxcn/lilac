@@ -31,6 +31,7 @@ Python 库
 * winterpy (will auto download if not available)
 * toposort
 * pyyaml
+* toml
 * pyalpm
 * structlog
 * prctl
