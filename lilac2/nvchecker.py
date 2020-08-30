@@ -62,11 +62,10 @@ def _gen_config_from_mods(
         newconfig[f'{name}'] = conf
       else:
         newconfig[f'{name}:{i}'] = conf
-        # Avoid valueless keys under numbered name
-        # as nvchecker can't handle that
-        for key, value in conf.items():
-          if not value:
-            conf[key] = name
+      # Avoid empty-value keys as nvchecker can't handle that
+      for key, value in conf.items():
+        if not value:
+          conf[key] = name
 
   return newconfig, unknown
 
