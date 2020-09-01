@@ -97,9 +97,12 @@ def packages_need_update(
   if KEY_FILE.exists():
     cmd.extend(['--keyfile', KEY_FILE])
 
+  env = os.environ.copy()
+  env['PYTHONPATH'] = str(Path(__file__).resolve().parent.parent)
+
   logger.info('Running nvchecker...')
   process = subprocess.Popen(
-    cmd, cwd=repo.repodir, pass_fds=(wfd,))
+    cmd, cwd=repo.repodir, pass_fds=(wfd,), env=env)
   os.close(wfd)
 
   output = os.fdopen(rfd)
