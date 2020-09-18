@@ -49,16 +49,19 @@ class NvResults(UserList):
 
 def _gen_config_from_mods(
   mods: LilacMods,
-) -> Tuple[Dict[str, Any], Set[str]]:
-  unknown = set()
+) -> Tuple[Dict[str, Any], Dict[str, str]]:
+  errors = {}
   newconfig = {}
   for name, mod in mods.items():
     confs = getattr(mod, 'update_on', None)
     if not confs:
-      unknown.add(name)
+      errors[name] = 'unknown'
       continue
 
     for i, conf in enumerate(confs):
+      if not isinstance(conf, dict):
+        errors[name] = 'not array of dicts'
+        break
       if i == 0:
         newconfig[f'{name}'] = conf
       else:
@@ -68,13 +71,13 @@ def _gen_config_from_mods(
         if value in [None, '']:
           conf[key] = name
 
-  return newconfig, unknown
+  return newconfig, errors
 
 def packages_need_update(
   repo: Repo,
   proxy: Optional[str] = None,
 ) -> Tuple[Dict[str, NvResults], Set[str], Set[str]]:
-  newconfig, unknown = _gen_config_from_mods(repo.mods)
+  newconfig, update_on_errors = _gen_config_from_mods(repo.mods)
 
   if not OLDVER_FILE.exists():
     open(OLDVER_FILE, 'a').close()
@@ -147,12 +150,13 @@ def packages_need_update(
     for maintainer in maintainers:
       error_owners[maintainer].extend(pkgerrs)
 
-  for pkg in unknown:
+  for pkg, error in update_on_errors.items():
     maintainers = repo.find_maintainers(repo.mods[pkg])
     for maintainer in maintainers:
       error_owners[maintainer].append({
         'name': pkg,
-        'event': 'package without `update_on` config',
+        'error': error,
+        'event': 'wrong or missing `update_on` config',
       })
 
   for who, their_errors in error_owners.items():
@@ -186,7 +190,7 @@ def packages_need_update(
       # maybe nvchecker has failed
       nvdata[name] = NvResults()
 
-  return nvdata, unknown, rebuild
+  return nvdata, set(update_on_errors.keys()), rebuild
 
 def _format_error(error) -> str:
   if 'exception' in error:
