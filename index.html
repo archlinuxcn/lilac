@@ -206,7 +206,7 @@
                                     <dt data-property-name="update_on">
                                         <span class="json-property-name">update_on:</span>
                                         
-                                        <span class="json-property-type">[]</span>
+                                        <span class="json-property-type">object[]</span>
                                         <span class="json-property-range" title="Value limits"></span>
                                         
                                     </dt>
@@ -217,42 +217,34 @@
                                             
                                                             <section class="json-schema-array-items">
                                                                 
-                                                                <span class="json-property-type"></span>
+                                                                <span class="json-property-type">object</span>
                                                                 <span class="json-property-range" title="Value limits"></span>
                                                                 
                                                                 <div class="json-inner-schema">
+                                                                        <section class="json-schema-description">
+                                                                            <p>nvchecker configuration section</p>
                                                                     
-                                                                        <section class="json-schema-anyOf">
-                                                                            <dl>
-                                                                                    <dt>
-                                                                                        
-                                                                                        <span class="json-property-type">object</span>
-                                                                                        <span class="json-property-range" title="Value limits"></span>
-                                                                                        
-                                                                                    </dt>
-                                                                                    <dd>
-                                                                                            <section class="json-schema-description">
-                                                                                                <p>nvchecker configuration section</p>
-                                                                                        
-                                                                                            </section>
-                                                                                        
-                                                                                    </dd>
-                                                                                    <dt>
-                                                                                        
-                                                                                        <span class="json-property-type">string</span>
-                                                                                        <span class="json-property-range" title="Value limits"></span>
-                                                                                        
-                                                                                    </dt>
-                                                                                    <dd>
-                                                                                            <section class="json-schema-description">
-                                                                                                <p>Shorthand for simple check sources (e.g. &quot;aur&quot;)</p>
-                                                                                        
-                                                                                            </section>
-                                                                                        
-                                                                                    </dd>
-                                                                            </dl>
-                                                                        
                                                                         </section>
+                                                                    
+                                                                            <section class="json-schema-properties">
+                                                                                <dl>
+                                                                                        <dt data-property-name="source">
+                                                                                            <span class="json-property-name">source:</span>
+                                                                                            
+                                                                                            <span class="json-property-type">object</span>
+                                                                                            <span class="json-property-range" title="Value limits"></span>
+                                                                                            
+                                                                                                <span class="json-property-required"></span>
+                                                                                        </dt>
+                                                                                        <dd>
+                                                                                            <p>nvchecker source name</p>
+                                                                            
+                                                                                            <div class="json-inner-schema">
+                                                                                                
+                                                                                            </div>
+                                                                                        </dd>
+                                                                                </dl>
+                                                                            </section>
                                                                 </div>
                                                             </section>                </div>
                                     </dd>
