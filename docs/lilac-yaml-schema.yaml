@@ -55,6 +55,7 @@ properties:
       description: nvchecker configuration section
       properties:
         source:
+          type: string
           description: nvchecker source name
       required:
         - source
