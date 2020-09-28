@@ -318,6 +318,16 @@ def _update_aur_repo_real(pkgname: str) -> None:
       git_reset_hard()
       git_pull()
 
+  with at_dir(aurpath):
+    logger.info('removing old files from AUR repo: %s', aurpath)
+    oldfiles = run_cmd(['git', 'ls-files']).splitlines()
+    for f in oldfiles:
+      logger.debug('removing file %s', f)
+      try:
+        os.unlink(f)
+      except OSError as e:
+        logger.warning('failed to remove file %s: %s', f, e)
+
   logger.info('copying files to AUR repo: %s', aurpath)
   files = run_cmd(['git', 'ls-files']).splitlines()
   for f in files:
