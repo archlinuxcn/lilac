@@ -319,15 +319,9 @@ def _update_aur_repo_real(pkgname: str) -> None:
       git_pull()
 
   with at_dir(aurpath):
-    logger.info('removing old files from AUR repo: %s', aurpath)
-    oldfiles = run_cmd(['git', 'ls-files']).splitlines()
-    for f in oldfiles:
-      logger.debug('removing file %s', f)
-      try:
-        os.unlink(f)
-      except OSError as e:
-        logger.warning('failed to remove file %s: %s', f, e)
+    oldfiles = set(run_cmd(['git', 'ls-files']).splitlines())
 
+  newfiles = set()
   logger.info('copying files to AUR repo: %s', aurpath)
   files = run_cmd(['git', 'ls-files']).splitlines()
   for f in files:
@@ -335,8 +329,18 @@ def _update_aur_repo_real(pkgname: str) -> None:
       continue
     logger.debug('copying file %s', f)
     shutil.copy(f, aurpath)
+    newfiles.add(f)
 
   with at_dir(aurpath):
+    for f in oldfiles - newfiles:
+      if f in ['.SRCINFO', '.gitignore']:
+        continue
+      logger.debug('removing file %s', f)
+      try:
+        os.unlink(f)
+      except OSError as e:
+        logger.warning('failed to remove file %s: %s', f, e)
+
     if not _allow_update_aur_repo(pkgname, run_cmd(['git', 'diff'])):
       return
 
