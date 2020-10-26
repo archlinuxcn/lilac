@@ -58,7 +58,7 @@ def _add_into_array(line: str, values: Iterable[str]) -> str:
   arr = {_unquote_item(x) for x in line_m.split(' ')}.union(values)
   arr_nonone = [i for i in arr if i is not None]
   arr_nonone.sort()
-  arr_elems_str = "'{}'".format("' '".join(arr_nonone))
+  arr_elems_str = '"{}"'.format('" "'.join(arr_nonone))
   line = line_l + arr_elems_str + line_r
   return line
 
