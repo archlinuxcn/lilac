@@ -4,12 +4,11 @@ import subprocess
 from pathlib import Path
 from typing import (
   Optional, Tuple, List, Union, Dict, Set,
-  TYPE_CHECKING,
+  TYPE_CHECKING, Any
 )
 import logging
 from functools import lru_cache
 import traceback
-import configparser
 import string
 
 import structlog
@@ -31,21 +30,20 @@ build_logger = structlog.get_logger(logger_name='build')
 class Repo:
   gh: Optional[GitHub]
 
-  def __init__(self, config: configparser.ConfigParser):
-    self.myaddress = config.get('lilac', 'email')
-    self.mymaster = config.get('lilac', 'master')
-    self.logurl_template = config.get('lilac', 'logurl', fallback=None)
-    self.repomail = config.get('repository', 'email')
-    self.name = config.get('repository', 'name')
-    self.trim_ansi_codes = not config.getboolean(
-      'smtp', 'use_ansi', fallback=False)
+  def __init__(self, config: Dict[str, Any]) -> None:
+    self.myaddress = config['lilac']['email']
+    self.mymaster = config['lilac']['master']
+    self.logurl_template = config['lilac'].get('logurl')
+    self.repomail = config['repository']['email']
+    self.name = config['repository']['name']
+    self.trim_ansi_codes = not config['smtp']['use_ansi']
 
-    self.repodir = Path(config.get('repository', 'repodir')).expanduser()
+    self.repodir = Path(config['repository']['repodir']).expanduser()
 
     self.ms = MailService(config)
-    github_token = config.get('lilac', 'github_token', fallback=None)
+    github_token = config['lilac'].get('github_token')
     if github_token:
-      self.gh = GitHub(config.get('lilac', 'github_token', fallback=None))
+      self.gh = GitHub(github_token)
     else:
       self.gh = None
 

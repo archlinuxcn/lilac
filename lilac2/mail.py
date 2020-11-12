@@ -1,34 +1,31 @@
 from __future__ import annotations
 
 import smtplib
-from typing import Union, Type, List
+from typing import Union, Type, List, Dict, Any
 
 from mailutils import assemble_mail
 
 SMTPClient = Union[smtplib.SMTP, smtplib.SMTP_SSL]
 
 class MailService:
-  def __init__(self, config) -> None:
-    self.config = config
-    self.mailtag = config.get('lilac', 'name')
-    self.send_email = config.getboolean('lilac', 'send_email')
+  def __init__(self, config: Dict[str, Any]) -> None:
+    self.smtp_config = config['smtp']
+    self.mailtag = config['lilac']['name']
+    self.send_email = config['lilac']['send_email']
 
-    myname = config.get('lilac', 'name')
-    myaddress = config.get('lilac', 'email')
+    myname = config['lilac']['name']
+    myaddress = config['lilac']['email']
     self.from_ = f'{myname} <{myaddress}>'
-    self.unsub = config.get(
-      'lilac', 'unsubscribe_address',
-      fallback = None,
-    )
+    self.unsub = config['lilac'].get('unsubscribe_address')
 
   def smtp_connect(self) -> SMTPClient:
-    config = self.config
-    host = config.get('smtp', 'host', fallback='')
-    port = config.getint('smtp', 'port', fallback=0)
-    username = config.get('smtp', 'username', fallback='')
-    password = config.get('smtp', 'password', fallback='')
+    config = self.smtp_config
+    host = config.get('host', '')
+    port = config.get('port', 0)
+    username = config.get('username')
+    password = config.get('password')
     smtp_cls: Type[SMTPClient]
-    if config.getboolean('smtp', 'use_ssl', fallback=False):
+    if config.get('use_ssl', False):
       smtp_cls = smtplib.SMTP_SSL
     else:
       smtp_cls = smtplib.SMTP
@@ -36,7 +33,7 @@ class MailService:
     if not host:
       # __init__ doesn't connect; let's do it
       connection.connect()
-    if username != '' and password != '':
+    if username and password:
       connection.login(username, password)
     return connection
 

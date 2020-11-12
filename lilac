@@ -6,13 +6,13 @@ import os
 import sys
 import traceback
 import logging
-import configparser
 import time
 from collections import defaultdict
-from typing import Set, Dict, List, Any
+from typing import Set, Dict, List, Any, cast
 import textwrap
 from pathlib import Path
 
+import toml
 import prctl
 from toposort import toposort_flatten
 import structlog
@@ -48,7 +48,7 @@ from lilac2 import pkgbuild
 from lilac2.building import lilac_build, MissingDependencies, SkipBuild
 from lilac2 import slogconf
 
-# Note that source dirs need to be created in advance
+# TODO: move to config.toml
 BIND_MOUNTS = [
   os.path.expanduser('~/.cargo') + ':/build/.cargo',
   os.path.expanduser('~/go') + ':/build/go',
@@ -58,23 +58,24 @@ BIND_MOUNTS = [
   os.path.expanduser('~/.cache/pip') + ':/build/.cache/pip',
 ]
 
-config = configparser.ConfigParser()
-config.optionxform = lambda option: option # type: ignore
-config_file_candidates = [mydir / 'config.ini', topdir / 'config.ini']
-for config_file in config_file_candidates:
-  # ConfigParser.read does not raise an exception is the file is missing
-  if config_file.exists():
-    config.read(config_file)
-    break
-else:
-  raise Exception('No config files found!')
+def read_config() -> Dict[str, Any]:
+  config_file_candidates = [mydir / 'config.toml', topdir / 'config.toml']
+  for config_file in config_file_candidates:
+    # ConfigParser.read does not raise an exception is the file is missing
+    if config_file.exists():
+      with open(config_file) as f:
+        return cast(Dict[str, Any], toml.load(f))
+  else:
+    raise Exception('No config files found!')
+
+config = read_config()
 
 # Setting up enviroment variables
-os.environ.update(config.items('enviroment variables'))
+os.environ.update(config.get('envvars', ()))
 os.environ['PATH'] = str(topdir) + ':' + os.environ['PATH']
 
-DESTDIR = os.path.expanduser(config.get('repository', 'destdir'))
-MYNAME = config.get('lilac', 'name')
+DESTDIR = os.path.expanduser(config['repository'].get('destdir', ''))
+MYNAME = config['lilac']['name']
 
 building_packages: Set[str] = set()
 nvdata: Dict[str, NvResults] = {}
@@ -335,7 +336,7 @@ def main_may_raise(D: Dict[str, Any], pkgs_to_build: List[str]) -> None:
         REPO.mods[dep.pkgname] = all_mods[dep.pkgname]
       REPO.mods[pkg_to_build] = all_mods[pkg_to_build]
 
-  proxy = config.get('nvchecker', 'proxy', fallback=None)
+  proxy = config['nvchecker'].get('proxy')
   _nvdata, unknown, rebuild = packages_need_update(
     REPO, proxy)
   nvdata.update(_nvdata)
@@ -396,7 +397,7 @@ def main_may_raise(D: Dict[str, Any], pkgs_to_build: List[str]) -> None:
         del failed_info[x]
     D['failed'] = failed_info
 
-    if config.getboolean('lilac', 'rebuild_failed_pkgs'):
+    if config['lilac']['rebuild_failed_pkgs']:
       if update_succeeded:
         nvtake(update_succeeded, REPO.mods)
     else:
@@ -408,7 +409,7 @@ def main_may_raise(D: Dict[str, Any], pkgs_to_build: List[str]) -> None:
         nvtake(update_nv, REPO.mods)
 
     git_reset_hard()
-    if config.getboolean('lilac', 'git_push'):
+    if config['lilac']['git_push']:
       git_push()
 
 def main(pkgs_to_build: List[str]) -> None:

@@ -2,7 +2,7 @@ pylib/
 __pycache__/
 *.sw*
 .pytest_cache/
-config.ini
+config.toml
 
 # Distribution / packaging
 build/
