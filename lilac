@@ -8,7 +8,7 @@ import traceback
 import logging
 import time
 from collections import defaultdict
-from typing import Set, Dict, List, Any, cast
+from typing import Set, Dict, List, Any, cast, Optional
 import textwrap
 from pathlib import Path
 
@@ -48,16 +48,6 @@ from lilac2 import pkgbuild
 from lilac2.building import lilac_build, MissingDependencies, SkipBuild
 from lilac2 import slogconf
 
-# TODO: move to config.toml
-BIND_MOUNTS = [
-  os.path.expanduser('~/.cargo') + ':/build/.cargo',
-  os.path.expanduser('~/go') + ':/build/go',
-  os.path.expanduser('~/.cache/archbuild-bind-cache/stack') + ':/build/.stack',
-  os.path.expanduser('~/.cache/archbuild-bind-cache') + ':/build/.cache',
-  os.path.expanduser('~/.cache/go-build') + ':/build/.cache/go-build',
-  os.path.expanduser('~/.cache/pip') + ':/build/.cache/pip',
-]
-
 def read_config() -> Dict[str, Any]:
   config_file_candidates = [mydir / 'config.toml', topdir / 'config.toml']
   for config_file in config_file_candidates:
@@ -76,6 +66,19 @@ os.environ['PATH'] = str(topdir) + ':' + os.environ['PATH']
 
 DESTDIR = os.path.expanduser(config['repository'].get('destdir', ''))
 MYNAME = config['lilac']['name']
+
+def get_bindmounts(
+  bindmounts: Optional[Dict[str, str]],
+) -> List[str]:
+  if bindmounts is None:
+    return []
+
+  items = [(os.path.expanduser(src), dst)
+           for src, dst in bindmounts.items()]
+  items.sort(reverse=True)
+  return ['{src}:{dst}' for src, dst in items]
+
+BIND_MOUNTS = get_bindmounts(config.get('bindmounts'))
 
 building_packages: Set[str] = set()
 nvdata: Dict[str, NvResults] = {}

@@ -41,4 +41,14 @@ proxy = "http://localhost:8000"
 # Set to true to allow ANSI characters in content
 #use_ansi = false
 
+[bindmounts]
+# bind mounts in the devtools enviroment, e.g. for caching
+# source directories will be created if not yet
+"~/.cache/archbuild-bind-cache" = "/build/.cache"
+"~/.cache/archbuild-bind-cache/stack" = "/build/.stack"
+"~/.cache/go-build" = "/build/.cache/go-build"
+"~/.cache/pip" = "/build/.cache/pip"
+"~/.cargo" = "/build/.cargo"
+"~/go" = "/build/go"
+
 # vim: se ft=toml:
