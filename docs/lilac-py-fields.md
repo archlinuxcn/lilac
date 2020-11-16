@@ -10,7 +10,7 @@
 * `time_limit_hours`: `*-build` 的时间限制。单位为小时，默认为 1 。
 * `build_args`: 传递给 `*-build` 的额外参数。可选。
 * `makechrootpkg_args`: 传递给 `makechrootpkg` 的额外参数。可选。
-* `makepkg_args`: 传递给 `makepkg` 的额外参数。可选。自带 `--holdver` 。
+* `makepkg_args`: 传递给 `makepkg` 的额外参数。可选。
 
 ## 提供的信息
 * `_G.oldver`: 旧版本号。可能为 `None`。当被非第一项 `update_on` 触发（rebuild）时，也可能与新版本号相同。
