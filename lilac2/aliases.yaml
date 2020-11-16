@@ -48,3 +48,7 @@ mediawiki:
   archpkg: mediawiki
   from_pattern: '^(\d+\.\d+)\..*'
   to_pattern: '\1'
+alpm-lilac:
+  source: alpm
+  dbpath: '{pacman_db_dir}'
+  repo: '{repo_name}'

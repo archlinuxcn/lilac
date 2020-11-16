@@ -6,6 +6,7 @@ import importlib.util
 from pathlib import Path
 from typing import Generator, cast, Dict, Tuple
 
+from .const import _G, PACMAN_DB_DIR
 from .typing import LilacMod, LilacMods, ExcInfo
 from .lilacyaml import (
   load_lilac_yaml, ALIASES, iter_pkgdir,
@@ -33,6 +34,12 @@ def load_all(repodir: Path) -> Tuple[LilacMods, Dict[str, ExcInfo]]:
       errors[x.name] = cast(ExcInfo, sys.exc_info())
 
   return mods, errors
+
+def expand_alias_arg(value: str) -> str:
+  return value.format(
+    pacman_db_dir=PACMAN_DB_DIR,
+    repo_name=_G.repo.name,
+  )
 
 @contextlib.contextmanager
 def load_lilac(dir: Path) -> Generator[LilacMod, None, None]:
@@ -81,7 +88,7 @@ def load_lilac(dir: Path) -> Generator[LilacMod, None, None]:
         alias = entry.pop('alias', None)
         if alias is not None:
           for k, v in ALIASES[alias].items():
-            entry.setdefault(k, v)
+            entry.setdefault(k, expand_alias_arg(v))
 
     yield mod
 
@@ -90,4 +97,3 @@ def load_lilac(dir: Path) -> Generator[LilacMod, None, None]:
       del sys.modules['lilac.py']
     except KeyError:
       pass
-

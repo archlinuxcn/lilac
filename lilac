@@ -41,7 +41,7 @@ from lilac2.cmd import (
 )
 from lilac2.tools import kill_child_processes, redirect_output
 from lilac2.repo import Repo
-from lilac2.const import mydir, _G
+from lilac2.const import mydir, _G, PACMAN_DB_DIR
 from lilac2.nvchecker import packages_need_update, nvtake, NvResults
 from lilac2.typing import LilacMod
 from lilac2 import pkgbuild
@@ -450,9 +450,7 @@ def setup() -> None:
   setup_build_logger()
   os.chdir(REPO.repodir)
 
-  dbpath = mydir / 'pacmandb'
-  dbpath.mkdir(exist_ok=True)
-  pkgbuild.init_data(dbpath)
+  pkgbuild.init_data(PACMAN_DB_DIR)
 
 if __name__ == '__main__':
   try:
