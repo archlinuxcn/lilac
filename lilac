@@ -76,7 +76,7 @@ def get_bindmounts(
   items = [(os.path.expanduser(src), dst)
            for src, dst in bindmounts.items()]
   items.sort(reverse=True)
-  return ['{src}:{dst}' for src, dst in items]
+  return [f'{src}:{dst}' for src, dst in items]
 
 BIND_MOUNTS = get_bindmounts(config.get('bindmounts'))
 
