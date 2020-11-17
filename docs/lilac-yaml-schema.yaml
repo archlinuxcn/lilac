@@ -68,7 +68,6 @@ properties:
               description: alias name
           required:
             - alias
-          additionalProperties: false
     minItems: 1
   maintainers:
     description: List of maintainers for receiving email notifications

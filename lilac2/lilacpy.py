@@ -77,9 +77,11 @@ def load_lilac(dir: Path) -> Generator[LilacMod, None, None]:
     mod.pkgbase = dir.name
 
     if hasattr(mod, 'update_on'):
-      for i, entry in enumerate(mod.update_on):
-        if 'alias' in entry:
-          mod.update_on[i] = ALIASES[entry['alias']]
+      for entry in mod.update_on:
+        alias = entry.pop('alias', None)
+        if alias is not None:
+          for k, v in ALIASES[alias].items():
+            entry.setdefault(k, v)
 
     yield mod
 
