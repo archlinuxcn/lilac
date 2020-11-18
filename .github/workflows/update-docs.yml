@@ -24,10 +24,11 @@ jobs:
         node-version: 14.x
     - name: Install NodeJS dependencies
       run: npm install -g bootprint bootprint-json-schema
+
     - name: Configure git
       run: |
-        git config --global user.name 'gh-actions'
-        git config --global user.email 'lilacbot@users.noreply.github.com'
+        git config --global user.name 'github-actions'
+        git config --global user.email 'github-actions@github.com'
     - name: Update docs
       run: |
         cd docs
@@ -36,3 +37,18 @@ jobs:
       run: |
         cd docs/build/docs
         git push
+
+    - uses: actions/checkout@v2
+      with:
+        repository: archlinuxcn/repo
+        path: repo
+
+    - name: Update archlinuxcn/repo
+      run: |
+        cp docs/lilac-yaml-schema.yaml repo
+        cd repo
+        if [ -n "$(git status -s)" ]; then
+          git add lilac-yaml-schema.yaml
+          git commit -m 'update lilac-yaml-schema.yaml'
+          git push
+        fi
