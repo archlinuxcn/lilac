@@ -88,7 +88,10 @@ def load_lilac(dir: Path) -> Generator[LilacMod, None, None]:
         alias = entry.pop('alias', None)
         if alias is not None:
           for k, v in ALIASES[alias].items():
-            entry.setdefault(k, expand_alias_arg(v))
+            if isinstance(v, str):
+              entry.setdefault(k, expand_alias_arg(v))
+            else:
+              entry.setdefault(k, v)
 
     yield mod
 
