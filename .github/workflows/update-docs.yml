@@ -5,6 +5,10 @@ on:
     branches:
       - master
 
+defaults:
+  run:
+    shell: bash
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -42,12 +46,13 @@ jobs:
       with:
         repository: archlinuxcn/repo
         path: repo
+        ssh-key: ${{ secrets.REPO_DEPLOY_KEY }}
 
     - name: Update archlinuxcn/repo
       run: |
         cp docs/lilac-yaml-schema.yaml repo
         cd repo
-        if [ -n "$(git status -s)" ]; then
+        if [[ -n "$(git status -s)" ]]; then
           git add lilac-yaml-schema.yaml
           git commit -m 'update lilac-yaml-schema.yaml'
           git push
