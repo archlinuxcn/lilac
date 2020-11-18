@@ -1,5 +1,7 @@
 .PHONY: all clean
 
+SHELL := /bin/bash
+
 all: build/.lilacyaml-doc
 
 build/.lilacyaml-doc: build/lilac.json build/docs/.timestamp
