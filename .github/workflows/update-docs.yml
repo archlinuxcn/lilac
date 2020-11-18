@@ -1,0 +1,39 @@
+name: Update lilac.yaml docs
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.8'
+    - name: Install Python dependencies
+      run: pip install PyYAML
+    - name: Set up NodeJS
+      uses: actions/setup-node@v1
+      with:
+        node-version: 14.x
+    - name: Install NodeJS dependencies
+      run: npm install -g bootprint bootprint-json-schema
+    - name: Update docs
+      run: |
+        cd docs
+        mkdir -p build
+        git worktree add build/docs gh-pages
+        make
+    - name: Commit changes
+      run: |
+        cd docs/build/docs
+        git config --global user.name 'gh-actions'
+        git config --global user.email 'nobody@users.noreply.github.com'
+        git commit -am "Update docs"
+        git push
