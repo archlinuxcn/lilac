@@ -27,8 +27,6 @@ jobs:
     - name: Update docs
       run: |
         cd docs
-        mkdir -p build
-        git worktree add build/docs gh-pages
         make
     - name: Commit changes
       run: |
