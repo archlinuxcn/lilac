@@ -11,6 +11,8 @@ from typing import (
 from types import SimpleNamespace
 import contextlib
 
+import pyalpm
+
 from . import pkgbuild
 from .typing import LilacMod, Cmd
 from .cmd import run_cmd
@@ -49,7 +51,8 @@ def may_update_pkgrel() -> Generator[None, None, None]:
   if pkgver2 is None or pkgrel2 is None:
     return
 
-  if pkgver == pkgver2 and pkgrel == pkgrel2:
+  if pkgver == pkgver2 and \
+     pyalpm.vercmp(f'1-{pkgrel}', f'1-{pkgrel2}') >= 0:
     update_pkgrel(_next_pkgrel(pkgrel))
 
 def lilac_build(
