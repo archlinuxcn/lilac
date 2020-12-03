@@ -4,14 +4,16 @@ import sys
 import pathlib
 import re
 
-from lilac2.lilacpy import load_all
+from lilac2.lilacyaml import iter_pkgdir, load_lilac_yaml
 
 REPOPATH = pathlib.Path('/ldata/src/archgitrepo/archlinuxcn')
 
 PkgPattern = re.compile(r'[\w.+-]+')
 
 def main():
-  mods, _errors = load_all(REPOPATH)
+  mods = {}
+  for dir in iter_pkgdir(REPOPATH):
+    mods[dir.name] = load_lilac_yaml(dir)
 
   for line in sys.stdin:
     m = PkgPattern.search(line)
@@ -25,7 +27,7 @@ def main():
       continue
 
     m = mods[pkg]
-    maints = [x['github'] for x in m.maintainers]
+    maints = [x['github'] for x in m['maintainers']]
     line = line.rstrip() + ' (%s)\n' % ' '.join(f'@{x}' for x in maints)
     sys.stdout.write(line)
 
