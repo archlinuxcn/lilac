@@ -11,7 +11,7 @@
 命令
 ----
 
-* Python >= 3.7
+* Python >= 3.9
 * curl
 * git
 * makepkg
@@ -29,7 +29,6 @@ Python 库
 * requests
 * lxml
 * winterpy (will auto download if not available)
-* toposort
 * pyyaml
 * toml
 * pyalpm

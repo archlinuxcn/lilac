@@ -16,7 +16,7 @@ setup(
   setup_requires = ['setuptools_scm'],
   # See README.md
   install_requires = [
-    'requests', 'lxml', 'toposort', 'PyYAML', 'pyalpm', 'structlog', 'python_prctl',
+    'requests', 'lxml', 'PyYAML', 'pyalpm', 'structlog', 'python_prctl',
   ],
   include_package_data = True,
   package_data = {
@@ -25,7 +25,6 @@ setup(
   classifiers = [
     'Programming Language :: Python',
     'Programming Language :: Python :: 3',
-    'Programming Language :: Python :: 3.7',
-    'Programming Language :: Python :: 3.8',
+    'Programming Language :: Python :: 3.9',
   ],
 )

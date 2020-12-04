@@ -11,10 +11,10 @@ from collections import defaultdict
 from typing import Set, Dict, List, Any, cast, Optional
 import textwrap
 from pathlib import Path
+import graphlib
 
 import toml
 import prctl
-from toposort import toposort_flatten
 import structlog
 
 topdir = Path(__file__).resolve().parent
@@ -252,7 +252,7 @@ def start_build(repo: Repo, failed: Set[str], built: Set[str]) -> None:
       msg = f'''软件包 {name} 的 lilac.py 或者 lilac.yaml 指定了 repo_depends，然而其直接或者间接的依赖项 {deps!r} 并不在本仓库中。
 ''')
 
-  packages = toposort_flatten(dep_building_map)
+  packages = graphlib.TopologicalSorter(dep_building_map).static_order()
   # filter out already built packages
   packages = [x for x in packages if x in building_packages]
 

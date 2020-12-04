@@ -4,8 +4,7 @@ from collections import defaultdict, namedtuple
 from pathlib import Path
 from typing import Dict, Union, Tuple, Set, Optional
 import re
-
-from toposort import toposort_flatten
+import graphlib
 
 import archpkg
 
@@ -35,7 +34,7 @@ def get_dependency_map(
         rmap[d.pkgdir.name].add(pkgbase)
       map[pkgbase].update(ds)
 
-  dep_order = toposort_flatten(pkgdir_map)
+  dep_order = graphlib.TopologicalSorter(pkgdir_map).static_order()
   for pkgbase in dep_order:
     if pkgbase in rmap:
       deps = map[pkgbase]
