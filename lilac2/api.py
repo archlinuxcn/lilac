@@ -166,7 +166,7 @@ def get_pkgver_and_pkgrel(
           except (ValueError, TypeError):
             pass
         elif l.startswith('pkgver='):
-          pkgver = l.rstrip().split('=', 1)[-1]
+          pkgver = l.rstrip().split('=', 1)[-1].strip('\'"')
   except FileNotFoundError:
     pass
 
