@@ -1,0 +1,5 @@
+*.toml
+__pycache__
+*.json
+djangorm
+config.py

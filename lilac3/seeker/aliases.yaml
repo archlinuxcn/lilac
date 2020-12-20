@@ -1,0 +1,54 @@
+python:
+  source: archpkg
+  archpkg: python
+  from_pattern: '^(\d+\.\d+)\..*'
+  to_pattern: '\1'
+ruby:
+  source: archpkg
+  archpkg: ruby
+  from_pattern: ^(\d+\.\d+)\..*
+  to_pattern: \1
+perl:
+  source: archpkg
+  archpkg: perl
+  from_pattern: ^(\d+\.\d+)\..*
+  to_pattern: \1
+boost:
+  source: archpkg
+  archpkg: boost-libs
+  from_pattern: ^(\d+\.\d+)\..*
+  to_pattern: \1
+icu:
+  source: archpkg
+  archpkg: icu
+  from_pattern: ^(\d+)\..*
+  to_pattern: \1
+readline:
+  source: archpkg
+  archpkg: readline
+  from_pattern: ^(\d+)\..*
+  to_pattern: \1
+clang:
+  source: archpkg
+  archpkg: clang
+  from_pattern: ^(\d+)\..*
+  to_pattern: \1
+protobuf:
+  source: archpkg
+  archpkg: protobuf
+  provided: libprotobuf.so
+  strip_release: true
+jsoncpp:
+  source: archpkg
+  archpkg: jsoncpp
+  provided: libjsoncpp.so
+  strip_release: true
+mediawiki:
+  source: archpkg
+  archpkg: mediawiki
+  from_pattern: '^(\d+\.\d+)\..*'
+  to_pattern: '\1'
+alpm-lilac:
+  source: alpm
+  dbpath: '{pacman_db_dir}'
+  repo: '{repo_name}'

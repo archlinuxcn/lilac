@@ -1,0 +1,54 @@
+name: Trigger rebuild
+
+on:
+  workflow_dispatch:
+    inputs:
+      pkgbase:
+        description: 'Path to pkgbase'
+        required: true
+
+jobs:
+
+  build:
+    runs-on: ubuntu-latest
+    container:
+      image: archlinux
+
+    steps:
+      - name: Get time
+        id: time
+        run: echo "::set-output name=time::$(date +%F-%T)"
+
+      - name: Set up pacman db cache
+        uses: actions/cache@master
+        with:
+          path: /var/lib/pacman/sync
+          key: pacman-db-x86_64-${{ steps.time.outputs.time }}
+          restore-keys: pacman-db-x86_64-
+
+      - name: Set up pacman package cache
+        uses: actions/cache@master
+        with:
+          path: /var/cache/pacman/pkg
+          key: pacman-package-x86_64-${{ steps.time.outputs.time }}
+          restore-keys: pacman-package-x86_64-
+
+      - name: Install runtime dependencies
+        run: |
+          pacman -Syu --noconfirm
+          pacman -S --noconfirm --needed python-django python-mysqlclient
+
+      - uses: actions/checkout@master
+        with:
+          path: lilac
+
+      - uses: actions/checkout@master
+        with:
+          repository: petronny/djangorm
+          path: djangorm
+
+      - name: Update database
+        env:
+          RECORDER_DATABASE: ${{ secrets.RECORDER_DATABASE }}
+          PYTHONPATH: .:lilac/lilac3
+        run: python lilac/lilac3/seeker/trigger.py ${{ github.event.inputs.pkgbase }}
