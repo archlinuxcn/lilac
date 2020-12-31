@@ -14,11 +14,13 @@ def test_unquote_item(shell_str, python_str):
   assert _unquote_item(shell_str) == python_str
 
 @pytest.mark.parametrize('line, extra_elements, line_expected', [
-  ("some_array=()", ["ab", "bc"], "some_array=('ab' 'bc')"),
-  ("some_array=('ab', 'bc')", ["cd"], "some_array=('ab' 'bc' 'cd')"),
-  ('''some_array=("ab" "bc")''', ["cd"], "some_array=('ab' 'bc' 'cd')"),
-  ('''some_array=("ab" 'bc')''', ["cd"], "some_array=('ab' 'bc' 'cd')"),
-  ('''some_array=("ab"''', ["cd"], "some_array=('ab' 'cd'"),
+  ("some_array=()", ["ab", "bc"], '''some_array=("ab" "bc")'''),
+  ("some_array=('ab', 'bc')", ["cd"], '''some_array=("ab" "bc" "cd")'''),
+  ('''some_array=("ab" "bc")''', ["cd"], '''some_array=("ab" "bc" "cd")'''),
+  ('''some_array=("ab" 'bc')''', ["cd"], '''some_array=("ab" "bc" "cd")'''),
+  ('''some_array=("ab"''', ["cd"], '''some_array=("ab" "cd"'''),
+  # https://github.com/archlinuxcn/lilac/issues/164
+  ('''some_array=("$foo"''', ["bar"], '''some_array=("$foo" "bar"'''),
 ])
 def test_add_into_array(line, extra_elements, line_expected):
   assert _add_into_array(line, extra_elements) == line_expected
