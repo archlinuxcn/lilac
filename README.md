@@ -45,11 +45,14 @@ lilac only produces packages and put them in a directory, but doesn't update the
 
 Compile the `kill_children` binary and put it in `$PATH`, `chown` to root and `chmod u+s` so that it runs with root privileges.
 
+The `build-cleaner` inside `scripts/` needs to be in `$PATH` and runs with `sudo` without a password to release space.
+
 Setup a cron job, or a systemd.timer, or whatever to run lilac, e.g. `LANG=en_US.UTF-8 PATH=$HOME/bin:$PATH ~/soft/lilac/lilac`.
 
 If you have a lot of memory (e.g. >100G), you may want to mount `/var/lib/archbuild` as a tmpfs.
 
-There are other scripts in [misc_scripts](https://github.com/archlinuxcn/misc_scripts) that does things like cleanups, issue processing. The `build-cleaner` needs to be in `$PATH` and runs with `sudo` without a password to release space.
+There are other scripts in [misc_scripts](https://github.com/archlinuxcn/misc_scripts) that does things like cleanups, issue processing.
+
 
 License
 -------
