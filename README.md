@@ -50,3 +50,8 @@ Setup a cron job, or a systemd.timer, or whatever to run lilac, e.g. `LANG=en_US
 If you have a lot of memory (e.g. >100G), you may want to mount `/var/lib/archbuild` as a tmpfs.
 
 There are other scripts in [misc_scripts](https://github.com/archlinuxcn/misc_scripts) that does things like cleanups, issue processing. The `build-cleaner` needs to be in `$PATH` and runs with `sudo` without a password to release space.
+
+License
+-------
+
+This project is licensed under GPLv3.
