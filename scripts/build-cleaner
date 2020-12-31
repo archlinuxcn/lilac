@@ -1,0 +1,77 @@
+#!/usr/bin/python3
+
+import os
+import fcntl
+from sys import argv
+import re
+from contextlib import contextmanager
+import subprocess
+
+# ARCHBUILD='/tmp/workspace/archbuild'
+ARCHBUILD='/var/lib/archbuild'
+
+def usage():
+    print('''
+Usage: %s [build_prefix [arch]]
+
+Clean up chroot building directory in /var/lib/archbuild/ with specified
+<build_prefix> and <arch>.
+
+If <build_prefix> and <arch> are not specified, clean up all copies.
+''' % argv[0])
+
+def get_prefixes():
+    return sorted({re.sub(r'-[^-]*$', '', s) for s in os.listdir(ARCHBUILD)})
+
+def get_arches():
+    return sorted({re.sub(r'^.*-', '', s) for s in os.listdir(ARCHBUILD)})
+
+@contextmanager
+def lock(filename):
+    with open(filename, 'w') as lockfile:
+        fcntl.flock(lockfile, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        try:
+            yield
+        finally:
+            os.unlink(filename)
+
+def main():
+    prefixes = arches = None
+    try:
+        prefixes = [argv[1]]
+        arches = [argv[2]]
+    except IndexError:
+        pass
+
+    if not prefixes:
+        prefixes = get_prefixes()
+    if not arches:
+        arches = get_arches()
+
+    for prefix in prefixes:
+        for arch in arches:
+            base = ARCHBUILD + '/' + prefix + '-' + arch
+            if not os.path.isdir(base):
+                continue
+
+            print('----In %s-%s----' % (prefix, arch))
+
+            copies = [x for x in os.listdir(base)
+                      if os.path.isdir(base + '/' + x) and x != 'root'
+                     ]
+
+            for copy in copies:
+                full_path = base + '/' + copy
+                try:
+                    with lock(full_path + '.lock'):
+                        print('\033[1;32mClean up copy: %s...' % copy,
+                              end='', flush=True)
+                        subprocess.check_call(['rm', '-rf', '--one-file-system', full_path])
+                        print('done\033[1;0m')
+                except BlockingIOError:
+                    print('\033[1;31mCopy in use, skipped: \033[1;33m%s\033[1;0m' % copy)
+            print()
+
+
+if __name__ == '__main__':
+    main()
