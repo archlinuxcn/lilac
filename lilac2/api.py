@@ -21,7 +21,7 @@ import requests
 from myutils import at_dir
 from htmlutils import parse_document_from_requests
 
-from .cmd import run_cmd, git_pull, git_push, git_reset_hard
+from .cmd import run_cmd, git_pull, git_push
 from . import const
 from .const import _G, SPECIAL_FILES
 from .typing import PkgRel
@@ -315,7 +315,8 @@ def _update_aur_repo_real(pkgname: str) -> None:
       run_cmd(['git', 'clone', f'aur@aur.archlinux.org:{pkgname}.git'])
   else:
     with at_dir(aurpath):
-      git_reset_hard()
+      # reset everything, dropping local commits
+      run_cmd(['git', 'reset', '--hard', 'origin/master'])
       git_pull()
 
   with at_dir(aurpath):

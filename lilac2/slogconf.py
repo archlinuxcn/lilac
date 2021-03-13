@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import structlog
 import time
-from typing import Dict, Any
+from typing import Dict, Any, cast
 
 LogEvent = Dict[str, Any]
 
@@ -18,7 +18,8 @@ _renderer = structlog.processors.JSONRenderer(
 
 def json_renderer(logger, level: str, event: LogEvent) -> str:
   event['level'] = level
-  return _renderer(logger, level, event)
+  # this cannot be bytes, can it?
+  return cast(str, _renderer(logger, level, event))
 
 def add_timestamp(
   logger, level: str, event: LogEvent,
