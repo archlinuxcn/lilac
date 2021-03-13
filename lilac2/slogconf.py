@@ -2,9 +2,9 @@ from __future__ import annotations
 
 import structlog
 import time
-from typing import Dict, Any, cast
+from typing import MutableMapping, Any, Union
 
-LogEvent = Dict[str, Any]
+LogEvent = MutableMapping[str, Any]
 
 def exc_info(
   logger, level: str, event: LogEvent,
@@ -16,10 +16,9 @@ def exc_info(
 _renderer = structlog.processors.JSONRenderer(
   ensure_ascii=False)
 
-def json_renderer(logger, level: str, event: LogEvent) -> str:
+def json_renderer(logger, level: str, event: LogEvent) -> Union[str, bytes]:
   event['level'] = level
-  # this cannot be bytes, can it?
-  return cast(str, _renderer(logger, level, event))
+  return _renderer(logger, level, event)
 
 def add_timestamp(
   logger, level: str, event: LogEvent,

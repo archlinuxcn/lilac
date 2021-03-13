@@ -111,9 +111,7 @@ def setup_build_logger() -> None:
     file=logfile)
 
   structlog.configure(
-    # has List[Callable[[Any, str, Dict[str, Any]], Collection[str]]]
-    # expected Optional[Iterable[Callable[[Any, str, MutableMapping[str, Any]], Union[Mapping[str, Any], str, bytes, Tuple[Any, ...]]]]]
-    processors = processors, # type: ignore
+    processors = processors,
     logger_factory = logger_factory,
   )
 
