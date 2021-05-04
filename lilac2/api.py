@@ -326,7 +326,7 @@ def _update_aur_repo_real(pkgname: str) -> None:
   logger.info('copying files to AUR repo: %s', aurpath)
   files = run_cmd(['git', 'ls-files']).splitlines()
   for f in files:
-    if f in const.SPECIAL_FILES:
+    if f in SPECIAL_FILES:
       continue
     logger.debug('copying file %s', f)
     shutil.copy(f, aurpath)
@@ -433,7 +433,7 @@ def _download_aur_pkgbuild(name: str) -> List[str]:
       basename, remain = os.path.split(tarinfo.name)
       if basename == '':
         continue
-      if remain in ('.AURINFO', '.SRCINFO', '.gitignore'):
+      if remain in SPECIAL_FILES + ('.AURINFO', '.SRCINFO', '.gitignore'):
         continue
       tarinfo.name = remain
       tarf.extract(tarinfo)
