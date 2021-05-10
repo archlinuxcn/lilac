@@ -444,6 +444,14 @@ def git_rm_files(files: List[str]) -> None:
   if files:
     run_cmd(['git', 'rm', '--cached', '--'] + files)
 
+def _get_aur_packager(name: str) -> Tuple[Optional[str], str]:
+  doc = parse_document_from_requests(f'https://aur.archlinux.org/packages/{name}/', s)
+  maintainer: Optional[str] = str(doc.xpath('//th[text()="Maintainer: "]/following::td[1]/text()')[0])
+  last_packager = str(doc.xpath('//th[text()="Last Packager: "]/following::td[1]/text()')[0])
+  if maintainer == 'None':
+    maintainer = None
+  return maintainer, last_packager
+
 def aur_pre_build(
   name: Optional[str] = None, *, do_vcs_update: Optional[bool] = None,
   maintainers: Union[str, Container[str]] = (),
@@ -454,16 +462,24 @@ def aur_pre_build(
 
   if name is None:
     name = os.path.basename(os.getcwd())
+
+  maintainer, last_packager = _get_aur_packager(name)
   if maintainers:
-    info = s.get(AUR_URL, params={"v": 5, "type": "info", "arg[]": name}).json()
-    maintainer = info['results'][0]['Maintainer']
+    if last_packager == 'lilac':
+      who = maintainer
+    else:
+      who = last_packager
+
     error = False
     if isinstance(maintainers, str):
-      error = maintainer != maintainers
+      error = who != maintainers
     else:
-      error = maintainer not in maintainers
+      error = who not in maintainers
     if error:
-      raise Exception('unexpected AUR package maintainer', maintainer)
+      raise Exception('unexpected AUR package maintainer / packager', who)
+  else:
+    if maintainer is None:
+      raise Exception('refused to package orphaned packages')
 
   pkgver, pkgrel = get_pkgver_and_pkgrel()
   _g.aur_pre_files = clean_directory()
