@@ -463,8 +463,8 @@ def aur_pre_build(
   if name is None:
     name = os.path.basename(os.getcwd())
 
-  maintainer, last_packager = _get_aur_packager(name)
   if maintainers:
+    maintainer, last_packager = _get_aur_packager(name)
     if last_packager == 'lilac':
       who = maintainer
     else:
@@ -477,9 +477,6 @@ def aur_pre_build(
       error = who not in maintainers
     if error:
       raise Exception('unexpected AUR package maintainer / packager', who)
-  else:
-    if maintainer is None:
-      raise Exception('refused to package orphaned packages')
 
   pkgver, pkgrel = get_pkgver_and_pkgrel()
   _g.aur_pre_files = clean_directory()
