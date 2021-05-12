@@ -284,7 +284,7 @@ def git_commit(*, check_status: bool = True) -> None:
     if not ret:
       return
 
-  pkgbase = os.path.split(os.getcwd())[1]
+  pkgbase = os.path.basename(os.getcwd())
   built_version = _format_package_version(
     _G.epoch, _G.pkgver, _G.pkgrel)
   msg = f'{pkgbase}: auto updated to {built_version}'
@@ -541,3 +541,17 @@ def download_official_pkgbuild(name: str) -> List[str]:
       f.write(data)
   return files
 
+def notify_maintainers(msg: Optional[str] = None) -> None:
+  pkgbase = _G.mod.pkgbase
+  built_version = _format_package_version(
+    _G.epoch, _G.pkgver, _G.pkgrel)
+  subject = f'{pkgbase} {built_version} 刚刚打包了'
+  if msg is None:
+    body = '这是由 post_build 配置所发送的邮件通知。'
+  else:
+    body = msg
+
+  repo = _G.repo
+  maintainers = repo.find_maintainers(_G.mod)
+  addresses = [str(x) for x in maintainers]
+  repo.sendmail(addresses, subject, body)
