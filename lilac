@@ -8,12 +8,11 @@ import traceback
 import logging
 import time
 from collections import defaultdict
-from typing import Set, Dict, List, Any, cast, Optional, Tuple
+from typing import Set, Dict, List, Any, Optional, Tuple
 import textwrap
 from pathlib import Path
 import graphlib
 
-import toml
 import prctl
 import structlog
 
@@ -39,7 +38,7 @@ from lilac2.cmd import (
   run_cmd, git_pull_override, git_push, pkgrel_changed,
   git_reset_hard, get_git_branch,
 )
-from lilac2.tools import kill_child_processes, redirect_output
+from lilac2.tools import kill_child_processes, redirect_output, read_config
 from lilac2.repo import Repo
 from lilac2.const import mydir, _G, PACMAN_DB_DIR
 from lilac2.nvchecker import packages_need_update, nvtake, NvResults
@@ -47,16 +46,6 @@ from lilac2.typing import LilacMod
 from lilac2 import pkgbuild
 from lilac2.building import lilac_build, MissingDependencies, SkipBuild
 from lilac2 import slogconf
-
-def read_config() -> Dict[str, Any]:
-  config_file_candidates = [mydir / 'config.toml', topdir / 'config.toml']
-  for config_file in config_file_candidates:
-    # ConfigParser.read does not raise an exception is the file is missing
-    if config_file.exists():
-      with open(config_file) as f:
-        return cast(Dict[str, Any], toml.load(f))
-  else:
-    raise Exception('No config files found!')
 
 config = read_config()
 
@@ -142,7 +131,13 @@ def build_package(logdir: Path, package: str, mod: LilacMod) -> bool:
     except TimeoutError:
       kill_child_processes()
       raise
-    sign_and_copy()
+    if getattr(mod, 'staging', False):
+      destdir = os.path.join(DESTDIR, 'staging')
+      if not os.path.isdir(destdir):
+        os.mkdir(destdir)
+    else:
+      destdir = DESTDIR
+    sign_and_copy(destdir)
     built_successfully = True
     assert _G.pkgver is not None
     assert _G.pkgrel is not None
@@ -198,9 +193,7 @@ def build_package(logdir: Path, package: str, mod: LilacMod) -> bool:
 
   return built_successfully
 
-def sign_and_copy() -> None:
-  if not DESTDIR:
-    return
+def sign_and_copy(dest: str) -> None:
   pkgs = [x for x in os.listdir() if x.endswith(('.pkg.tar.xz', '.pkg.tar.zst'))]
   for pkg in pkgs:
     run_cmd(['gpg', '--pinentry-mode', 'loopback', '--passphrase', '',
@@ -209,7 +202,7 @@ def sign_and_copy() -> None:
     if not f.endswith(('.pkg.tar.xz', '.pkg.tar.xz.sig', '.pkg.tar.zst', '.pkg.tar.zst.sig')):
       continue
     try:
-      os.link(f, os.path.join(DESTDIR, f))
+      os.link(f, os.path.join(dest, f))
     except FileExistsError:
       pass
 
