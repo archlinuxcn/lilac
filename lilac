@@ -46,6 +46,7 @@ from lilac2.typing import LilacMod
 from lilac2 import pkgbuild
 from lilac2.building import lilac_build, MissingDependencies, SkipBuild
 from lilac2 import slogconf
+from lilac2.api import notify_maintainers
 
 config = read_config()
 
@@ -131,13 +132,18 @@ def build_package(logdir: Path, package: str, mod: LilacMod) -> bool:
     except TimeoutError:
       kill_child_processes()
       raise
-    if getattr(mod, 'staging', False):
+
+    staging = getattr(mod, 'staging', False)
+    if staging:
       destdir = os.path.join(DESTDIR, 'staging')
       if not os.path.isdir(destdir):
         os.mkdir(destdir)
     else:
       destdir = DESTDIR
     sign_and_copy(destdir)
+    if staging:
+      notify_maintainers('软件包已被置于 staging 目录，请查验后手动发布。')
+
     built_successfully = True
     assert _G.pkgver is not None
     assert _G.pkgrel is not None
