@@ -8,7 +8,7 @@ import traceback
 import logging
 import time
 from collections import defaultdict
-from typing import Set, Dict, List, Any, cast, Optional
+from typing import Set, Dict, List, Any, cast, Optional, Tuple
 import textwrap
 from pathlib import Path
 import graphlib
@@ -80,7 +80,8 @@ def get_bindmounts(
 
 BIND_MOUNTS = get_bindmounts(config.get('bindmounts'))
 
-building_packages: Set[str] = set()
+# dict for perserving insertion order
+building_packages: Dict[str, Tuple[()]] = {}
 nvdata: Dict[str, NvResults] = {}
 DEPMAP: Dict[str, Set[Dependency]] = {}
 DEPENDS: Dict[str, Set[Dependency]] = {}
@@ -235,7 +236,7 @@ def start_build(repo: Repo, failed: Set[str], built: Set[str]) -> None:
           nonexistent[name].append(d)
           continue
         # we need build this too
-        building_packages.add(d.pkgname)
+        building_packages[d.pkgname] = ()
 
     dep_building_map[name] = set()
     for x in ds:
@@ -370,8 +371,12 @@ def main_may_raise(D: Dict[str, Any], pkgs_to_build: List[str]) -> None:
   # build it again
   need_update = updated | failed_updated
 
-  all_building = need_update | need_rebuild_failed | need_rebuild_pkgrel \
-      | rebuild
+  # rebuild first, update later
+  all_building: List[str] = []
+  all_building.extend(rebuild)
+  all_building.extend(need_rebuild_pkgrel)
+  all_building.extend(need_rebuild_failed)
+  all_building.extend(need_update)
 
   logger.info('these updated (pkgrel) packages should be rebuilt: %r',
               need_rebuild_pkgrel or None)
@@ -383,7 +388,7 @@ def main_may_raise(D: Dict[str, Any], pkgs_to_build: List[str]) -> None:
               ' as detected by nvchecker or manually specified: %r',
               rebuild or None)
 
-  building_packages.update(all_building)
+  building_packages.update({x: () for x in all_building})
   update_succeeded: Set[str] = set()
 
   try:
