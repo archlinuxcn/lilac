@@ -555,3 +555,13 @@ def notify_maintainers(msg: Optional[str] = None) -> None:
   maintainers = repo.find_maintainers(_G.mod)
   addresses = [str(x) for x in maintainers]
   repo.sendmail(addresses, subject, body)
+
+def check_library_provides() -> None:
+  pkg_pattern = re.compile(r'\.pkg\.tar\.[^.]+$')
+  provides_pattern = re.compile(r'^provides = .*\.so$')
+  pkgs = [n for n in os.listdir() if pkg_pattern.search(n)]
+  for pkg in pkgs:
+    pkginfo = run_cmd(['tar', 'xOf', pkg, '.PKGINFO'])
+    for line in pkginfo.splitlines():
+      if provides_pattern.match(line):
+        raise Exception(f'{pkg} has an unversioned library "provides" entry: {line[11:]}')
