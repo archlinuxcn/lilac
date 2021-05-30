@@ -1,26 +1,20 @@
-.PHONY: all clean
+# Minimal makefile for Sphinx documentation
+#
 
-SHELL := /bin/bash
+# You can set these variables from the command line, and also
+# from the environment for the first two.
+SPHINXOPTS    ?=
+SPHINXBUILD   ?= sphinx-build
+SOURCEDIR     = .
+BUILDDIR      = _build
 
-all: build/.lilacyaml-doc
+# Put it first so that "make" without argument is like "make help".
+help:
+	@$(SPHINXBUILD) -M help "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
 
-build/.lilacyaml-doc: build/lilac.json build/docs/.timestamp
-	bootprint json-schema $< build/docs
-	rm build/docs/*.map
-	sed -i '/<title>/s/Bootprint/lilac.yaml/' build/docs/index.html
-	(cd build/docs && if [[ -n $$(git status -s) ]]; then git add -A && git commit -m 'update docs'; fi)
-	touch $@
+.PHONY: help Makefile
 
-build/lilac.json: lilac-yaml-schema.yaml build/.timestamp
-	./yaml2json < $< > $@
-
-build/.timestamp:
-	mkdir build
-	touch $@
-
-build/docs/.timestamp: build/.timestamp
-	if [[ ! -d build/docs ]]; then git worktree add build/docs gh-pages; fi
-	touch $@
-
-clean:
-	rm -rf build
+# Catch-all target: route all unknown targets to Sphinx using the new
+# "make mode" option.  $(O) is meant as a shortcut for $(SPHINXOPTS).
+%: Makefile
+	@$(SPHINXBUILD) -M $@ "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)

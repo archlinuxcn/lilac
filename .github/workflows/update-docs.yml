@@ -5,7 +5,7 @@ on:
     branches:
       - master
     paths:
-      - docs/lilac-yaml-schema.yaml
+      - schema-docs/lilac-yaml-schema.yaml
 
 defaults:
   run:
@@ -37,11 +37,11 @@ jobs:
         git config --global user.email 'github-actions@github.com'
     - name: Update docs
       run: |
-        cd docs
+        cd schema-docs
         make
     - name: Commit changes
       run: |
-        cd docs/build/docs
+        cd schema-docs/build/docs
         git push
 
     - uses: actions/checkout@v2
@@ -52,7 +52,7 @@ jobs:
 
     - name: Update archlinuxcn/repo
       run: |
-        cp docs/lilac-yaml-schema.yaml repo
+        cp schema-docs/lilac-yaml-schema.yaml repo
         cd repo
         if [[ -n "$(git status -s)" ]]; then
           git add lilac-yaml-schema.yaml
