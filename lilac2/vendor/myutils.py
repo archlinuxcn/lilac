@@ -29,12 +29,13 @@ def safe_overwrite(fname: str, data: Union[bytes, str], *,
   # if the above write failed (because disk is full etc), the old data should be kept
   os.rename(tmpname, fname)
 
+UNITS = 'KMGTPEZY'
+
 def filesize(size: int) -> str:
   '''将 数字 转化为 xxKiB 的形式'''
-  units = 'KMGTPEZY'
   left: Union[int, float] = abs(size)
   unit = -1
-  n = len(units)
+  n = len(UNITS)
   while left > 1100 and unit < n:
     left = left / 1024
     unit += 1
@@ -43,14 +44,34 @@ def filesize(size: int) -> str:
   else:
     if size < 0:
       left = -left
-    return '%.1f%siB' % (left, units[unit])
+    return '%.1f%siB' % (left, UNITS[unit])
 
 class FileSize(int):
   def __str__(self) -> str:
     return filesize(self).rstrip('iB')
 
+def parse_filesize(s: str) -> int:
+  s1 = s.rstrip('iB')
+  if not s1:
+    raise ValueError(s)
+
+  last = s1[-1]
+  try:
+    idx = UNITS.index(last)
+  except ValueError:
+    return int(float(s1))
+
+  v = float(s1[:-1]) * 1024 ** (idx+1)
+  return int(v)
+
 def humantime(t: int) -> str:
   '''seconds -> XhYmZs'''
+  if t < 0:
+    sign = '-'
+    t = -t
+  else:
+    sign = ''
+
   m, s = divmod(t, 60)
   h, m = divmod(m, 60)
   d, h = divmod(h, 24)
@@ -65,7 +86,7 @@ def humantime(t: int) -> str:
     ret += '%ds' % s
   if not ret:
     ret = '0s'
-  return ret
+  return sign + ret
 
 def dehumantime(s: str) -> int:
   '''XhYmZs -> seconds'''

@@ -34,6 +34,7 @@ def download_into_with_progressbar(url, dest):
 
 class RequestsBase:
   _session = None
+  __our_session: bool = False
   userAgent: Optional[str] = None
   lasturl: Optional[str] = None
   auto_referer: bool = False
@@ -43,8 +44,7 @@ class RequestsBase:
   def session(self):
     if not self._session:
       s = requests.Session()
-      if self.userAgent:
-        s.headers['User-Agent'] = self.userAgent
+      self.__our_session = True
       self._session = s
     return self._session
 
@@ -69,16 +69,20 @@ class RequestsBase:
   def __del__(self):
     if self._has_cookiefile:
       self.session.cookies.save()
+    if self.__our_session:
+      self._session.close()
 
   def request(self, url: str, method: Optional[str] = None, *args, **kwargs
              ) -> requests.Response:
     if self.baseurl:
       url = urljoin(self.baseurl, url)
 
+    h = kwargs.get('headers', None)
+    if not h:
+      h = kwargs['headers'] = {}
+    if self.userAgent:
+      h.setdefault('User-Agent', self.userAgent)
     if self.auto_referer and self.lasturl:
-      h = kwargs.get('headers', None)
-      if not h:
-        h = kwargs['headers'] = {}
       h.setdefault('Referer', self.lasturl)
 
     if method is None:

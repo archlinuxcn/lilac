@@ -21,12 +21,11 @@ Python libraries
 
 * requests
 * lxml
-* PyYAMl
+* PyYAML
 * toml
 * pyalpm
 * structlog
 * prctl
-* winterpy (will auto download if not available)
 
 Setup
 ----
