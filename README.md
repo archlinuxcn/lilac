@@ -52,6 +52,10 @@ If you have a lot of memory (e.g. >100G), you may want to mount `/var/lib/archbu
 
 There are other scripts in [misc_scripts](https://github.com/archlinuxcn/misc_scripts) that does things like cleanups, issue processing.
 
+Usage
+----
+
+Please see [usage.rst](./usage.rst) (in Chinese).
 
 License
 -------
