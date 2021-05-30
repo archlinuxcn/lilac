@@ -4,7 +4,6 @@ lxml
 PyYAML
 pyalpm
 structlog
-prctl
 
 sphinx>=3.2
 # <5 has strange bottom margins for p, and no list indicators
