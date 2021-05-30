@@ -50,7 +50,8 @@ lilac 是由百合仙子（a.k.a. `依云 <https://github.com/lilydjwg>`_\ ）�
 
 ``lilac.py`` 定义如何更新打包脚本。\ ``lilac.yaml`` 中定义打包相关的数据和元信息。可选的 ``package.list`` 中可以每行一个地列出 split package 会产生的包，避免额外的包被清理。
 
-详细说明见 docs/ 目录。
+* `lilac.yaml 文档 <https://archlinuxcn.github.io/lilac/>`_
+* `lilac.py API 文档 <https://lilac.readthedocs.io/en/latest/api.html>`_
 
 测试 lilac.py
 -------------
