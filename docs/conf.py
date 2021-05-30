@@ -69,3 +69,5 @@ if not on_rtd:
 html_theme_options = {
     'collapse_navigation': False,
 }
+
+autodoc_mock_imports = ["pyalpm"]
