@@ -574,7 +574,7 @@ def check_library_provides() -> None:
   provides_pattern = re.compile(r'^provides = .*\.so$')
   pkgs = [n for n in os.listdir() if pkg_pattern.search(n)]
   for pkg in pkgs:
-    pkginfo = run_cmd(['tar', '--force-local', 'xOf', pkg, '.PKGINFO'])
+    pkginfo = run_cmd(['tar', 'xOf', pkg, '--force-local', '.PKGINFO'])
     for line in pkginfo.splitlines():
       if provides_pattern.match(line):
         raise Exception(f'{pkg} has an unversioned library "provides" entry: {line[11:]}')
