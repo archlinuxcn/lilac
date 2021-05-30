@@ -2,7 +2,6 @@ toml
 requests
 lxml
 PyYAML
-pyalpm
 structlog
 
 sphinx>=3.2
