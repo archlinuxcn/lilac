@@ -62,50 +62,55 @@ def _add_into_array(line: str, values: Iterable[str]) -> str:
   line = line_l + arr_elems_str + line_r
   return line
 
-def add_into_array(which: str, extra_deps: Iterable[str]) -> None:
+def add_into_array(which: str, extra: Iterable[str]) -> None:
   '''
-  Add more values into the shell array
+  Add more values into the ``which`` shell array in the PKGBUILD file
   '''
   field_appeared = False
 
   pattern = re.compile(r'\s*' + re.escape(which) + r'=')
   for line in edit_file('PKGBUILD'):
     if pattern.match(line):
-      line = _add_into_array(line, extra_deps)
+      line = _add_into_array(line, extra)
       field_appeared = True
     print(line)
 
   if not field_appeared:
     with open('PKGBUILD', 'a') as f:
       line = f'{which}=()'
-      line = _add_into_array(line, extra_deps)
+      line = _add_into_array(line, extra)
       f.write(line + '\n')
 
-def add_arch(extra_arches: Iterable[str]) -> None:
-  add_into_array('arch', extra_arches)
+def _build_add_into_array_func(name: str):
+  source = f'''
+def add_{name}(extra: Iterable[str]) -> None:
+  """
+  Add more values into the ``{name}`` shell array in the PKGBUILD file
+  """
+  add_into_array(name, extra)
+'''
 
-def add_depends(extra_deps: Iterable[str]) -> None:
-  add_into_array('depends', extra_deps)
+  exec(source, globals(), globals())
 
-def add_makedepends(extra_deps: Iterable[str]) -> None:
-  add_into_array('makedepends', extra_deps)
-
-def add_checkdepends(extra_deps: Iterable[str]) -> None:
-  add_into_array('checkdepends', extra_deps)
-
-def add_conflicts(extra_conflicts: Iterable[str]) -> None:
-  add_into_array('conflicts', extra_conflicts)
-
-def add_replaces(extra_replaces: Iterable[str]) -> None:
-  add_into_array('replaces', extra_replaces)
-
-def add_provides(extra_provides: Iterable[str]) -> None:
-  add_into_array('provides', extra_provides)
-
-def add_groups(extra_groups: Iterable[str]) -> None:
-  add_into_array('groups', extra_groups)
+_build_add_into_array_func('arch')
+_build_add_into_array_func('depends')
+_build_add_into_array_func('makedepends')
+_build_add_into_array_func('checkdepends')
+_build_add_into_array_func('conflicts')
+_build_add_into_array_func('replaces')
+_build_add_into_array_func('provides')
+_build_add_into_array_func('groups')
 
 def edit_file(filename: str) -> Iterator[str]:
+  '''Edit the file in a loop, e.g.:
+
+  .. code-block:: python
+
+      for line in edit_file('PKGBUILD'):
+        if line.startswith('_name='):
+          line = '_name=newname'
+        print(line)
+  '''
   with fileinput.input(files=(filename,), inplace=True) as f:
     for line in f:
       yield line.rstrip('\n')
@@ -113,6 +118,7 @@ def edit_file(filename: str) -> Iterator[str]:
 def obtain_array(name: str) -> Optional[List[str]]:
   '''
   Obtain an array variable from PKGBUILD.
+
   Works by calling bash to source PKGBUILD, writing the array to a temporary file, and reading from the file.
   '''
   with tempfile.NamedTemporaryFile() as output_file:
@@ -147,6 +153,7 @@ def obtain_optdepends(
     return obtained_array
 
 def vcs_update() -> None:
+  '''update VCS sources'''
   # clean up the old source tree
   shutil.rmtree('src', ignore_errors=True)
   run_cmd(['makepkg', '-od', '--noprepare', '-A'], use_pty=True)
@@ -361,6 +368,12 @@ def _update_aur_repo_real(pkgname: str) -> None:
       run_cmd(['git', 'push'])
 
 def update_aur_repo() -> None:
+  '''update the package on AUR if suitable.
+
+  ``lilac`` must have the permission to do so, i.e. added as a co-maintainer.
+
+  For VCS packages, if only the version changes, the package on AUR won't be updated.
+  '''
   pkgbase = _G.mod.pkgbase
   try:
     _update_aur_repo_real(pkgbase)

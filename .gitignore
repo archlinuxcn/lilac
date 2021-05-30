@@ -10,3 +10,4 @@ dist/
 .eggs/
 sdist/
 *.egg-info/
+_build/
