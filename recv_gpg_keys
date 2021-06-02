@@ -4,6 +4,8 @@
 . ./PKGBUILD
 for key in ${validpgpkeys[@]}; do
   echo "Receiving key ${key}..."
-  # first check if the key is already received; if not try it twice
-  gpg --list-keys $key || gpg --recv-keys $key || gpg --recv-keys $key
+  # try both servers as some keys exist one place and others another
+  # we also want to always try to receive keys to pick up any update
+  gpg --keyserver hkp://keys.gnupg.net --recv-keys $key || true
+  gpg --keyserver hkps://keys.openpgp.org --recv-keys $key || true
 done
