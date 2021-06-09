@@ -87,7 +87,7 @@ def add_{name}(extra: Iterable[str]) -> None:
   """
   Add more values into the ``{name}`` shell array in the PKGBUILD file
   """
-  add_into_array(name, extra)
+  add_into_array('{name}', extra)
 '''
 
   exec(source, globals(), globals())
