@@ -26,6 +26,7 @@ Python libraries
 * pyalpm
 * structlog
 * prctl
+* chardet
 
 Setup
 ----
