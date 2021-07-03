@@ -543,7 +543,7 @@ def download_official_pkgbuild(name: str) -> List[str]:
   tarball_url = 'https://github.com/archlinux/svntogit-%s/archive/refs/heads/packages/%s.tar.gz' % (gitrepo, pkgbase)
   logger.debug('downloading Arch package tarball from: %s', tarball_url)
   tarball = s.get(tarball_url).content
-  path = f'repos/{repo}-{arch}'
+  path = f'svntogit-{gitrepo}-packages-{pkgbase}/repos/{repo}-{arch}'
   files = []
 
   with tarfile.open(
