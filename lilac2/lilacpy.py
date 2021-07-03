@@ -46,6 +46,8 @@ def load_lilac(dir: Path) -> Generator[LilacMod, None, None]:
   try:
     spec = importlib.util.spec_from_file_location(
       'lilac.py', dir / 'lilac.py')
+    if spec is None:
+      raise RuntimeError('lilac.py spec is None')
     mod = importlib.util.module_from_spec(spec)
 
     try:

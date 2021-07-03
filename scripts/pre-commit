@@ -6,4 +6,4 @@ if [[ $br != master ]]; then
 fi
 
 pyflakes lilac2 lilac
-mypy lilac2 lilac
+python "$(which mypy)" lilac2 lilac

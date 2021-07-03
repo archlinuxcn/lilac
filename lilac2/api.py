@@ -540,18 +540,24 @@ def download_official_pkgbuild(name: str) -> List[str]:
     gitrepo = 'community'
   pkgbase = [r['pkgbase'] for r in info['results'] if r['repo'] != 'testing'][0]
 
-  tree_url = 'https://projects.archlinux.org/svntogit/%s.git/tree/repos/%s-%s?h=packages/%s' % (
-    gitrepo, repo, arch, pkgbase)
-  doc = parse_document_from_requests(tree_url, s)
-  blobs = doc.xpath('//div[@class="content"]//td/a[contains(concat(" ", normalize-space(@class), " "), " ls-blob ")]')
-  files = [x.text for x in blobs]
-  for filename in files:
-    blob_url = 'https://projects.archlinux.org/svntogit/%s.git/plain/repos/%s-%s/%s?h=packages/%s' % (
-      gitrepo, repo, arch, filename, pkgbase)
-    with open(filename, 'wb') as f:
-      logger.debug('download file %s.', filename)
-      data = s.get(blob_url).content
-      f.write(data)
+  tarball_url = 'https://github.com/archlinux/svntogit-%s/archive/refs/heads/packages/%s.tar.gz' % (gitrepo, pkgbase)
+  logger.debug('downloading Arch package tarball from: %s', tarball_url)
+  tarball = s.get(tarball_url).content
+  path = f'repos/{repo}-{arch}'
+  files = []
+
+  with tarfile.open(
+    name=f"{pkgbase}.tar.gz", mode="r:gz", fileobj=io.BytesIO(tarball)
+  ) as tarf:
+    for tarinfo in tarf:
+      dirname, filename = os.path.split(tarinfo.name)
+      if dirname != path:
+        continue
+      tarinfo.name = filename
+      logger.debug('extract file %s.', filename)
+      tarf.extract(tarinfo)
+      files.append(filename)
+
   return files
 
 def notify_maintainers(msg: Optional[str] = None) -> None:
