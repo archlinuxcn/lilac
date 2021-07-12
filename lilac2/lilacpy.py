@@ -87,8 +87,20 @@ def load_lilac(dir: Path) -> Generator[LilacMod, None, None]:
 
     if hasattr(mod, 'update_on'):
       for entry in mod.update_on:
+
+        # fill our dbpath if not provided
+        if entry.get('source') == 'alpm':
+          entry.setdefault('dbpath', str(PACMAN_DB_DIR))
+
         alias = entry.pop('alias', None)
-        if alias is not None:
+
+        # fill alpm-lilac parameters
+        if alias == 'alpm-lilac':
+          entry['source'] = 'alpm'
+          entry.setdefault('dbpath', str(PACMAN_DB_DIR))
+          entry.setdefault('repo', _G.repo.name)
+
+        elif alias is not None:
           for k, v in ALIASES[alias].items():
             if isinstance(v, str):
               entry.setdefault(k, expand_alias_arg(v))

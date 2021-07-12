@@ -1,54 +1,60 @@
 python:
-  source: archpkg
-  archpkg: python
+  source: alpm
+  alpm: python
+  repo: extra
   from_pattern: '^(\d+\.\d+)\..*'
   to_pattern: '\1'
 ruby:
-  source: archpkg
-  archpkg: ruby
+  source: alpm
+  alpm: ruby
+  repo: extra
   from_pattern: ^(\d+\.\d+)\..*
   to_pattern: \1
 perl:
-  source: archpkg
-  archpkg: perl
+  source: alpm
+  alpm: perl
+  repo: core
   from_pattern: ^(\d+\.\d+)\..*
   to_pattern: \1
 boost:
-  source: archpkg
-  archpkg: boost-libs
+  source: alpm
+  alpm: boost-libs
+  repo: extra
   from_pattern: ^(\d+\.\d+)\..*
   to_pattern: \1
 icu:
-  source: archpkg
-  archpkg: icu
+  source: alpm
+  alpm: icu
+  repo: core
   from_pattern: ^(\d+)\..*
   to_pattern: \1
 readline:
-  source: archpkg
-  archpkg: readline
+  source: alpm
+  alpm: readline
+  repo: core
   from_pattern: ^(\d+)\..*
   to_pattern: \1
 clang:
-  source: archpkg
-  archpkg: clang
+  source: alpm
+  alpm: clang
+  repo: extra
   from_pattern: ^(\d+)\..*
   to_pattern: \1
 protobuf:
-  source: archpkg
-  archpkg: protobuf
+  source: alpm
+  alpm: protobuf
+  repo: extra
   provided: libprotobuf.so
   strip_release: true
 jsoncpp:
-  source: archpkg
-  archpkg: jsoncpp
+  source: alpm
+  alpm: jsoncpp
+  repo: extra
   provided: libjsoncpp.so
   strip_release: true
 mediawiki:
-  source: archpkg
-  archpkg: mediawiki
+  source: alpm
+  alpm: mediawiki
+  repo: community
   from_pattern: '^(\d+\.\d+)\..*'
   to_pattern: '\1'
-alpm-lilac:
-  source: alpm
-  dbpath: '{pacman_db_dir}'
-  repo: '{repo_name}'
