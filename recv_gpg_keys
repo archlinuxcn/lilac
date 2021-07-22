@@ -6,6 +6,6 @@ for key in ${validpgpkeys[@]}; do
   echo "Receiving key ${key}..."
   # try both servers as some keys exist one place and others another
   # we also want to always try to receive keys to pick up any update
-  gpg --keyserver hkp://keys.gnupg.net --recv-keys $key || true
+  gpg --keyserver hkps://keyserver.ubuntu.com --recv-keys $key || true
   gpg --keyserver hkps://keys.openpgp.org --recv-keys $key || true
 done
