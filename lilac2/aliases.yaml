@@ -1,7 +1,7 @@
 python:
   source: alpm
   alpm: python
-  repo: extra
+  repo: core
   from_pattern: '^(\d+\.\d+)\..*'
   to_pattern: '\1'
 ruby:
