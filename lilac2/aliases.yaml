@@ -1,60 +1,50 @@
 python:
   source: alpm
   alpm: python
-  repo: core
   from_pattern: '^(\d+\.\d+)\..*'
   to_pattern: '\1'
 ruby:
   source: alpm
   alpm: ruby
-  repo: extra
   from_pattern: ^(\d+\.\d+)\..*
   to_pattern: \1
 perl:
   source: alpm
   alpm: perl
-  repo: core
   from_pattern: ^(\d+\.\d+)\..*
   to_pattern: \1
 boost:
   source: alpm
   alpm: boost-libs
-  repo: extra
   from_pattern: ^(\d+\.\d+)\..*
   to_pattern: \1
 icu:
   source: alpm
   alpm: icu
-  repo: core
   from_pattern: ^(\d+)\..*
   to_pattern: \1
 readline:
   source: alpm
   alpm: readline
-  repo: core
   from_pattern: ^(\d+)\..*
   to_pattern: \1
 clang:
   source: alpm
   alpm: clang
-  repo: extra
   from_pattern: ^(\d+)\..*
   to_pattern: \1
 protobuf:
   source: alpm
   alpm: protobuf
-  repo: extra
   provided: libprotobuf.so
   strip_release: true
 jsoncpp:
   source: alpm
   alpm: jsoncpp
-  repo: extra
   provided: libjsoncpp.so
   strip_release: true
 mediawiki:
   source: alpm
   alpm: mediawiki
-  repo: community
   from_pattern: '^(\d+\.\d+)\..*'
   to_pattern: '\1'
