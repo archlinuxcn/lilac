@@ -47,6 +47,7 @@ echo ${pkgname[*]}''' % PKGBUILD
   # Python 3.4 has 'input' arg for check_output
   p = subprocess.Popen(
     ['bwrap', '--unshare-all', '--ro-bind', '/', '/', '--tmpfs', '/home',
+     '--tmpfs', '/run',
      '--tmpfs', '/tmp', '--proc', '/proc', '--dev', '/dev', '/bin/bash'],
     stdin=subprocess.PIPE, stdout=subprocess.PIPE,
   )
@@ -61,11 +62,6 @@ pkgfile_pat = re.compile(r'(?:^|/).+-[^-]+-[\d.]+-(?:\w+)\.pkg\.tar\.(?:xz|zst)$
 
 def _strip_ver(s: str) -> str:
   return re.sub(r'[<>=].*', '', s)
-
-def get_package_dependencies(name: str) -> List[str]:
-  outb = subprocess.check_output(["package-query", "-Sii", "-f", "%D", name])
-  out = outb.decode('latin1')
-  return [_strip_ver(x) for x in out.split() if x != '-']
 
 def get_package_info(name: str, local: bool = False) -> Dict[str, str]:
   old_lang = os.environ['LANG']
@@ -90,14 +86,3 @@ def get_package_info(name: str, local: bool = False) -> Dict[str, str]:
       ret[key] += ' ' + l.strip()
   return ret
 
-def get_package_repository(name: str) -> str:
-  try:
-    out = subprocess.check_output(["package-query", "-Sii", "-f", "%r", name])
-    repo = out.strip().decode('latin1')
-  except subprocess.CalledProcessError:
-    repo = 'local'
-  return repo
-
-def is_official(name: str) -> bool:
-  repo = get_package_repository(name)
-  return repo in ('core', 'extra', 'community', 'multilib', 'testing')

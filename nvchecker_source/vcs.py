@@ -11,7 +11,7 @@ _self_path = _path.dirname(_path.abspath(__file__))
 def get_cmd_prefix(name):
   return [
     'bwrap', '--unshare-user-try', '--unshare-ipc', '--unshare-pid', '--unshare-uts', '--unshare-cgroup-try',
-    '--ro-bind', '/', '/', '--tmpfs', '/home',
+    '--ro-bind', '/', '/', '--tmpfs', '/home', '--tmpfs', '/run',
     '--tmpfs', '/tmp', '--proc', '/proc', '--dev', '/dev',
     '--ro-bind', _path.join(_self_path, 'vcs.sh'), '/tmp/vcs.sh',
     '--ro-bind', name, f'/tmp/{name}', '--chdir', '/tmp',

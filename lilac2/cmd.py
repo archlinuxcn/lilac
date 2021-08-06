@@ -165,5 +165,6 @@ def pkgrel_changed(from_: str, to: str, pkgname: str) -> bool:
 
 UNTRUSTED_PREFIX: Cmd = [
   'bwrap', '--unshare-all', '--ro-bind', '/', '/', '--tmpfs', '/home',
+  '--tmpfs', '/run',
   '--tmpfs', '/tmp', '--proc', '/proc', '--dev', '/dev',
 ]
