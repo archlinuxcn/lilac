@@ -1,5 +1,5 @@
 # MIT licensed
-# Copyright (c) 2013-2020 lilydjwg <lilydjwg@gmail.com>, et al.
+# Copyright (c) 2013-2021 lilydjwg <lilydjwg@gmail.com>, et al.
 
 import asyncio
 import os.path as _path
@@ -7,7 +7,16 @@ import os.path as _path
 from nvchecker.api import GetVersionError
 
 _self_path = _path.dirname(_path.abspath(__file__))
-_cmd_prefix = ['/bin/bash', _path.join(_self_path, 'vcs.sh')]
+
+def get_cmd_prefix(name):
+  return [
+    'bwrap', '--unshare-user-try', '--unshare-ipc', '--unshare-pid', '--unshare-uts', '--unshare-cgroup-try',
+    '--ro-bind', '/', '/', '--tmpfs', '/home',
+    '--tmpfs', '/tmp', '--proc', '/proc', '--dev', '/dev',
+    '--ro-bind', _path.join(_self_path, 'vcs.sh'), '/tmp/vcs.sh',
+    '--ro-bind', name, f'/tmp/{name}', '--chdir', '/tmp',
+    '/bin/bash', '/tmp/vcs.sh',
+  ]
 
 PROT_VER = 1
 
@@ -28,7 +37,7 @@ async def get_version(name, conf, *, cache, **kwargs):
   vcs = conf.get('vcs', '')
   use_max_tag = conf.get('use_max_tag', False)
   oldver = conf.get('oldver')
-  cmd = _cmd_prefix + [name, vcs]
+  cmd = get_cmd_prefix(name) + [name, vcs]
   if use_max_tag:
     cmd += ["get_tags"]
 

@@ -21,7 +21,7 @@ import requests
 from myutils import at_dir
 from htmlutils import parse_document_from_requests
 
-from .cmd import run_cmd, git_pull, git_push
+from .cmd import run_cmd, git_pull, git_push, UNTRUSTED_PREFIX
 from . import const
 from .const import _G, SPECIAL_FILES
 from .typing import PkgRel
@@ -121,11 +121,13 @@ def obtain_array(name: str) -> Optional[List[str]]:
 
   Works by calling bash to source PKGBUILD, writing the array to a temporary file, and reading from the file.
   '''
-  with tempfile.NamedTemporaryFile() as output_file:
+  with tempfile.NamedTemporaryFile(dir='/tmp') as output_file:
     command_write_array_out = """printf "%s\\0" "${{{}[@]}}" > {}""" \
         .format(name, output_file.name)
-    command_export_array = ['bash', '-c', "source PKGBUILD && {}".format(
-      command_write_array_out)]
+    extra_binds = ['--bind', output_file.name, output_file.name, '--ro-bind', 'PKGBUILD', '/tmp/PKGBUILD', '--chdir', '/tmp']
+    command_export_array = UNTRUSTED_PREFIX + extra_binds + [ # type: ignore
+      '/bin/bash', '-c', "source PKGBUILD && {}".format(command_write_array_out)
+    ]
     subprocess.run(command_export_array, stderr=subprocess.PIPE,
                    check=True)
     res = output_file.read().decode()

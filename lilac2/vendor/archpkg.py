@@ -45,41 +45,17 @@ def get_pkgname_with_bash(PKGBUILD: str) -> List[str]:
 . '%s'
 echo ${pkgname[*]}''' % PKGBUILD
   # Python 3.4 has 'input' arg for check_output
-  p = subprocess.Popen(['bash'], stdin=subprocess.PIPE,
-                       stdout=subprocess.PIPE)
-  output = p.communicate(script.encode('latin1'))[0].decode('latin1')
+  p = subprocess.Popen(
+    ['bwrap', '--unshare-all', '--ro-bind', '/', '/', '--tmpfs', '/home',
+     '--tmpfs', '/tmp', '--proc', '/proc', '--dev', '/dev', '/bin/bash'],
+    stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+  )
+  output = p.communicate(script.encode())[0].decode()
   ret = p.wait()
   if ret != 0:
     raise subprocess.CalledProcessError(
       ret, ['bash'], output)
   return output.split()
-
-def _run_bash(script: str) -> None:
-  p = subprocess.Popen(['bash'], stdin=subprocess.PIPE)
-  p.communicate(script.encode('latin1'))
-  ret = p.wait()
-  if ret != 0:
-    raise subprocess.CalledProcessError(
-      ret, ['bash'])
-
-def get_aur_pkgbuild_with_bash(name: str) -> None:
-  script = '''\
-. /usr/lib/yaourt/util.sh
-. /usr/lib/yaourt/aur.sh
-init_color
-aur_get_pkgbuild '%s' ''' % name
-  _run_bash(script)
-
-def get_abs_pkgbuild_with_bash(name: str) -> None:
-  script = '''\
-. /usr/lib/yaourt/util.sh
-. /usr/lib/yaourt/abs.sh
-init_paths
-init_color
-arg=$(pacman -Sp --print-format '%%r/%%n' '%s')
-RSYNCOPT="$RSYNCOPT -O"
-abs_get_pkgbuild "$arg" ''' % name
-  _run_bash(script)
 
 pkgfile_pat = re.compile(r'(?:^|/).+-[^-]+-[\d.]+-(?:\w+)\.pkg\.tar\.(?:xz|zst)$')
 

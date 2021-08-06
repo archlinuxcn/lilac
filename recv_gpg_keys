@@ -1,11 +1,20 @@
 #!/bin/bash -e
 
+if [[ -z $SANDBOXED ]]; then
+  exec bwrap --unshare-all --ro-bind / / --tmpfs /home --tmpfs /tmp \
+    --proc /proc --dev /dev \
+    --ro-bind "$0" /tmp/recv_gpg_keys \
+    --bind "$HOME/.gnupg" "$HOME/.gnupg" \
+    --ro-bind PKGBUILD /tmp/PKGBUILD --chdir /tmp --setenv SANDBOXED 1 \
+    /tmp/recv_gpg_keys "$@"
+fi
+
 . /usr/share/makepkg/util.sh
 . ./PKGBUILD
-for key in ${validpgpkeys[@]}; do
+for key in "${validpgpkeys[@]}"; do
   echo "Receiving key ${key}..."
   # try both servers as some keys exist one place and others another
   # we also want to always try to receive keys to pick up any update
-  gpg --keyserver hkps://keyserver.ubuntu.com --recv-keys $key || true
-  gpg --keyserver hkps://keys.openpgp.org --recv-keys $key || true
+  gpg --keyserver hkps://keyserver.ubuntu.com --recv-keys "$key" || true
+  gpg --keyserver hkps://keys.openpgp.org --recv-keys "$key" || true
 done

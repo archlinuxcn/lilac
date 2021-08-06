@@ -163,3 +163,7 @@ def pkgrel_changed(from_: str, to: str, pkgname: str) -> bool:
   r = run_cmd(cmd, silent=True).splitlines()
   return any(x.startswith('+pkgrel=') for x in r)
 
+UNTRUSTED_PREFIX: Cmd = [
+  'bwrap', '--unshare-all', '--ro-bind', '/', '/', '--tmpfs', '/home',
+  '--tmpfs', '/tmp', '--proc', '/proc', '--dev', '/dev',
+]
