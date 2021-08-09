@@ -15,6 +15,7 @@ import pyalpm
 from myutils import safe_overwrite
 
 from .const import _G
+from .cmd import UNTRUSTED_PREFIX
 
 _official_repos = ['core', 'extra', 'community', 'multilib']
 _official_packages: Dict[str, int] = {}
@@ -98,7 +99,7 @@ def get_official_packages() -> Set[str]:
   return _official_packages_current
 
 def check_srcinfo() -> None:
-  srcinfo = get_srcinfo()
+  srcinfo = get_srcinfo().decode('utf-8').splitlines()
   bad_groups = []
   bad_packages = []
   pkgnames = []
@@ -133,11 +134,12 @@ def check_srcinfo() -> None:
   if bad_groups or bad_packages:
     raise ConflictWithOfficialError(bad_groups, bad_packages)
 
-def get_srcinfo() -> List[str]:
+def get_srcinfo() -> bytes:
+  extra_binds = ['--ro-bind', 'PKGBUILD', '/tmp/PKGBUILD', '--chdir', '/tmp']
   out = subprocess.check_output(
-    ['makepkg', '--printsrcinfo'],
+    UNTRUSTED_PREFIX + extra_binds + ['makepkg', '--printsrcinfo'], # type: ignore
   )
-  return out.decode('utf-8').splitlines()
+  return out
 
 def _get_package_version(srcinfo: List[str]) -> Tuple[Optional[str], str, str]:
   epoch = pkgver = pkgrel = None

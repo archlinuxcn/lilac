@@ -15,7 +15,7 @@ import pyalpm
 
 from . import pkgbuild
 from .typing import LilacMod, Cmd
-from .cmd import run_cmd
+from .cmd import run_cmd, UNTRUSTED_PREFIX
 from .api import (
   vcs_update, get_pkgver_and_pkgrel, update_pkgrel,
   _next_pkgrel,
@@ -154,7 +154,10 @@ def call_build_cmd(
 ) -> None:
   cmd: Cmd
   if build_prefix == 'makepkg':
-    cmd = ['makepkg', '--holdver']
+    pwd = os.getcwd()
+    basename = os.path.basename(pwd)
+    extra_args = ['--share-net', '--bind', pwd, f'/tmp/{basename}', '--chdir', f'/tmp/{basename}']
+    cmd = UNTRUSTED_PREFIX + extra_args + ['makepkg', '--holdver'] # type: ignore
   else:
     cmd = ['%s-build' % build_prefix]
     cmd.extend(build_args)

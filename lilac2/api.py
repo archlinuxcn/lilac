@@ -27,6 +27,7 @@ from .const import _G, SPECIAL_FILES
 from .typing import PkgRel
 from .pypi2pkgbuild import gen_pkgbuild
 from .pkgbuild import format_package_version as _format_package_version
+from .pkgbuild import get_srcinfo
 
 git_push
 
@@ -158,7 +159,11 @@ def vcs_update() -> None:
   '''update VCS sources'''
   # clean up the old source tree
   shutil.rmtree('src', ignore_errors=True)
-  run_cmd(['makepkg', '-od', '--noprepare', '-A'], use_pty=True)
+  pwd = os.getcwd()
+  basename = os.path.basename(pwd)
+  extra_args = ['--share-net', '--bind', pwd, f'/tmp/{basename}', '--chdir', f'/tmp/{basename}']
+  run_cmd(UNTRUSTED_PREFIX + extra_args + # type: ignore
+          ['makepkg', '-od', '--noprepare', '-A'], use_pty=True)
 
 def get_pkgver_and_pkgrel(
 ) -> Tuple[Optional[str], Optional[PkgRel]]:
@@ -355,11 +360,8 @@ def _update_aur_repo_real(pkgname: str) -> None:
       return
 
     with open('.SRCINFO', 'wb') as srcinfo:
-      subprocess.run(
-        ['makepkg', '--printsrcinfo'],
-        stdout = srcinfo,
-        check = True,
-      )
+      srcinfo.write(get_srcinfo())
+
     run_cmd(['git', 'add', '.'])
     p = subprocess.run(['git', 'diff-index', '--quiet', 'HEAD'])
     if p.returncode != 0:
