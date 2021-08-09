@@ -14,6 +14,7 @@ You'll need the following:
 * gnupg
 * fakeroot
 * bubblewrap
+* pacman-contrib
 * A Local MTA (e.g. postfix; a remote MTA works but you may have issues when the network glitches because no error handling is present)
 * The command [kill_children](https://github.com/lilydjwg/pid_children) (a suid program to kill all descendant processes of its parent)
 
