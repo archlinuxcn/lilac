@@ -145,6 +145,13 @@ def run_cmd(
     if old_hdl is not None:
       signal.signal(signal.SIGCHLD, old_hdl)
 
+    # reap any possible dead children
+    try:
+      while os.waitid(os.P_ALL, 0, os.WEXITED | os.WNOHANG) is not None:
+        pass
+    except ChildProcessError:
+      pass
+
     outb = b''.join(out)
     outs = outb.decode('utf-8', errors='replace')
     outs = outs.replace('\r\n', '\n')
