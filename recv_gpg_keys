@@ -1,7 +1,6 @@
 #!/bin/bash -e
 
 if [[ -z $SANDBOXED ]]; then
-  mkdir -p ~/.lilac/gnupg
   exec bwrap --unshare-all --ro-bind / / --tmpfs /home --tmpfs /tmp \
     --tmpfs /run --ro-bind /run/user/$UID/gnupg /run/user/$UID/gnupg \
     --proc /proc --dev /dev --die-with-parent \
