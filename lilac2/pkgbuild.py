@@ -137,7 +137,8 @@ def check_srcinfo() -> None:
 def get_srcinfo() -> bytes:
   pwd = os.getcwd()
   basename = os.path.basename(pwd)
-  extra_binds = ['--ro-bind', pwd, f'/tmp/{basename}', '--chdir', f'/tmp/{basename}']
+  # makepkg wants *.install file and write permissions to simply print out info :-(
+  extra_binds = ['--bind', pwd, f'/tmp/{basename}', '--chdir', f'/tmp/{basename}']
   out = subprocess.check_output(
     UNTRUSTED_PREFIX + extra_binds + ['makepkg', '--printsrcinfo'], # type: ignore
   )
