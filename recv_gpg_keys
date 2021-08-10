@@ -6,7 +6,7 @@ if [[ -z $SANDBOXED ]]; then
     --tmpfs /run --ro-bind /run/user/$UID/gnupg /run/user/$UID/gnupg \
     --proc /proc --dev /dev --die-with-parent \
     --ro-bind "$0" /tmp/recv_gpg_keys \
-    --bind "~/.lilac/gnupg" "$HOME/.gnupg" \
+    --bind ~/.lilac/gnupg "$HOME/.gnupg" \
     --ro-bind PKGBUILD /tmp/PKGBUILD --chdir /tmp --setenv SANDBOXED 1 \
     /tmp/recv_gpg_keys "$@"
 fi
