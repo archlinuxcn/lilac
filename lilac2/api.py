@@ -161,10 +161,9 @@ def vcs_update() -> None:
   shutil.rmtree('src', ignore_errors=True)
   pwd = os.getcwd()
   basename = os.path.basename(pwd)
-  gpgdir = os.path.expanduser('~/.gnupg')
   extra_args = [
     '--share-net', '--bind', pwd, f'/tmp/{basename}', '--chdir', f'/tmp/{basename}',
-    '--ro-bind', gpgdir, gpgdir,
+    '--ro-bind', const.mydir / 'gnupg', os.path.expanduser('~/.gnupg'),
   ]
   run_cmd(UNTRUSTED_PREFIX + extra_args + # type: ignore
           ['makepkg', '-od', '--noprepare', '-A'], use_pty=True)
