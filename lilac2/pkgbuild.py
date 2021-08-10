@@ -135,7 +135,9 @@ def check_srcinfo() -> None:
     raise ConflictWithOfficialError(bad_groups, bad_packages)
 
 def get_srcinfo() -> bytes:
-  extra_binds = ['--ro-bind', 'PKGBUILD', '/tmp/PKGBUILD', '--chdir', '/tmp']
+  pwd = os.getcwd()
+  basename = os.path.basename(pwd)
+  extra_binds = ['--ro-bind', pwd, f'/tmp/{basename}', '--chdir', f'/tmp/{basename}']
   out = subprocess.check_output(
     UNTRUSTED_PREFIX + extra_binds + ['makepkg', '--printsrcinfo'], # type: ignore
   )
