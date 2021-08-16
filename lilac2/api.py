@@ -21,10 +21,11 @@ import requests
 from myutils import at_dir
 from htmlutils import parse_document_from_requests
 
-from .cmd import run_cmd, git_pull, git_push, UNTRUSTED_PREFIX
+from .cmd import git_pull, git_push, UNTRUSTED_PREFIX
+from .cmd import run_cmd as _run_cmd
 from . import const
 from .const import _G, SPECIAL_FILES
-from .typing import PkgRel
+from .typing import PkgRel, Cmd
 from .pypi2pkgbuild import gen_pkgbuild
 from .pkgbuild import format_package_version as _format_package_version
 from .pkgbuild import get_srcinfo
@@ -159,14 +160,27 @@ def vcs_update() -> None:
   '''update VCS sources'''
   # clean up the old source tree
   shutil.rmtree('src', ignore_errors=True)
+  run_protected(['makepkg', '-od', '--noprepare', '-A'], use_pty=True)
+
+def run_protected(cmd: Cmd, **kwargs) -> str:
+  '''run a command that sources PKGBUILD and thus is protected by bwrap'''
+  # clean up the old source tree
   pwd = os.getcwd()
   basename = os.path.basename(pwd)
   extra_args = [
     '--share-net', '--bind', pwd, f'/tmp/{basename}', '--chdir', f'/tmp/{basename}',
     '--ro-bind', const.mydir / 'gnupg', os.path.expanduser('~/.gnupg'),
   ]
-  run_cmd(UNTRUSTED_PREFIX + extra_args + # type: ignore
-          ['makepkg', '-od', '--noprepare', '-A'], use_pty=True)
+  return _run_cmd(UNTRUSTED_PREFIX + extra_args + # type: ignore
+                  cmd, **kwargs)
+
+def run_cmd(cmd: Cmd, **kwargs) -> str:
+  if cmd == ['updpkgsums'] or any(
+    x.startswith('makepkg ') for x in cmd if isinstance(x, str)
+  ):
+    return run_protected(cmd, **kwargs)
+  else:
+    return _run_cmd(cmd, **kwargs)
 
 def get_pkgver_and_pkgrel(
 ) -> Tuple[Optional[str], Optional[PkgRel]]:
@@ -214,7 +228,7 @@ def update_pkgver_and_pkgrel(
     print(line)
 
   if updpkgsums:
-    run_cmd(["updpkgsums"])
+    run_protected(["updpkgsums"])
 
 def update_pkgrel(
   rel: Optional[PkgRel] = None,
@@ -285,18 +299,18 @@ def git_add_files(
     files = [files]
   try:
     if force:
-      run_cmd(['git', 'add', '-f', '--'] + files)
+      _run_cmd(['git', 'add', '-f', '--'] + files)
     else:
-      run_cmd(['git', 'add', '--'] + files)
+      _run_cmd(['git', 'add', '--'] + files)
   except subprocess.CalledProcessError:
     # on error, there may be a partial add, e.g. some files are ignored
-    run_cmd(['git', 'reset', '--'] + files)
+    _run_cmd(['git', 'reset', '--'] + files)
     raise
 
 def git_commit(*, check_status: bool = True) -> None:
   if check_status:
     ret = [x for x in
-           run_cmd(["git", "status", "-s", "."]).splitlines()
+           _run_cmd(["git", "status", "-s", "."]).splitlines()
            if x.split(None, 1)[0] != '??']
     if not ret:
       return
@@ -305,7 +319,7 @@ def git_commit(*, check_status: bool = True) -> None:
   built_version = _format_package_version(
     _G.epoch, _G.pkgver, _G.pkgrel)
   msg = f'{pkgbase}: auto updated to {built_version}'
-  run_cmd(['git', 'commit', '-m', msg])
+  _run_cmd(['git', 'commit', '-m', msg])
 
 class AurDownloadError(Exception):
   def __init__(self, pkgname: str) -> None:
@@ -329,19 +343,19 @@ def _update_aur_repo_real(pkgname: str) -> None:
   if not aurpath.is_dir():
     logger.info('cloning AUR repo: %s', aurpath)
     with at_dir(const.AUR_REPO_DIR):
-      run_cmd(['git', 'clone', f'aur@aur.archlinux.org:{pkgname}.git'])
+      _run_cmd(['git', 'clone', f'aur@aur.archlinux.org:{pkgname}.git'])
   else:
     with at_dir(aurpath):
       # reset everything, dropping local commits
-      run_cmd(['git', 'reset', '--hard', 'origin/master'])
+      _run_cmd(['git', 'reset', '--hard', 'origin/master'])
       git_pull()
 
   with at_dir(aurpath):
-    oldfiles = set(run_cmd(['git', 'ls-files']).splitlines())
+    oldfiles = set(_run_cmd(['git', 'ls-files']).splitlines())
 
   newfiles = set()
   logger.info('copying files to AUR repo: %s', aurpath)
-  files = run_cmd(['git', 'ls-files']).splitlines()
+  files = _run_cmd(['git', 'ls-files']).splitlines()
   for f in files:
     if f in SPECIAL_FILES:
       continue
@@ -359,20 +373,20 @@ def _update_aur_repo_real(pkgname: str) -> None:
       except OSError as e:
         logger.warning('failed to remove file %s: %s', f, e)
 
-    if not _allow_update_aur_repo(pkgname, run_cmd(['git', 'diff'])):
+    if not _allow_update_aur_repo(pkgname, _run_cmd(['git', 'diff'])):
       return
 
     with open('.SRCINFO', 'wb') as srcinfo:
       srcinfo.write(get_srcinfo())
 
-    run_cmd(['git', 'add', '.'])
+    _run_cmd(['git', 'add', '.'])
     p = subprocess.run(['git', 'diff-index', '--quiet', 'HEAD'])
     if p.returncode != 0:
       built_version = _format_package_version(
         _G.epoch, _G.pkgver, _G.pkgrel)
       msg = f'[lilac] updated to {built_version}'
-      run_cmd(['git', 'commit', '-m', msg])
-      run_cmd(['git', 'push'])
+      _run_cmd(['git', 'commit', '-m', msg])
+      _run_cmd(['git', 'push'])
 
 def update_aur_repo() -> None:
   '''update the package on AUR if suitable.
@@ -417,7 +431,7 @@ def single_main(build_prefix: str = 'makepkg') -> None:
 
 def clean_directory() -> List[str]:
   '''clean all PKGBUILD and related files'''
-  files = run_cmd(['git', 'ls-files']).splitlines()
+  files = _run_cmd(['git', 'ls-files']).splitlines()
   logger.info('clean directory')
   ret = []
   for f in files:
@@ -462,7 +476,7 @@ def _download_aur_pkgbuild(name: str) -> List[str]:
 
 def git_rm_files(files: List[str]) -> None:
   if files:
-    run_cmd(['git', 'rm', '--cached', '--'] + files)
+    _run_cmd(['git', 'rm', '--cached', '--'] + files)
 
 def _get_aur_packager(name: str) -> Tuple[Optional[str], str]:
   doc = parse_document_from_requests(f'https://aur.archlinux.org/packages/{name}/', s)
@@ -529,7 +543,7 @@ def aur_pre_build(
 def aur_post_build() -> None:
   git_rm_files(_g.aur_pre_files)
   git_add_files(_g.aur_building_files, force=True)
-  output = run_cmd(["git", "status", "-s", "."]).strip()
+  output = _run_cmd(["git", "status", "-s", "."]).strip()
   if output:
     git_commit()
   del _g.aur_pre_files, _g.aur_building_files
@@ -587,7 +601,7 @@ def check_library_provides() -> None:
   provides_pattern = re.compile(r'^provides = .*\.so$')
   pkgs = [n for n in os.listdir() if pkg_pattern.search(n)]
   for pkg in pkgs:
-    pkginfo = run_cmd(['tar', 'xOf', pkg, '--force-local', '.PKGINFO'])
+    pkginfo = _run_cmd(['tar', 'xOf', pkg, '--force-local', '.PKGINFO'])
     for line in pkginfo.splitlines():
       if provides_pattern.match(line):
         raise Exception(f'{pkg} has an unversioned library "provides" entry: {line[11:]}')
