@@ -142,6 +142,7 @@ def build_package(logdir: Path, package: str, mod: LilacMod) -> bool:
       destdir = DESTDIR
     sign_and_copy(destdir)
     if staging:
+      logger.info('package %s has been staged', package)
       notify_maintainers('软件包已被置于 staging 目录，请查验后手动发布。')
 
     built_successfully = True
