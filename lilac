@@ -107,7 +107,7 @@ def setup_build_logger() -> None:
   )
 
 def build_package(
-  logfile: Path, package: str, mod: LilacMod,
+  package: str, mod: LilacMod,
 ) -> tuple[BuildResult, Optional[str]]:
   pkg_version = None
   try:
@@ -119,9 +119,7 @@ def build_package(
     os.environ['PACKAGER'] = '%s (on behalf of %s) <%s>' % (
       MYNAME, maintainer.name, maintainer.email)
     try:
-      with logfile.open('wb') as f, \
-          redirect_output(f.fileno()), \
-          execution_timeout(time_limit_hours * 3600):
+      with execution_timeout(time_limit_hours * 3600):
         lilac_build(
           mod, REPO,
           update_info = update_info,
@@ -230,58 +228,65 @@ def start_build(repo: Repo, failed: Set[str], built: Set[str]) -> None:
         # marked as failed, skip
         continue
 
-      path = repo.repodir / pkg
+      start_time = time.time()
+      logger.info('building %s', pkg)
       logfile = logdir / f'{pkg}.log'
-      with at_dir(path):
-        start_time = time.time()
-        logger.info('building %s', pkg)
-        r, version = build_package(logfile, pkg, repo.mods[pkg])
+
+      with at_dir(repo.repodir / pkg), \
+          logfile.open('wb') as f, \
+          redirect_output(f.fileno()):
+        r, version = build_package(pkg, repo.mods[pkg])
         elapsed = time.time() - start_time
         logger.info(
           'build (version %s) finished in %ds with result: %r',
           version, elapsed, r,
         )
 
-        newver = nvdata[pkg].newver
+      logger.info(
+        'package %s (version %s) finished in %ds with result: %r',
+        pkg, version, elapsed, r,
+      )
 
-        if isinstance(r, BuildResult.successful):
-          build_logger_old.info(
-            '%s %s [%s] successful after %ds',
-            pkg, newver, version, elapsed)
-          build_logger.info(
-            'successful', pkgbase = pkg,
-            nv_version = newver, pkg_version = version, elapsed = elapsed,
-          )
+      newver = nvdata[pkg].newver
 
-        elif isinstance(r, BuildResult.staged):
-          build_logger_old.info(
-            '%s %s [%s] staged after %ds',
-            pkg, newver, version, elapsed)
-          build_logger.info(
-            'staged', pkgbase = pkg,
-            nv_version = newver, pkg_version = version, elapsed = elapsed,
-          )
+      if isinstance(r, BuildResult.successful):
+        build_logger_old.info(
+          '%s %s [%s] successful after %ds',
+          pkg, newver, version, elapsed)
+        build_logger.info(
+          'successful', pkgbase = pkg,
+          nv_version = newver, pkg_version = version, elapsed = elapsed,
+        )
 
-        elif isinstance(r, BuildResult.skipped):
-          build_logger_old.warning('%s %s skipped after %ds', pkg, newver, elapsed)
-          build_logger.warning(
-            'skipped', pkgbase = pkg,
-            nv_version = newver, msg = r.reason, elapsed = elapsed,
-          )
+      elif isinstance(r, BuildResult.staged):
+        build_logger_old.info(
+          '%s %s [%s] staged after %ds',
+          pkg, newver, version, elapsed)
+        build_logger.info(
+          'staged', pkgbase = pkg,
+          nv_version = newver, pkg_version = version, elapsed = elapsed,
+        )
 
-        elif isinstance(r, BuildResult.failed):
-          build_logger_old.error('%s %s failed after %ds', pkg, newver, elapsed)
-          build_logger.error(
-            'failed', pkgbase = pkg,
-            nv_version = newver, elapsed = elapsed, exc_info = r.exc,
-          )
-          assert r.exc is not None
-          handle_failure(r.exc, repo, pkg, logfile, built, failed)
+      elif isinstance(r, BuildResult.skipped):
+        build_logger_old.warning('%s %s skipped after %ds', pkg, newver, elapsed)
+        build_logger.warning(
+          'skipped', pkgbase = pkg,
+          nv_version = newver, msg = r.reason, elapsed = elapsed,
+        )
 
-        if r:
-          built.add(pkg)
-        else:
-          failed.add(pkg)
+      elif isinstance(r, BuildResult.failed):
+        build_logger_old.error('%s %s failed after %ds', pkg, newver, elapsed)
+        build_logger.error(
+          'failed', pkgbase = pkg,
+          nv_version = newver, elapsed = elapsed, exc_info = r.exc,
+        )
+        assert r.exc is not None
+        handle_failure(r.exc, repo, pkg, logfile, built, failed)
+
+      if r:
+        built.add(pkg)
+      else:
+        failed.add(pkg)
 
   except KeyboardInterrupt:
     logger.info('keyboard interrupted, bye~')
