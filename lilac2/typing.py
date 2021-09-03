@@ -3,7 +3,7 @@ from __future__ import annotations
 import types
 from typing import (
   Union, Dict, Tuple, Type, List, NamedTuple, Optional,
-  Sequence,
+  Sequence, Literal,
 )
 from pathlib import Path
 
@@ -45,3 +45,58 @@ class Maintainer(NamedTuple):
     return cls(name, email, github)
 
 PkgRel = Union[int, str]
+
+class BuildResult:
+  _lit_created = False
+
+  def __bool__(self) -> bool:
+    return self.ty in ['successful', 'staged']
+
+  def __new__(
+    cls,
+    ty: Literal['successful', 'failed', 'skipped', 'staged'],
+    reason: Optional[str] = None,
+    exc: Optional[Exception] = None,
+  ) -> BuildResult:
+    if ty in ['successful', 'staged'] and \
+       cls._lit_created:
+      return getattr(cls, ty)
+
+    inst = super().__new__(cls)
+    inst.__init__(ty, reason)
+    return inst
+
+  def __init__(
+    self,
+    ty: Literal['successful', 'failed', 'skipped', 'staged'],
+    reason: Optional[str] = None,
+    exc: Optional[Exception] = None,
+  ) -> None:
+    self.ty = ty
+    self.reason = reason
+    self.exc = exc
+
+  @classmethod
+  def skipped(cls, reason: str) -> BuildResult:
+    return cls('skipped', reason = reason)
+
+  @classmethod
+  def failed(cls, exc: Exception) -> BuildResult:
+    return cls('failed', exc = exc)
+
+  def __repr__(self) -> str:
+    name = self.__class__.__name__
+    if self.ty == 'failed':
+      s = f'<{name}: {self.ty}({self.exc!r})>'
+    elif self.ty == 'skipped':
+      s = f'<{name}: {self.ty}({self.reason!r})>'
+    else:
+      s = f'<{name}: {self.ty}>'
+    return s
+
+  successful: BuildResult
+  staged: BuildResult
+
+BuildResult.successful = BuildResult('successful')
+BuildResult.staged = BuildResult('staged')
+BuildResult._lit_created = True
