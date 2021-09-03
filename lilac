@@ -144,9 +144,10 @@ def build_package(
     else:
       result = BuildResult.successful()
 
+    # mypy thinks they are None...
     assert _G.pkgver is not None
     assert _G.pkgrel is not None
-    pkg_version = pkgbuild.format_package_version(_G.epoch, _G.pkgver, _G.pkgrel),
+    pkg_version = pkgbuild.format_package_version(_G.epoch, _G.pkgver, _G.pkgrel)
 
   except SkipBuild as e:
     result = BuildResult.skipped(e.msg)
