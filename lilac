@@ -276,7 +276,7 @@ def start_build(repo: Repo, failed: Set[str], built: Set[str]) -> None:
         )
 
       elif isinstance(r, BuildResult.failed):
-        build_logger_old.error('%s %s failed after %ds', pkg, newver, elapsed)
+        build_logger_old.error('%s %s [%s] failed after %ds', pkg, newver, version, elapsed)
         build_logger.error(
           'failed', pkgbase = pkg,
           nv_version = newver, elapsed = elapsed, exc_info = r.exc,
