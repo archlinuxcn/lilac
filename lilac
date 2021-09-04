@@ -109,6 +109,7 @@ def setup_build_logger() -> None:
 def build_package(
   package: str, mod: LilacMod,
 ) -> tuple[BuildResult, Optional[str]]:
+  old_version = pkgbuild.format_package_version(_G.epoch, _G.pkgver, _G.pkgrel)
   pkg_version = None
   try:
     _G.mod = mod
@@ -152,6 +153,9 @@ def build_package(
   except SkipBuild as e:
     result = BuildResult.skipped(e.msg)
   except Exception as e:
+    cur_version = pkgbuild.format_package_version(_G.epoch, _G.pkgver, _G.pkgrel)
+    if old_version != cur_version:
+      pkg_version = cur_version
     result = BuildResult.failed(e)
   finally:
     del _G.mod, _G.epoch, _G.pkgver, _G.pkgrel
