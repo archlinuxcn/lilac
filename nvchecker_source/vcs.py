@@ -38,7 +38,8 @@ async def get_version(name, conf, *, cache, **kwargs):
   vcs = conf.get('vcs', '')
   use_max_tag = conf.get('use_max_tag', False)
   oldver = conf.get('oldver')
-  cmd = get_cmd_prefix(name) + [name, vcs]
+  dirname = name.split(':', 1)[0]
+  cmd = get_cmd_prefix(dirname) + [dirname, vcs]
   if use_max_tag:
     cmd += ["get_tags"]
 
