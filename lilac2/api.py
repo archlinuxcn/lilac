@@ -5,7 +5,6 @@ import shutil
 import re
 import os
 import subprocess
-import traceback
 from typing import Dict, List, Union
 from typing import Tuple, Optional, Iterable, Iterator
 import fileinput
@@ -399,10 +398,9 @@ def update_aur_repo() -> None:
   try:
     _update_aur_repo_real(pkgbase)
   except subprocess.CalledProcessError as e:
-    tb = traceback.format_exc()
     _G.repo.send_error_report(
       _G.mod,
-      exc = (e, tb),
+      exc = e,
       subject = '提交软件包 %s 到 AUR 时出错',
     )
 

@@ -326,8 +326,7 @@ def handle_failure(
     )
 
   else:
-    tb = traceback.format_exc()
-    repo.send_error_report(mod, exc=(e, tb), logfile=logfile)
+    repo.send_error_report(mod, exc=e, logfile=logfile)
 
 def main_may_raise(D: Dict[str, Any], pkgs_to_build: List[str]) -> None:
   global DEPMAP

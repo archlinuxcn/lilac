@@ -173,7 +173,7 @@ class Repo:
     self,
     mod: Union[LilacMod, str], *,
     msg: Optional[str] = None,
-    exc: Optional[Tuple[Exception, str]] = None,
+    exc: Optional[Exception] = None,
     subject: Optional[str] = None,
     logfile: Optional[Path] = None,
   ) -> None:
@@ -192,19 +192,19 @@ class Repo:
       msgs.append(msg)
 
     if exc is not None:
-      exception, tb = exc
-      if isinstance(exception, subprocess.CalledProcessError):
+      tb = ''.join(traceback.format_exception(type(exc), exc, exc.__traceback__))
+      if isinstance(exc, subprocess.CalledProcessError):
         subject_real = subject or '在打包软件包 %s 时发生错误'
         msgs.append('命令执行失败！\n\n命令 %r 返回了错误号 %d。' % (
-          exception.cmd, exception.returncode))
-        if exception.output:
-          msgs.append('命令的输出如下：\n\n%s' % exception.output)
+          exc.cmd, exc.returncode))
+        if exc.output:
+          msgs.append('命令的输出如下：\n\n%s' % exc.output)
         msgs.append('调用栈如下：\n\n' + tb)
-      elif isinstance(exception, api.AurDownloadError):
+      elif isinstance(exc, api.AurDownloadError):
         subject_real = subject or '在获取AUR包 %s 时发生错误'
         msgs.append('获取AUR包失败！\n\n')
         msgs.append('调用栈如下：\n\n' + tb)
-      elif isinstance(exception, TimeoutError):
+      elif isinstance(exc, TimeoutError):
         subject_real = subject or '打包软件包 %s 超时'
       else:
         subject_real = subject or '在打包软件包 %s 时发生未知错误'
@@ -261,13 +261,11 @@ class Repo:
     self.mods, errors = lilacpy.load_managed(self.repodir)
     failed = set(errors)
     for name, exc_info in errors.items():
-      tb_lines = traceback.format_exception(*exc_info)
-      tb = ''.join(tb_lines)
       logger.error('error while loading lilac.py for %s', name, exc_info=exc_info)
       exc = exc_info[1]
       if not isinstance(exc, Exception):
         raise
-      self.send_error_report(name, exc=(exc, tb),
+      self.send_error_report(name, exc=exc,
                              subject='为软件包 %s 载入 lilac.py 时失败')
       build_logger_old.error('%s failed', name)
       build_logger.exception('lilac.py error', pkgbase = name, exc_info=exc_info)
