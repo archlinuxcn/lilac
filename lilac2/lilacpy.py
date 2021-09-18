@@ -92,6 +92,11 @@ def load_lilac(dir: Path) -> Generator[LilacMod, None, None]:
         if entry.get('source') == 'alpm':
           entry.setdefault('dbpath', str(PACMAN_DB_DIR))
 
+        # fix wrong key for 'alpm-lilac'
+        if entry.get('source') == 'alpm-lilac':
+          del entry['source']
+          entry['alias'] = 'alpm-lilac'
+
         alias = entry.pop('alias', None)
 
         # fill alpm-lilac parameters
