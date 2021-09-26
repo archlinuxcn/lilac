@@ -70,7 +70,7 @@ def gen_pkgbuild(
   arch: Optional[Iterable[str]] = None,
   makedepends: Optional[List[str]] = None,
   optdepends: Optional[List[str]] = None,
-  depends_setuptools: bool = True,
+  depends_setuptools: bool = False,
   check: Optional[str] = None,
   provides: Optional[Iterable[str]] = None,
   conflicts: Optional[Iterable[str]] = None,
