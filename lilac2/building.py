@@ -57,7 +57,7 @@ def may_update_pkgrel() -> Generator[None, None, None]:
 
 def lilac_build(
   mod: LilacMod,
-  repo: Optional['Repo'],
+  repo: Optional[Repo],
   build_prefix: Optional[str] = None,
   update_info: NvResults = NvResults(),
   accept_noupdate: bool = False,
@@ -159,7 +159,8 @@ def call_build_cmd(
     extra_args = ['--share-net', '--bind', pwd, f'/tmp/{basename}', '--chdir', f'/tmp/{basename}']
     cmd = UNTRUSTED_PREFIX + extra_args + ['makepkg', '--holdver'] # type: ignore
   else:
-    cmd = ['%s-build' % build_prefix]
+    gpghome = os.path.expanduser('~/.lilac/gnupg')
+    cmd = ['env', f'GNUPGHOME={gpghome}', '%s-build' % build_prefix]
     cmd.extend(build_args)
     cmd.append('--')
 
