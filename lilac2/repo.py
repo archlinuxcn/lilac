@@ -160,6 +160,9 @@ class Repo:
       assert stdout
       while True:
         line = stdout.readline()
+        if not line:
+          logger.error('history exhausted while finding maintainer, stop.')
+          raise Exception('maintainer cannot be found')
         commit, author = line.rstrip().split(None, 1)
         if me not in author:
           return Maintainer.from_email_address(author)
