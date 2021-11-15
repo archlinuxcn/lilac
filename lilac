@@ -194,6 +194,8 @@ def start_build(repo: Repo, failed: Set[str], built: Set[str]) -> None:
           nonexistent[name].append(d)
           continue
         # we need build this too
+        logger.info('build %s as a dependency of %s because no built package found',
+                    d.pkgname, name)
         building_packages[d.pkgname] = ()
 
     dep_building_map[name] = set()
