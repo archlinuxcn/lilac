@@ -88,10 +88,6 @@ def load_lilac(dir: Path) -> Generator[LilacMod, None, None]:
     if hasattr(mod, 'update_on'):
       for entry in mod.update_on:
 
-        # fill our dbpath if not provided
-        if entry.get('source') == 'alpm':
-          entry.setdefault('dbpath', str(PACMAN_DB_DIR))
-
         # fix wrong key for 'alpm-lilac'
         if entry.get('source') == 'alpm-lilac':
           del entry['source']
@@ -111,6 +107,10 @@ def load_lilac(dir: Path) -> Generator[LilacMod, None, None]:
               entry.setdefault(k, expand_alias_arg(v))
             else:
               entry.setdefault(k, v)
+
+        # fill our dbpath if not provided
+        if entry.get('source') == 'alpm':
+          entry.setdefault('dbpath', str(PACMAN_DB_DIR))
 
     yield mod
 
