@@ -109,7 +109,8 @@ def packages_need_update(
   os.close(wfd)
 
   output = os.fdopen(rfd)
-  nvdata_unord: Dict[str, Dict[int, NvResult]] = {}
+  # pkgbase => index => NvResult
+  nvdata_nested: Dict[str, Dict[int, NvResult]] = {}
   errors: Dict[Optional[str], List[Dict[str, Any]]] = defaultdict(list)
   rebuild = set()
   for l in output:
@@ -120,16 +121,16 @@ def packages_need_update(
       i = int(i)
     else:
       i = 0
-    if pkg not in nvdata_unord:
-      nvdata_unord[pkg] = {}
+    if pkg not in nvdata_nested:
+      nvdata_nested[pkg] = {}
 
     event = j['event']
     if event == 'updated':
-      nvdata_unord[pkg][i] = NvResult(j['old_version'], j['version'])
+      nvdata_nested[pkg][i] = NvResult(j['old_version'], j['version'])
       if i != 0:
         rebuild.add(pkg)
     elif event == 'up-to-date':
-      nvdata_unord[pkg][i] = NvResult(j['version'], j['version'])
+      nvdata_nested[pkg][i] = NvResult(j['version'], j['version'])
     elif j['level'] in ['warning', 'warn', 'error', 'exception', 'critical']:
       errors[pkg].append(j)
 
@@ -173,22 +174,21 @@ def packages_need_update(
 
   nvdata: Dict[str, NvResults] = {}
 
-  for name, d in nvdata_unord.items():
-    nrs = nvdata[name] = NvResults()
-    for i, (j, nr) in enumerate(sorted(d.items())):
-      if i != j:
-        logger.warning('mismatched nvdata_unord item for %s: %d != %d in %r', 
-                       name, i, j, d)
-        # maybe previous items have failed; insert a dummy one
-        nrs.append(NvResult(None, None))
+  for pkgbase, d in nvdata_nested.items():
+    n = max(d.keys()) + 1
+    nrs = nvdata[pkgbase] = NvResults()
+    for i in range(n):
+      if i in d:
+        nrs.append(d[i])
       else:
-        nrs.append(nr)
+        # item at this index has failed; insert a dummy one
+        nrs.append(NvResult(None, None))
 
-  for name in repo.mods:
-    if name not in nvdata:
+  for pkgbase in repo.mods:
+    if pkgbase not in nvdata:
       # we know nothing about these versions
       # maybe nvchecker has failed
-      nvdata[name] = NvResults()
+      nvdata[pkgbase] = NvResults()
 
   return nvdata, set(update_on_errors.keys()), rebuild
 
