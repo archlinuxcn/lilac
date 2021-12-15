@@ -49,9 +49,10 @@ class NvResults(UserList):
 
 def _gen_config_from_mods(
   mods: LilacMods,
-) -> Tuple[Dict[str, Any], Dict[str, str]]:
+) -> Tuple[Dict[str, Any], Dict[str, int], Dict[str, str]]:
   errors = {}
   newconfig = {}
+  counts = {}
   for name, mod in mods.items():
     confs = getattr(mod, 'update_on', None)
     if not confs:
@@ -70,14 +71,15 @@ def _gen_config_from_mods(
       for key, value in conf.items():
         if value in [None, '']:
           conf[key] = name
+    counts[name] = len(confs)
 
-  return newconfig, errors
+  return newconfig, counts, errors
 
 def packages_need_update(
   repo: Repo,
   proxy: Optional[str] = None,
 ) -> Tuple[Dict[str, NvResults], Set[str], Set[str]]:
-  newconfig, update_on_errors = _gen_config_from_mods(repo.mods)
+  newconfig, update_on_counts, update_on_errors = _gen_config_from_mods(repo.mods)
 
   if not OLDVER_FILE.exists():
     open(OLDVER_FILE, 'a').close()
@@ -175,7 +177,7 @@ def packages_need_update(
   nvdata: Dict[str, NvResults] = {}
 
   for pkgbase, d in nvdata_nested.items():
-    n = max(d.keys()) + 1
+    n = update_on_counts[pkgbase]
     nrs = nvdata[pkgbase] = NvResults()
     for i in range(n):
       if i in d:
