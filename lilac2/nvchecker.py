@@ -177,6 +177,9 @@ def packages_need_update(
   nvdata: Dict[str, NvResults] = {}
 
   for pkgbase, d in nvdata_nested.items():
+    if pkgbase is None:
+      # from events without a name
+      continue
     n = update_on_counts[pkgbase]
     nrs = nvdata[pkgbase] = NvResults()
     for i in range(n):
