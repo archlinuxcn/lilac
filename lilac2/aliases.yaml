@@ -48,3 +48,8 @@ mediawiki:
   alpm: mediawiki
   from_pattern: '^(\d+\.\d+)\..*'
   to_pattern: '\1'
+grpc:
+  source: alpm
+  alpm: grpc
+  provided: libgrpc++.so
+  strip_release: true
