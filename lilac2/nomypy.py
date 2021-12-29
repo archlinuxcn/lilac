@@ -1,6 +1,8 @@
 # type: ignore
 
 class BuildResult:
+  rusage = None
+
   def __init__(self) -> None:
     if __class__ is self.__class__:
       raise TypeError('use subclasses')
@@ -13,7 +15,7 @@ class BuildResult:
 
   def __repr__(self) -> str:
     name = self.__class__.__name__
-    return f'<BuildResult.{name}>'
+    return f'<BuildResult.{name}; rusage={self.rusage}>'
 
 class successful(BuildResult):
   pass
@@ -27,7 +29,7 @@ class failed(BuildResult):
 
   def __repr__(self) -> str:
     name = self.__class__.__name__
-    return f'<BuildResult.{name}: {self.exc!r}>'
+    return f'<BuildResult.{name}: {self.exc!r}; rusage={self.rusage}>'
 
 class skipped(BuildResult):
   def __init__(self, reason: str) -> None:
@@ -35,7 +37,7 @@ class skipped(BuildResult):
 
   def __repr__(self) -> str:
     name = self.__class__.__name__
-    return f'<BuildResult.{name}: {self.reason!r}>'
+    return f'<BuildResult.{name}: {self.reason!r}; rusage={self.rusage}>'
 
 del successful, staged, failed, skipped
 

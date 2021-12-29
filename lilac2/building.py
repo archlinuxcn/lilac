@@ -6,10 +6,13 @@ import subprocess
 from pathlib import Path
 from typing import (
   Optional, Iterable, List, Set, TYPE_CHECKING,
-  Generator,
+  Generator, Tuple,
 )
 from types import SimpleNamespace
 import contextlib
+import select
+import resource
+import time
 
 import pyalpm
 
@@ -63,7 +66,7 @@ def lilac_build(
   accept_noupdate: bool = False,
   depends: Iterable[Dependency] = (),
   bindmounts: List[str] = [],
-) -> None:
+) -> Tuple[resource.struct_rusage, Optional[Exception]]:
   success = False
 
   try:
@@ -100,6 +103,8 @@ def lilac_build(
     need_build_first = set()
     build_prefix = build_prefix or getattr(
       mod, 'build_prefix', 'extra-x86_64')
+    if not isinstance(build_prefix, str):
+      raise TypeError('build_prefix', build_prefix)
     depend_packages = []
 
     for x in depends:
@@ -128,18 +133,22 @@ def lilac_build(
     if hasattr(mod, 'makepkg_args'):
         makepkg_args.extend(mod.makepkg_args)
 
-    call_build_cmd(
+    rusage, called_exc = call_build_cmd(
       build_prefix, depend_packages, bindmounts,
       build_args, makechrootpkg_args, makepkg_args,
+      time_limit_secs = getattr(mod, 'time_limit_hours', 1) * 3600,
     )
 
-    pkgs = [x for x in os.listdir() if x.endswith(('.pkg.tar.xz', '.pkg.tar.zst'))]
-    if not pkgs:
-      raise Exception('no package built')
-    post_build = getattr(mod, 'post_build', None)
-    if post_build is not None:
-      post_build()
-    success = True
+    if called_exc is None:
+      pkgs = [x for x in os.listdir() if x.endswith(('.pkg.tar.xz', '.pkg.tar.zst'))]
+      if not pkgs:
+        raise Exception('no package built')
+      post_build = getattr(mod, 'post_build', None)
+      if post_build is not None:
+        post_build()
+      success = True
+
+    return rusage, called_exc
   finally:
     post_build_always = getattr(mod, 'post_build_always', None)
     if post_build_always is not None:
@@ -151,7 +160,8 @@ def call_build_cmd(
   build_args: List[str] = [],
   makechrootpkg_args: List[str] = [],
   makepkg_args: List[str] = [],
-) -> None:
+  time_limit_secs: int = 3600,
+) -> Tuple[resource.struct_rusage, Optional[Exception]]:
   cmd: Cmd
   if build_prefix == 'makepkg':
     pwd = os.getcwd()
@@ -184,32 +194,49 @@ def call_build_cmd(
 
   # NOTE that Ctrl-C here may not succeed
   try:
-    run_build_cmd(cmd)
+    return run_build_cmd(cmd, time_limit_secs)
   finally:
     may_need_cleanup()
 
-def run_build_cmd(cmd: Cmd) -> None:
+def run_build_cmd(
+  cmd: Cmd,
+  time_limit_secs: int,
+) -> Tuple[resource.struct_rusage, Optional[Exception]]:
   logger.info('Running build command: %r', cmd)
+  start = time.time()
 
   p = subprocess.Popen(
     cmd,
     stdin = subprocess.DEVNULL,
   )
 
+  pid = p.pid
+  pidfd = os.pidfd_open(pid) # type: ignore
+  poll = select.poll()
+  poll.register(pidfd, select.POLLIN)
+
+  exc = None
   try:
     while True:
-      try:
-        code = p.wait(10)
-      except subprocess.TimeoutExpired:
-        st = os.stat(1)
-        if st.st_size > 1024 ** 3: # larger than 1G
+      ret = poll.poll(10_000)
+      if not ret:
+        if time.time() - start > time_limit_secs:
           kill_child_processes()
-          logger.error('\n\n输出过多，已击杀。')
+          exc = TimeoutError()
+        else:
+          st = os.stat(1)
+          if st.st_size > 1024 ** 3: # larger than 1G
+            kill_child_processes()
+            logger.error('\n\n输出过多，已击杀。')
       else:
-        if code != 0:
-          raise subprocess.CalledProcessError(code, cmd)
-        break
+        _pid, status, rusage = os.wait4(pid, 0)
+        code = os.waitstatus_to_exitcode(status) # type: ignore
+        if code == 0 or exc:
+          return rusage, exc
+        else:
+          return rusage, subprocess.CalledProcessError(code, cmd)
   finally:
+    os.close(pidfd)
     # say goodbye to all our children
     kill_child_processes()
 

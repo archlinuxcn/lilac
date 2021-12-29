@@ -19,6 +19,7 @@ If you want to run manually (or you're the packager for lilac), you'll need the 
 * pacman-contrib
 * A Local MTA (e.g. postfix; a remote MTA works but you may have issues when the network glitches because no error handling is present)
 * The command [kill_children](https://github.com/lilydjwg/pid_children) (a suid program to kill all descendant processes of its parent). You may need to add the build user to `pkg` group to use it (use `ls -l $(which kill_children)` to check). Note that there may be security implications for people who can execute this program.
+* A SQL database supported by SQLAlchemy (optional)
 
 Python libraries
 ----
@@ -30,6 +31,7 @@ Python libraries
 * pyalpm
 * structlog
 * prctl
+* sqlalchemy (and the database driver you configure to use)
 
 Setup
 ----
@@ -43,6 +45,8 @@ Copy `config.toml.sample` to `config.toml` and edit as appropriate.
 If you track GitHub or GitLab, get your API tokens and put your keyfile at `~/.lilac/nvchecker_keyfile.toml`.
 
 Setup your mail server so that lilac can send out error reports. You may want to disable mail during testing though.
+
+Setup your database if you configure to use one.
 
 lilac only produces packages and put them in a directory, but doesn't update the pacman repository database. You may use [archrepo2](https://github.com/lilydjwg/archrepo2) to do that.
 

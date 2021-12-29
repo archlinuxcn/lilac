@@ -12,6 +12,7 @@ from typing import Set, Dict, List, Any, Optional, Tuple
 from pathlib import Path
 import graphlib
 
+import sqlalchemy
 import prctl
 import structlog
 
@@ -47,6 +48,7 @@ from lilac2 import pkgbuild
 from lilac2.building import lilac_build, MissingDependencies, SkipBuild
 from lilac2 import slogconf
 from lilac2.api import notify_maintainers
+from lilac2 import db
 
 config = read_config()
 
@@ -109,7 +111,9 @@ def setup_build_logger() -> None:
 def build_package(
   package: str, mod: LilacMod,
 ) -> tuple[BuildResult, Optional[str]]:
+  '''return BuildResult and version string if successful'''
   pkg_version = None
+  rusage = None
   try:
     _G.mod = mod
     _G.epoch = _G.pkgver = _G.pkgrel = None
@@ -119,8 +123,10 @@ def build_package(
     os.environ['PACKAGER'] = '%s (on behalf of %s) <%s>' % (
       MYNAME, maintainer.name, maintainer.email)
     try:
-      with execution_timeout(time_limit_hours * 3600):
-        lilac_build(
+      # we have set a time limit in run_build_cmd, but guard against possible
+      # other issues here. Add 120s for other work
+      with execution_timeout(time_limit_hours * 3600 + 120):
+        rusage, exc = lilac_build(
           mod, REPO,
           update_info = update_info,
           depends = DEPENDS.get(package, ()),
@@ -129,6 +135,8 @@ def build_package(
     except TimeoutError:
       kill_child_processes()
       raise
+    if exc:
+      raise exc
 
     staging = getattr(mod, 'staging', False)
     if staging:
@@ -156,6 +164,7 @@ def build_package(
   finally:
     del _G.mod, _G.epoch, _G.pkgver, _G.pkgrel
 
+  result.ruage = rusage
   return result, pkg_version
 
 def sign_and_copy(dest: str) -> None:
@@ -251,6 +260,7 @@ def start_build(repo: Repo, failed: Set[str], built: Set[str]) -> None:
       )
 
       newver = nvdata[pkg].newver
+      msg = None
 
       if isinstance(r, BuildResult.successful):
         build_logger_old.info(
@@ -276,6 +286,7 @@ def start_build(repo: Repo, failed: Set[str], built: Set[str]) -> None:
           'skipped', pkgbase = pkg,
           nv_version = newver, msg = r.reason, elapsed = elapsed,
         )
+        msg = r.reason
 
       elif isinstance(r, BuildResult.failed):
         build_logger_old.error('%s %s [%s] failed after %ds', pkg, newver, version, elapsed)
@@ -285,6 +296,26 @@ def start_build(repo: Repo, failed: Set[str], built: Set[str]) -> None:
         )
         assert r.exc is not None
         handle_failure(r.exc, repo, pkg, logfile, built, failed)
+        msg = repr(r.exc)
+
+      if db.USE:
+        if r.rusage:
+          cputime = r.rusage.ru_utime + r.rusage.ru_stime
+          maxrss = r.rusage.ru_maxrss * 1024
+        else:
+          cputime = maxrss = None
+        with db.get_session() as s:
+          p = db.PkgLog(
+            pkgbase = pkg,
+            nv_version = newver,
+            pkg_version = version,
+            elapsed = elapsed,
+            result = r.name,
+            cputime = cputime,
+            maxrss = maxrss,
+            msg = msg,
+          )
+          s.add(p)
 
       if r:
         built.add(pkg)
@@ -337,6 +368,10 @@ def main_may_raise(D: Dict[str, Any], pkgs_to_build: List[str]) -> None:
 
   if get_git_branch() != 'master':
     raise Exception('repo not on master, aborting.')
+
+  if dburl := config['lilac'].get('dburl'):
+    engine = sqlalchemy.create_engine(dburl)
+    db.setup(engine)
 
   git_reset_hard()
   git_pull_override()
@@ -406,10 +441,13 @@ def main_may_raise(D: Dict[str, Any], pkgs_to_build: List[str]) -> None:
 
   try:
     build_logger.info('build start')
+    if db.USE:
+      with db.get_session() as s:
+        b = db.Batch(event='start')
+        s.add(b)
     start_build(REPO, failed, update_succeeded)
     D['last_commit'] = git_last_commit()
   finally:
-    build_logger.info('build end')
     # handle what has been processed even on exception
     failed_info.update({k: nvdata[k].newver for k in failed if k in nvdata})
 
@@ -428,6 +466,12 @@ def main_may_raise(D: Dict[str, Any], pkgs_to_build: List[str]) -> None:
         built = update_succeeded | failed
         update_nv = built & (need_update | rebuild)
         nvtake(update_nv, REPO.mods)
+
+    build_logger.info('build end')
+    if db.USE:
+      with db.get_session() as s:
+        b = db.Batch(event='stop')
+        s.add(b)
 
     git_reset_hard()
     if config['lilac']['git_push']:

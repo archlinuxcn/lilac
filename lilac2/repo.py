@@ -109,7 +109,7 @@ class Repo:
     ret: List[Maintainer] = []
     errors: List[str] = []
 
-    maintainers: List[Dict[str, str]] = getattr(mod, 'maintainers', None)
+    maintainers: Optional[List[Dict[str, str]]] = getattr(mod, 'maintainers', None)
     if maintainers is not None:
       if maintainers:
         ret, errors = self.parse_maintainers(maintainers)

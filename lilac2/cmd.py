@@ -100,7 +100,7 @@ def run_cmd(
 
   try:
     exited = False
-    def child_exited(signum: int, sigframe: types.FrameType) -> None:
+    def child_exited(signum: int, sigframe: Optional[types.FrameType]) -> None:
       nonlocal exited
       exited = True
     old_hdl = signal.signal(signal.SIGCHLD, child_exited)

@@ -26,6 +26,8 @@ send_email = false
 logurl = "https://example.com/${pkgbase}/${datetime}.html"
 # for searching github
 # github_token = "xxx"
+# keep build logs; you need to manually run the script "scripts/dbsetup.sql" once
+dburl = "postgresql:///"
 
 [nvchecker]
 # set proxy for nvchecker
