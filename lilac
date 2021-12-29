@@ -310,7 +310,7 @@ def start_build(repo: Repo, failed: Set[str], built: Set[str]) -> None:
             nv_version = newver,
             pkg_version = version,
             elapsed = elapsed,
-            result = r.name,
+            result = r.__class__.__name__,
             cputime = cputime,
             maxrss = maxrss,
             msg = msg,
