@@ -13,7 +13,8 @@ create table pkglog (
   result buildresult not null,
   cputime int,
   maxrss bigint,
-  msg text
+  msg text,
+  build_reasons text
 );
 
 create index pkglog_ts_idx on pkglog (ts);

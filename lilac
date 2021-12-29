@@ -11,6 +11,7 @@ from collections import defaultdict
 from typing import Set, Dict, List, Any, Optional, Tuple
 from pathlib import Path
 import graphlib
+import json
 
 import sqlalchemy
 import prctl
@@ -43,7 +44,7 @@ from lilac2.repo import Repo
 from lilac2.const import mydir, _G, PACMAN_DB_DIR
 from lilac2.nvchecker import packages_need_update, nvtake, NvResults
 from lilac2.typing import LilacMod
-from lilac2.nomypy import BuildResult # type: ignore
+from lilac2.nomypy import BuildResult, BuildReason # type: ignore
 from lilac2 import pkgbuild
 from lilac2.building import lilac_build, MissingDependencies, SkipBuild
 from lilac2 import slogconf
@@ -77,6 +78,7 @@ building_packages: Dict[str, Tuple[()]] = {}
 nvdata: Dict[str, NvResults] = {}
 DEPMAP: Dict[str, Set[Dependency]] = {}
 DEPENDS: Dict[str, Set[Dependency]] = {}
+build_reasons: Dict[str, List[BuildReason]] = defaultdict(list)
 
 logger = logging.getLogger(__name__)
 build_logger_old = logging.getLogger('build')
@@ -206,6 +208,7 @@ def start_build(repo: Repo, failed: Set[str], built: Set[str]) -> None:
         logger.info('build %s as a dependency of %s because no built package found',
                     d.pkgname, name)
         building_packages[d.pkgname] = ()
+        build_reasons[d.pkgname].append(BuildReason.Depended(name))
 
     dep_building_map[name] = set()
     for x in ds:
@@ -304,6 +307,7 @@ def start_build(repo: Repo, failed: Set[str], built: Set[str]) -> None:
           maxrss = r.rusage.ru_maxrss * 1024
         else:
           cputime = maxrss = None
+        rs = [r.to_dict() for r in build_reasons[pkg]]
         with db.get_session() as s:
           p = db.PkgLog(
             pkgbase = pkg,
@@ -314,6 +318,7 @@ def start_build(repo: Repo, failed: Set[str], built: Set[str]) -> None:
             cputime = cputime,
             maxrss = maxrss,
             msg = msg,
+            build_reasons = json.dumps(rs),
           )
           s.add(p)
 
@@ -391,13 +396,12 @@ def main_may_raise(D: Dict[str, Any], pkgs_to_build: List[str]) -> None:
   proxy = config['nvchecker'].get('proxy')
   _nvdata, unknown, rebuild = packages_need_update(
     REPO, proxy)
-  nvdata.update(_nvdata)
+  nvdata.update(_nvdata) # update to the global object
 
   if pkgs_to_build:
     need_update: Set[str] = set()
     need_rebuild_failed: Set[str] = set()
     need_rebuild_pkgrel: Set[str] = set()
-    rebuild = rebuild | set(pkgs_to_build)
   else:
     U = set(REPO.mods)
     last_commit = D.get('last_commit', EMPTY_COMMIT)
@@ -418,12 +422,31 @@ def main_may_raise(D: Dict[str, Any], pkgs_to_build: List[str]) -> None:
   # build updated; if last build failed but it gets updated once more,
   # build it again
   need_update = updated | failed_updated
+  for p, vers in nvdata.items():
+    diff_idxs = [i for i, v in enumerate(vers)
+                 if v.oldver != v.newver]
+    if diff_idxs:
+      mod = REPO.mods[p]
+      confs = mod.update_on
+      sources = [(i, confs[i]['source']) for i in diff_idxs]
+      build_reasons[p].append(BuildReason.NvChecker(sources))
 
   # rebuild first, update later
   all_building: List[str] = []
   all_building.extend(rebuild)
+
+  all_building.extend(pkgs_to_build)
+  for p in pkgs_to_build:
+    build_reasons[p].append(BuildReason.Cmdline())
+
   all_building.extend(need_rebuild_pkgrel)
+  for p in need_rebuild_pkgrel:
+    build_reasons[p].append(BuildReason.UpdatedPkgrel())
+
   all_building.extend(need_rebuild_failed)
+  for p in need_rebuild_failed:
+    build_reasons[p].append(BuildReason.UpdatedFailed())
+
   all_building.extend(need_update)
 
   logger.info('these updated (pkgrel) packages should be rebuilt: %r',

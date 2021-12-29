@@ -45,4 +45,3 @@ class Maintainer(NamedTuple):
     return cls(name, email, github)
 
 PkgRel = Union[int, str]
-
