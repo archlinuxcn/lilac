@@ -4,10 +4,10 @@ import os
 import re
 import subprocess
 import contextlib
-from typing import Generator, Dict, Any, cast
+from typing import Generator, Dict, Any
 from pathlib import Path
 
-import toml
+import tomli
 
 from .const import mydir
 
@@ -36,8 +36,8 @@ def read_config() -> Dict[str, Any]:
   for config_file in config_file_candidates:
     # ConfigParser.read does not raise an exception is the file is missing
     if config_file.exists():
-      with open(config_file) as f:
-        return cast(Dict[str, Any], toml.load(f))
+      with open(config_file, 'rb') as f:
+        return tomli.load(f)
   else:
     raise Exception('No config files found!')
 

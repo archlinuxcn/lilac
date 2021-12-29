@@ -27,7 +27,7 @@ Python libraries
 * requests
 * lxml
 * PyYAML
-* toml
+* tomli
 * pyalpm
 * structlog
 * prctl

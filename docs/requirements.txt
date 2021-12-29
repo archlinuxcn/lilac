@@ -1,4 +1,4 @@
-toml
+tomli
 requests
 lxml
 PyYAML
