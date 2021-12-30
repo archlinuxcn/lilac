@@ -1,5 +1,7 @@
 # type: ignore
 
+from typing import Union
+
 class SumType:
   _intermediate = True
 
@@ -12,7 +14,7 @@ class SumType:
       setattr(cls.__mro__[1], cls.__name__, cls)
 
   def __repr__(self) -> str:
-    cname = __class__.__name__
+    cname = self.__class__.__mro__[1].__name__
     name = self.__class__.__name__
     if e := self._extra_info():
       return f'<{cname}.{name}: {e}>'
@@ -25,6 +27,7 @@ class SumType:
 class BuildResult(SumType):
   _intermediate = True
   rusage = None
+  elapsed = 0
 
   def __bool__(self) -> bool:
     return self.__class__ in [self.successful, self.staged]
@@ -39,11 +42,13 @@ class staged(BuildResult):
   pass
 
 class failed(BuildResult):
-  def __init__(self, exc: Exception) -> None:
+  def __init__(self, exc: Union[Exception, str]) -> None:
     self.exc = exc
 
   def _extra_info(self) -> str:
-    return f'{self.exc!r}; {super()._extra_info()}'
+    if isinstance(self.exc, Exception):
+      msg = repr(self.exc)
+    return f'{msg}; {super()._extra_info()}'
 
 class skipped(BuildResult):
   def __init__(self, reason: str) -> None:

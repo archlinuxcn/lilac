@@ -1,31 +1,26 @@
 from __future__ import annotations
 
 import os
+import sys
 import logging
 import subprocess
-from pathlib import Path
 from typing import (
   Optional, Iterable, List, Set, TYPE_CHECKING,
-  Generator, Tuple,
 )
-from types import SimpleNamespace
-import contextlib
-import select
-import resource
+import tempfile
+from pathlib import Path
 import time
-
-import pyalpm
+import json
 
 from . import pkgbuild
-from .typing import LilacMod, Cmd
-from .cmd import run_cmd, UNTRUSTED_PREFIX
-from .api import (
-  vcs_update, get_pkgver_and_pkgrel, update_pkgrel,
-  _next_pkgrel,
-)
-from .packages import Dependency
+from .typing import LilacMod
 from .nvchecker import NvResults
+from .packages import Dependency
+from .api import notify_maintainers
 from .tools import kill_child_processes
+from .nomypy import BuildResult # type: ignore
+from .const import _G
+from .cmd import run_cmd
 
 if TYPE_CHECKING:
   from .repo import Repo
@@ -42,205 +37,186 @@ class SkipBuild(Exception):
   def __init__(self, msg: str) -> None:
     self.msg = msg
 
-@contextlib.contextmanager
-def may_update_pkgrel() -> Generator[None, None, None]:
-  pkgver, pkgrel = get_pkgver_and_pkgrel()
-  yield
+class BuildFailed(Exception):
+  def __init__(self, msg: str) -> None:
+    self.msg = msg
 
-  if pkgver is None or pkgrel is None:
-    return
-
-  pkgver2, pkgrel2 = get_pkgver_and_pkgrel()
-  if pkgver2 is None or pkgrel2 is None:
-    return
-
-  if pkgver == pkgver2 and \
-     pyalpm.vercmp(f'1-{pkgrel}', f'1-{pkgrel2}') >= 0:
-    update_pkgrel(_next_pkgrel(pkgrel))
-
-def lilac_build(
+def build_package(
+  pkgbase: str,
   mod: LilacMod,
-  repo: Optional[Repo],
-  build_prefix: Optional[str] = None,
-  update_info: NvResults = NvResults(),
-  accept_noupdate: bool = False,
-  depends: Iterable[Dependency] = (),
-  bindmounts: List[str] = [],
-) -> Tuple[resource.struct_rusage, Optional[Exception]]:
-  success = False
-
+  bindmounts: List[str],
+  update_info: NvResults,
+  depends: Iterable[Dependency],
+  repo: Repo,
+  myname: str,
+  destdir: str,
+  logfile: Path,
+) -> tuple[BuildResult, Optional[str]]:
+  '''return BuildResult and version string if successful'''
+  start_time = time.time()
+  pkg_version = None
+  rusage = None
   try:
-    oldver = update_info.oldver
-    newver = update_info.newver
+    _G.mod = mod
+    _G.epoch = _G.pkgver = _G.pkgrel = None
+    maintainer = repo.find_maintainers(mod)[0]
+    time_limit_hours = getattr(mod, 'time_limit_hours', 1)
+    os.environ['PACKAGER'] = '%s (on behalf of %s) <%s>' % (
+      myname, maintainer.name, maintainer.email)
 
-    if not hasattr(mod, '_G'):
-      # fill nvchecker result unless already filled (e.g. by hand)
-      mod._G = SimpleNamespace(
-        oldver = oldver,
-        newver = newver,
-        oldvers = [x.oldver for x in update_info],
-        newvers = [x.newver for x in update_info],
+    depend_packages = resolve_depends(repo, depends)
+    pkgdir = repo.repodir / pkgbase
+    try:
+      rusage, error = call_worker(
+        pkgbase = pkgbase,
+        pkgdir = pkgdir,
+        depend_packages = [str(x) for x in depend_packages],
+        update_info = update_info,
+        bindmounts = bindmounts,
+        logfile = logfile,
+        deadline = start_time + time_limit_hours * 3600,
       )
+      if error:
+        raise error
+    finally:
+      kill_child_processes()
+      may_need_cleanup()
 
-    prepare = getattr(mod, 'prepare', None)
-    if prepare is not None:
-      msg = prepare()
-      if isinstance(msg, str):
-        raise SkipBuild(msg)
+    staging = getattr(mod, 'staging', False)
+    if staging:
+      destdir = os.path.join(destdir, 'staging')
+      if not os.path.isdir(destdir):
+        os.mkdir(destdir)
+    sign_and_copy(destdir)
+    if staging:
+      notify_maintainers('软件包已被置于 staging 目录，请查验后手动发布。')
+      result = BuildResult.staged()
+    else:
+      result = BuildResult.successful()
 
-    run_cmd(["sh", "-c", "rm -f -- *.pkg.tar.xz *.pkg.tar.xz.sig *.pkg.tar.zst *.pkg.tar.zst.sig"])
-    pre_build = getattr(mod, 'pre_build', None)
+    # mypy thinks they are None...
+    assert _G.pkgver is not None
+    assert _G.pkgrel is not None
+    pkg_version = pkgbuild.format_package_version(_G.epoch, _G.pkgver, _G.pkgrel)
 
-    with may_update_pkgrel():
-      if pre_build is not None:
-        logger.debug('accept_noupdate=%r, oldver=%r, newver=%r', accept_noupdate, oldver, newver)
-        pre_build()
-      run_cmd(['recv_gpg_keys'])
-      vcs_update()
+  except SkipBuild as e:
+    result = BuildResult.skipped(e.msg)
+  except BuildFailed as e:
+    result = BuildResult.failed(e.msg)
+  except Exception as e:
+    result = BuildResult.failed(e)
+  finally:
+    del _G.mod, _G.epoch, _G.pkgver, _G.pkgrel
 
-    pkgbuild.check_srcinfo()
-
-    need_build_first = set()
-    build_prefix = build_prefix or getattr(
-      mod, 'build_prefix', 'extra-x86_64')
-    if not isinstance(build_prefix, str):
-      raise TypeError('build_prefix', build_prefix)
-    depend_packages = []
-
-    for x in depends:
-      p = x.resolve()
-      if p is None:
-        if repo is None or not repo.manages(x):
-          # ignore depends that are not in repo
-          continue
-        need_build_first.add(x.pkgname)
-      else:
-        depend_packages.append(p)
-
-    if need_build_first:
-      raise MissingDependencies(need_build_first)
-    logger.info('depends: %s, resolved: %s', depends, depend_packages)
-
-    build_args: List[str] = []
-    if hasattr(mod, 'build_args'):
-        build_args = mod.build_args
-
-    makechrootpkg_args: List[str] = []
-    if hasattr(mod, 'makechrootpkg_args'):
-        makechrootpkg_args = mod.makechrootpkg_args
-
-    makepkg_args = ['--noprogressbar']
-    if hasattr(mod, 'makepkg_args'):
-        makepkg_args.extend(mod.makepkg_args)
-
-    rusage, called_exc = call_build_cmd(
-      build_prefix, depend_packages, bindmounts,
-      build_args, makechrootpkg_args, makepkg_args,
-      time_limit_secs = getattr(mod, 'time_limit_hours', 1) * 3600,
+  elapsed = time.time() - start_time
+  result.rusage = rusage
+  result.elapsed = elapsed
+  with logfile.open('a') as f:
+    print(
+      f'\nbuild (version {pkg_version}) finished in {int(elapsed)}s with result: {result!r}',
+      file = f,
     )
+  return result, pkg_version
 
-    if called_exc is None:
-      pkgs = [x for x in os.listdir() if x.endswith(('.pkg.tar.xz', '.pkg.tar.zst'))]
-      if not pkgs:
-        raise Exception('no package built')
-      post_build = getattr(mod, 'post_build', None)
-      if post_build is not None:
-        post_build()
-      success = True
+def resolve_depends(repo: Optional[Repo], depends: Iterable[Dependency]) -> List[str]:
+  need_build_first = set()
+  depend_packages = []
 
-    return rusage, called_exc
-  finally:
-    post_build_always = getattr(mod, 'post_build_always', None)
-    if post_build_always is not None:
-      post_build_always(success=success)
+  for x in depends:
+    p = x.resolve()
+    if p is None:
+      if repo is None or not repo.manages(x):
+        # ignore depends that are not in repo
+        continue
+      need_build_first.add(x.pkgname)
+    else:
+      depend_packages.append(str(p))
 
-def call_build_cmd(
-  build_prefix: str, depends: List[Path],
-  bindmounts: List[str] = [],
-  build_args: List[str] = [],
-  makechrootpkg_args: List[str] = [],
-  makepkg_args: List[str] = [],
-  time_limit_secs: int = 3600,
-) -> Tuple[resource.struct_rusage, Optional[Exception]]:
-  cmd: Cmd
-  if build_prefix == 'makepkg':
-    pwd = os.getcwd()
-    basename = os.path.basename(pwd)
-    extra_args = ['--share-net', '--bind', pwd, f'/tmp/{basename}', '--chdir', f'/tmp/{basename}']
-    cmd = UNTRUSTED_PREFIX + extra_args + ['makepkg', '--holdver'] # type: ignore
-  else:
-    gpghome = os.path.expanduser('~/.lilac/gnupg')
-    cmd = ['env', f'GNUPGHOME={gpghome}', '%s-build' % build_prefix]
-    cmd.extend(build_args)
-    cmd.append('--')
+  if need_build_first:
+    raise MissingDependencies(need_build_first)
+  logger.info('depends: %s, resolved: %s', depends, depend_packages)
 
-    if depends:
-      for x in depends:
-        cmd += ['-I', x]
-
-    for b in bindmounts:
-      # need to make sure source paths exist
-      # See --bind in systemd-nspawn(1) for bindmount spec details
-      # Note that this check does not consider all possible formats
-      source_dir = b.split(':')[0]
-      if not os.path.exists(source_dir):
-        os.makedirs(source_dir)
-      cmd += ['-d', b]
-
-    cmd.extend(makechrootpkg_args)
-    cmd.extend(['--'])
-    cmd.extend(makepkg_args)
-    cmd.extend(['--holdver'])
-
-  # NOTE that Ctrl-C here may not succeed
-  try:
-    return run_build_cmd(cmd, time_limit_secs)
-  finally:
-    may_need_cleanup()
-
-def run_build_cmd(
-  cmd: Cmd,
-  time_limit_secs: int,
-) -> Tuple[resource.struct_rusage, Optional[Exception]]:
-  logger.info('Running build command: %r', cmd)
-  start = time.time()
-
-  p = subprocess.Popen(
-    cmd,
-    stdin = subprocess.DEVNULL,
-  )
-
-  pid = p.pid
-  pidfd = os.pidfd_open(pid) # type: ignore
-  poll = select.poll()
-  poll.register(pidfd, select.POLLIN)
-
-  exc = None
-  try:
-    while True:
-      ret = poll.poll(10_000)
-      if not ret:
-        if time.time() - start > time_limit_secs:
-          kill_child_processes()
-          exc = TimeoutError()
-        else:
-          st = os.stat(1)
-          if st.st_size > 1024 ** 3: # larger than 1G
-            kill_child_processes()
-            logger.error('\n\n输出过多，已击杀。')
-      else:
-        _pid, status, rusage = os.wait4(pid, 0)
-        code = os.waitstatus_to_exitcode(status) # type: ignore
-        if code == 0 or exc:
-          return rusage, exc
-        else:
-          return rusage, subprocess.CalledProcessError(code, cmd)
-  finally:
-    os.close(pidfd)
-    # say goodbye to all our children
-    kill_child_processes()
+  return depend_packages
 
 def may_need_cleanup() -> None:
   st = os.statvfs('/var/lib/archbuild')
   if st.f_bavail * st.f_bsize < 60 * 1024 ** 3:
     subprocess.check_call(['sudo', 'build-cleaner'])
+
+def sign_and_copy(dest: str) -> None:
+  pkgs = [x for x in os.listdir() if x.endswith(('.pkg.tar.xz', '.pkg.tar.zst'))]
+  for pkg in pkgs:
+    run_cmd(['gpg', '--pinentry-mode', 'loopback', '--passphrase', '',
+             '--detach-sign', '--', pkg])
+  for f in os.listdir():
+    if not f.endswith(('.pkg.tar.xz', '.pkg.tar.xz.sig', '.pkg.tar.zst', '.pkg.tar.zst.sig')):
+      continue
+    try:
+      os.link(f, os.path.join(dest, f))
+    except FileExistsError:
+      pass
+
+def call_worker(
+  pkgbase: str,
+  pkgdir: Path,
+  logfile: Path,
+  depend_packages: List[str],
+  update_info: NvResults,
+  bindmounts: List[str],
+  deadline: float,
+) -> tuple[None, Optional[Exception]]:
+  input = {
+    'depend_packages': depend_packages,
+    'update_info': update_info.to_list(),
+    'bindmounts': bindmounts,
+  }
+  pkgname = os.path.basename(pkgdir)
+  fd, resultpath = tempfile.mkstemp(prefix=pkgname, suffix='.lilac')
+  os.close(fd)
+  input['result'] = resultpath
+  cmd = [sys.executable, '-m', 'lilac2.worker', pkgname]
+  with logfile.open('wb') as logf:
+    p = subprocess.Popen(
+      cmd,
+      stdin = subprocess.PIPE,
+      stdout = logf,
+      stderr = logf,
+      cwd = pkgdir,
+    )
+  p.stdin.write(json.dumps(input).encode()) # type: ignore
+  p.stdin.close() # type: ignore
+
+  while True:
+    try:
+      p.wait(10)
+    except subprocess.TimeoutExpired:
+      if time.time() > deadline:
+        kill_child_processes()
+    else:
+      try:
+        with open(resultpath) as f:
+          r = json.load(f)
+      except json.decoder.JSONDecodeError:
+        r = {
+          'status': 'failed',
+          'msg': 'worker did not return a proper result!',
+        }
+      finally:
+        try:
+          os.unlink(resultpath)
+        except FileNotFoundError:
+          pass
+
+      break
+
+  st = r['status']
+  error: Optional[Exception]
+  if st == 'done':
+    error = None
+  elif st == 'skipped':
+    error = SkipBuild(r['msg'])
+  elif st == 'failed':
+    error = BuildFailed(r['msg'])
+  else:
+    error = RuntimeError('unknown status from worker', st)
+  return None, error

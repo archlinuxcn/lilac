@@ -35,6 +35,13 @@ class NvResult(NamedTuple):
 class NvResults(UserList):
   data: List[NvResult]
 
+  def to_list(self) -> list[tuple[Optional[str], Optional[str]]]:
+    return [tuple(x) for x in self.data] # type: ignore
+
+  @classmethod
+  def from_list(cls, l) -> NvResults:
+    return cls([NvResult(o, n) for o, n in l])
+
   @property
   def oldver(self) -> Optional[str]:
     if self.data:

@@ -26,7 +26,7 @@ else:
   import lilac2
   sys.path.append(str(Path(lilac2.__file__).parent / 'vendor'))
 
-from myutils import at_dir, execution_timeout, lock_file
+from myutils import lock_file
 from serializer import PickledData
 from nicelogger import enable_pretty_logging
 
@@ -38,16 +38,14 @@ from lilac2.cmd import (
   run_cmd, git_pull_override, git_push, pkgrel_changed,
   git_reset_hard, get_git_branch,
 )
-from lilac2.tools import kill_child_processes, redirect_output, read_config
+from lilac2.tools import read_config
 from lilac2.repo import Repo
 from lilac2.const import mydir, _G, PACMAN_DB_DIR
 from lilac2.nvchecker import packages_need_update, nvtake, NvResults
-from lilac2.typing import LilacMod
 from lilac2.nomypy import BuildResult, BuildReason # type: ignore
 from lilac2 import pkgbuild
-from lilac2.building import lilac_build, MissingDependencies, SkipBuild
+from lilac2.building import build_package, MissingDependencies
 from lilac2 import slogconf
-from lilac2.api import notify_maintainers
 try:
   from lilac2 import db
 except ImportError:
@@ -113,78 +111,6 @@ def setup_build_logger() -> None:
     logger_factory = logger_factory,
   )
 
-def build_package(
-  package: str, mod: LilacMod,
-) -> tuple[BuildResult, Optional[str]]:
-  '''return BuildResult and version string if successful'''
-  pkg_version = None
-  rusage = None
-  try:
-    _G.mod = mod
-    _G.epoch = _G.pkgver = _G.pkgrel = None
-    update_info = nvdata[package]
-    maintainer = REPO.find_maintainers(mod)[0]
-    time_limit_hours = getattr(mod, 'time_limit_hours', 1)
-    os.environ['PACKAGER'] = '%s (on behalf of %s) <%s>' % (
-      MYNAME, maintainer.name, maintainer.email)
-    try:
-      # we have set a time limit in run_build_cmd, but guard against possible
-      # other issues here. Add 120s for other work
-      with execution_timeout(time_limit_hours * 3600 + 120):
-        rusage, exc = lilac_build(
-          mod, REPO,
-          update_info = update_info,
-          depends = DEPENDS.get(package, ()),
-          bindmounts = BIND_MOUNTS,
-        )
-    except TimeoutError:
-      kill_child_processes()
-      raise
-    if exc:
-      raise exc
-
-    staging = getattr(mod, 'staging', False)
-    if staging:
-      destdir = os.path.join(DESTDIR, 'staging')
-      if not os.path.isdir(destdir):
-        os.mkdir(destdir)
-    else:
-      destdir = DESTDIR
-    sign_and_copy(destdir)
-    if staging:
-      notify_maintainers('软件包已被置于 staging 目录，请查验后手动发布。')
-      result = BuildResult.staged()
-    else:
-      result = BuildResult.successful()
-
-    # mypy thinks they are None...
-    assert _G.pkgver is not None
-    assert _G.pkgrel is not None
-    pkg_version = pkgbuild.format_package_version(_G.epoch, _G.pkgver, _G.pkgrel)
-
-  except SkipBuild as e:
-    result = BuildResult.skipped(e.msg)
-  except Exception as e:
-    result = BuildResult.failed(e)
-  finally:
-    del _G.mod, _G.epoch, _G.pkgver, _G.pkgrel
-
-  result.rusage = rusage
-  return result, pkg_version
-
-def sign_and_copy(dest: str) -> None:
-  pkgs = [x for x in os.listdir() if x.endswith(('.pkg.tar.xz', '.pkg.tar.zst'))]
-  for pkg in pkgs:
-    run_cmd(['gpg', '--pinentry-mode', 'loopback', '--passphrase', '',
-             '--detach-sign', '--', pkg])
-  for f in os.listdir():
-    if not f.endswith(('.pkg.tar.xz', '.pkg.tar.xz.sig', '.pkg.tar.zst', '.pkg.tar.zst.sig')):
-      continue
-    try:
-      os.link(f, os.path.join(dest, f))
-    except FileExistsError:
-      pass
-
 def git_last_commit() -> str:
   cmd = ['git', 'log', '-1', '--format=%H']
   return run_cmd(cmd).strip()
@@ -246,20 +172,21 @@ def start_build(repo: Repo, failed: Set[str], built: Set[str]) -> None:
         # marked as failed, skip
         continue
 
-      start_time = time.time()
       logger.info('building %s', pkg)
       logfile = logdir / f'{pkg}.log'
 
-      with at_dir(repo.repodir / pkg), \
-          logfile.open('wb') as f, \
-          redirect_output(f.fileno()):
-        r, version = build_package(pkg, repo.mods[pkg])
-        elapsed = time.time() - start_time
-        logger.info(
-          'build (version %s) finished in %ds with result: %r',
-          version, elapsed, r,
-        )
+      r, version = build_package(
+        pkg, repo.mods[pkg],
+        update_info = nvdata[pkg],
+        bindmounts = BIND_MOUNTS,
+        depends = DEPENDS.get(pkg, ()),
+        repo = REPO,
+        myname = MYNAME,
+        destdir = DESTDIR,
+        logfile = logfile,
+      )
 
+      elapsed = r.elapsed
       logger.info(
         'package %s (version %s) finished in %ds with result: %r',
         pkg, version, elapsed, r,

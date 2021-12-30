@@ -416,18 +416,15 @@ def _prepend_self_path() -> None:
 def single_main(build_prefix: str = 'makepkg') -> None:
   from nicelogger import enable_pretty_logging
   from . import lilacpy
-  from .building import lilac_build
+  from .worker import lilac_build
 
   _prepend_self_path()
   enable_pretty_logging('DEBUG')
   with lilacpy.load_lilac(Path('.')) as mod:
-    _rusage, exc = lilac_build(
-      mod, None,
+    lilac_build(
+      mod,
       build_prefix = build_prefix,
-      accept_noupdate = True,
     )
-    if exc:
-      raise exc
 
 def clean_directory() -> List[str]:
   '''clean all PKGBUILD and related files'''
