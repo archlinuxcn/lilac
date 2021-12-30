@@ -190,10 +190,16 @@ def run_build_cmd(cmd: Cmd) -> None:
     kill_child_processes()
 
 def main() -> None:
+  from .repo import Repo
+  from .tools import read_config
+  config = read_config()
+  _G.repo = Repo(config)
+
   input = json.load(sys.stdin)
   pkgvers = None
   try:
     with load_lilac(Path('.')) as mod:
+      _G.mod = mod
       pkgvers = lilac_build(
         mod = mod,
         depend_packages = input['depend_packages'],
@@ -211,6 +217,8 @@ def main() -> None:
       'status': 'failed',
       'msg': repr(e),
     }
+
+  # FIXME: handle_failure here
 
   r['pkgvers'] = pkgvers # type: ignore
   with open(input['result'], 'w') as f:

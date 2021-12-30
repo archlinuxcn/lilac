@@ -17,7 +17,7 @@ from github import GitHub
 from .mail import MailService
 from .typing import LilacMod, Maintainer
 from .tools import ansi_escape_re
-from . import api, lilacpy
+from . import api, lilacpy, lilacyaml
 from .typing import LilacMods
 if TYPE_CHECKING:
   from .packages import Dependency
@@ -48,6 +48,7 @@ class Repo:
       self.gh = None
 
     self.mods: LilacMods = {}  # to be filled by self.load_all_lilac_and_report()
+    self.yamls: Dict[str, Any] = {}
 
   @lru_cache()
   def maintainer_from_github(self, username: str) -> Optional[Maintainer]:
@@ -91,50 +92,95 @@ class Repo:
 
   def find_dependents(
     self, pkgbase: str,
-  ) -> List[LilacMod]:
+  ) -> List[str]:
+    if self.mods:
+      return self._find_dependents_heavy(pkgbase)
+    else:
+      return self._find_dependents_lite(pkgbase)
+
+  def _find_dependents_heavy(
+    self, pkgbase: str,
+  ) -> List[str]:
     ret = []
 
     for mod in self.mods.values():
       ds = getattr(mod, 'repo_depends', ())
       if any(x == pkgbase for x, y in ds):
-        ret.append(mod)
+        ret.append(mod.pkgbase)
 
     return ret
+
+  def _find_dependents_lite(
+    self, pkgbase: str,
+  ) -> List[str]:
+    ret = []
+    self._load_yamls_ignore_errors()
+
+    for p, yamlconf in self.yamls.items():
+      ds = yamlconf.get('repo_depends', ())
+      if any(x == pkgbase for x, y in ds):
+        ret.append(p)
+
+    return ret
+
+  def _load_yamls_ignore_errors(self) -> None:
+    if self.yamls:
+      return
+
+    for dir in lilacyaml.iter_pkgdir(self.repodir):
+      try:
+        yamlconf = lilacyaml.load_lilac_yaml(dir)
+      except Exception:
+        pass
+      else:
+        self.yamls[dir.name] = yamlconf
 
   @lru_cache()
   def find_maintainers(
     self, mod: LilacMod,
     fallback_git: bool = True,
   ) -> List[Maintainer]:
+    return self._find_maintainers_lite(
+      mod.pkgbase,
+      maintainers = getattr(mod, 'maintainers', None),
+      fallback_git = fallback_git,
+    )
+
+  @lru_cache()
+  def _find_maintainers_lite(
+    self,
+    pkgbase: str,
+    maintainers: Optional[List[Dict[str, str]]],
+    fallback_git: bool = True,
+  ) -> List[Maintainer]:
     ret: List[Maintainer] = []
     errors: List[str] = []
 
-    maintainers: Optional[List[Dict[str, str]]] = getattr(mod, 'maintainers', None)
     if maintainers is not None:
       if maintainers:
         ret, errors = self.parse_maintainers(maintainers)
       else:
-        dependents = self.find_dependents(mod.pkgbase)
-        for dmod in dependents:
-          dmaints = self.find_maintainers(dmod, fallback_git=False)
+        dependents = self.find_dependents(pkgbase)
+        for pkg in dependents:
+          dmaints = self._find_maintainers_lite(pkg, fallback_git=False)
           ret.extend(dmaints)
 
     if (not ret and fallback_git) or errors:
       # fallback to git
-      dir = self.repodir / mod.pkgbase
+      dir = self.repodir / pkgbase
       git_maintainer = self.find_maintainer_by_git(dir)
 
     if errors:
       error_str = '\n'.join(errors)
       self.sendmail(
         git_maintainer,
-        subject = f'{mod.pkgbase} 的 maintainers 信息有误',
+        subject = f'{pkgbase} 的 maintainers 信息有误',
         msg = f"以下 maintainers 信息有误，请修正。\n\n{error_str}\n",
       )
 
     if not ret and fallback_git:
       logger.warning("lilac doesn't give out maintainers for %s, "
-                     "fallback to git.", mod.pkgbase)
+                     "fallback to git.", pkgbase)
       return [git_maintainer]
     else:
       return ret
