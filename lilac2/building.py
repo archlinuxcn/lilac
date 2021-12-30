@@ -81,6 +81,7 @@ def build_package(
     finally:
       kill_child_processes()
       may_need_cleanup()
+      reap_zombies()
 
     staging = getattr(mod, 'staging', False)
     if staging:
@@ -238,3 +239,12 @@ def call_worker(
   else:
     version = None
   return version, None, error
+
+def reap_zombies() -> None:
+  # reap any possible dead children since we are a subreaper
+  try:
+    while os.waitid(os.P_ALL, 0, os.WEXITED | os.WNOHANG) is not None:
+      pass
+  except ChildProcessError:
+    pass
+
