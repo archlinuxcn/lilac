@@ -229,6 +229,10 @@ class Repo:
     subject: Optional[str] = None,
     logfile: Optional[Path] = None,
   ) -> None:
+    '''
+    the mod argument can be a LilacMod, or a str in case the module cannot be loaded,
+    in that case we use git to find a maintainer.
+    '''
     if msg is None and exc is None:
       raise TypeError('send_error_report received insufficient args')
 
