@@ -182,7 +182,7 @@ def call_worker(
   os.close(fd)
   input['result'] = resultpath
 
-  cmd = [sys.executable, '-m', 'lilac2.worker', pkgbase]
+  cmd = [sys.executable, '-u', '-m', 'lilac2.worker', pkgbase]
   env = os.environ.copy()
   env['PYTHONPATH'] = ':'.join(pythonpath)
   with logfile.open('wb') as logf:
