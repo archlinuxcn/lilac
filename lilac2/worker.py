@@ -12,6 +12,8 @@ from pathlib import Path
 
 import pyalpm
 
+from nicelogger import enable_pretty_logging
+
 from . import pkgbuild
 from .typing import LilacMod, Cmd, PkgVers
 from .cmd import run_cmd, UNTRUSTED_PREFIX
@@ -191,6 +193,8 @@ def run_build_cmd(cmd: Cmd) -> None:
     kill_child_processes()
 
 def main() -> None:
+  enable_pretty_logging('DEBUG')
+
   from .tools import read_config
   config = read_config()
   repo = _G.repo = Repo(config)
