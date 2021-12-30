@@ -51,6 +51,7 @@ def build_package(
   myname: str,
   destdir: str,
   logfile: Path,
+  pythonpath: List[str],
 ) -> tuple[BuildResult, Optional[str]]:
   '''return BuildResult and version string if successful'''
   start_time = time.time()
@@ -75,6 +76,7 @@ def build_package(
         bindmounts = bindmounts,
         logfile = logfile,
         deadline = start_time + time_limit_hours * 3600,
+        pythonpath = pythonpath,
       )
       if error:
         raise error
@@ -112,8 +114,9 @@ def build_package(
   result.rusage = rusage
   result.elapsed = elapsed
   with logfile.open('a') as f:
+    t = time.strftime('%Y-%m-%d %H:%M:%S %z')
     print(
-      f'\nbuild (version {pkg_version}) finished in {int(elapsed)}s with result: {result!r}',
+      f'\n[{t}] build (version {pkg_version}) finished in {int(elapsed)}s with result: {result!r}',
       file = f,
     )
   return result, pkg_version
@@ -164,17 +167,20 @@ def call_worker(
   update_info: NvResults,
   bindmounts: List[str],
   deadline: float,
+  pythonpath: List[str],
 ) -> tuple[None, Optional[Exception]]:
   input = {
     'depend_packages': depend_packages,
     'update_info': update_info.to_list(),
     'bindmounts': bindmounts,
   }
-  pkgname = os.path.basename(pkgdir)
-  fd, resultpath = tempfile.mkstemp(prefix=pkgname, suffix='.lilac')
+  fd, resultpath = tempfile.mkstemp(prefix=pkgbase, suffix='.lilac')
   os.close(fd)
   input['result'] = resultpath
-  cmd = [sys.executable, '-m', 'lilac2.worker', pkgname]
+
+  cmd = [sys.executable, '-m', 'lilac2.worker', pkgbase]
+  env = os.environ.copy()
+  env['PYTHONPATH'] = ':'.join(pythonpath)
   with logfile.open('wb') as logf:
     p = subprocess.Popen(
       cmd,
@@ -182,6 +188,7 @@ def call_worker(
       stdout = logf,
       stderr = logf,
       cwd = pkgdir,
+      env = env,
     )
   p.stdin.write(json.dumps(input).encode()) # type: ignore
   p.stdin.close() # type: ignore

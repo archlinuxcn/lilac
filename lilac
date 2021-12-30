@@ -17,14 +17,22 @@ import prctl
 import structlog
 
 topdir = Path(__file__).resolve().parent
+pythonpath = []
 if (topdir / 'lilac2').exists():
   # In-tree
-  sys.path.append(str(topdir))
-  sys.path.append(str(topdir / 'lilac2' / 'vendor'))
+  p = str(topdir)
+  sys.path.append(p)
+  pythonpath.append(p)
+  p = str(topdir / 'lilac2' / 'vendor')
+  sys.path.append(p)
+  pythonpath.append(p)
 else:
   # Installed as a system package
   import lilac2
-  sys.path.append(str(Path(lilac2.__file__).parent / 'vendor'))
+  p = str(Path(lilac2.__file__).parent / 'vendor')
+  sys.path.append(p)
+  pythonpath.append(p)
+del p
 
 from myutils import lock_file
 from serializer import PickledData
@@ -184,6 +192,7 @@ def start_build(repo: Repo, failed: Set[str], built: Set[str]) -> None:
         myname = MYNAME,
         destdir = DESTDIR,
         logfile = logfile,
+        pythonpath = pythonpath,
       )
 
       elapsed = r.elapsed

@@ -48,6 +48,8 @@ class failed(BuildResult):
   def _extra_info(self) -> str:
     if isinstance(self.exc, Exception):
       msg = repr(self.exc)
+    else:
+      msg = self.exc
     return f'{msg}; {super()._extra_info()}'
 
 class skipped(BuildResult):
