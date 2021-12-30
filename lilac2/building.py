@@ -176,6 +176,7 @@ def call_worker(
     'depend_packages': depend_packages,
     'update_info': update_info.to_list(),
     'bindmounts': bindmounts,
+    'logfile': str(logfile), # for sending error reports
   }
   fd, resultpath = tempfile.mkstemp(prefix=pkgbase, suffix='.lilac')
   os.close(fd)

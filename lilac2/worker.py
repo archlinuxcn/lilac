@@ -23,6 +23,7 @@ from .nvchecker import NvResults
 from .tools import kill_child_processes
 from .lilacpy import load_lilac
 from .const import _G
+from .repo import Repo
 
 logger = logging.getLogger(__name__)
 
@@ -190,10 +191,9 @@ def run_build_cmd(cmd: Cmd) -> None:
     kill_child_processes()
 
 def main() -> None:
-  from .repo import Repo
   from .tools import read_config
   config = read_config()
-  _G.repo = Repo(config)
+  repo = _G.repo = Repo(config)
 
   input = json.load(sys.stdin)
   pkgvers = None
@@ -217,12 +217,35 @@ def main() -> None:
       'status': 'failed',
       'msg': repr(e),
     }
-
-  # FIXME: handle_failure here
+    sys.stdout.flush()
+    handle_failure(e, repo, mod, Path(input['logfile']))
 
   r['pkgvers'] = pkgvers # type: ignore
+
   with open(input['result'], 'w') as f:
     json.dump(r, f)
+
+def handle_failure(
+  e: Exception, repo: Repo, mod: LilacMod, logfile: Path,
+) -> None:
+  if isinstance(e, pkgbuild.ConflictWithOfficialError):
+    reason = ''
+    if e.groups:
+      reason += f'软件包被加入了官方组：{e.groups}\n'
+    if e.packages:
+      reason += f'软件包将取代官方包：{e.packages}\n'
+    repo.send_error_report(
+      mod, subject='%s 与官方软件库冲突', msg = reason,
+    )
+
+  elif isinstance(e, pkgbuild.DowngradingError):
+    repo.send_error_report(
+      mod, subject='%s 新打的包比仓库里的包旧',
+      msg=f'包 {e.pkgname} 打的版本为 {e.built_version}，但在仓库里已有较新版本 {e.repo_version}。\n',
+    )
+
+  else:
+    repo.send_error_report(mod, exc=e, logfile=logfile)
 
 if __name__ == '__main__':
   main()

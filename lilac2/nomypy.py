@@ -42,14 +42,14 @@ class staged(BuildResult):
   pass
 
 class failed(BuildResult):
-  def __init__(self, exc: Union[Exception, str]) -> None:
-    self.exc = exc
+  def __init__(self, error: Union[Exception, str]) -> None:
+    self.error = error
 
   def _extra_info(self) -> str:
-    if isinstance(self.exc, Exception):
-      msg = repr(self.exc)
+    if isinstance(self.error, Exception):
+      msg = repr(self.error)
     else:
-      msg = self.exc
+      msg = self.error
     return f'{msg}; {super()._extra_info()}'
 
 class skipped(BuildResult):

@@ -232,13 +232,32 @@ def start_build(repo: Repo, failed: Set[str], built: Set[str]) -> None:
 
       elif isinstance(r, BuildResult.failed):
         build_logger_old.error('%s %s [%s] failed after %ds', pkg, newver, version, elapsed)
-        build_logger.error(
-          'failed', pkgbase = pkg,
-          nv_version = newver, elapsed = elapsed, exc_info = r.exc,
-        )
-        assert r.exc is not None
-        handle_failure(r.exc, repo, pkg, logfile, built, failed)
-        msg = repr(r.exc)
+        assert r.error is not None
+
+        if isinstance(r.error, Exception):
+          e = r.error
+          build_logger.error(
+            'failed', pkgbase = pkg,
+            nv_version = newver, elapsed = elapsed, exc_info = e,
+          )
+          msg = repr(e)
+          mod = repo.mods[pkg]
+
+          if isinstance(e, MissingDependencies):
+            faileddeps = e.deps & failed
+            repo.send_error_report(
+              mod, subject='%s 出现依赖问题',
+              msg = f'{pkg} 缺少依赖 {e.deps}，其中 {faileddeps} 打包失败了。',
+            )
+          else:
+            repo.send_error_report(mod, exc=e, logfile=logfile)
+
+        else:
+          build_logger.error(
+            'failed', pkgbase = pkg,
+            nv_version = newver, elapsed = elapsed, error = r.error,
+          )
+          msg = r.error
 
       if db.USE:
         if r.rusage:
@@ -268,42 +287,6 @@ def start_build(repo: Repo, failed: Set[str], built: Set[str]) -> None:
 
   except KeyboardInterrupt:
     logger.info('keyboard interrupted, bye~')
-
-def handle_failure(
-  e: Exception, repo: Repo, pkg: str, logfile: Path,
-  built: Set[str], failed: Set[str],
-) -> None:
-  mod = repo.mods[pkg]
-
-  if isinstance(e, pkgbuild.ConflictWithOfficialError):
-    reason = ''
-    if e.groups:
-      reason += f'软件包被加入了官方组：{e.groups}\n'
-    if e.packages:
-      reason += f'软件包将取代官方包：{e.packages}\n'
-    repo.send_error_report(
-      mod, subject='%s 与官方软件库冲突', msg = reason,
-    )
-
-  elif isinstance(e, MissingDependencies):
-    reason = ''
-    faileddeps = e.deps & failed
-    if faileddeps:
-      reason += '唔，这些包没能成功打包呢：%r' % faileddeps
-
-    repo.send_error_report(
-      mod, subject='%s 出现依赖问题',
-      msg = f'在成功地编译打包 {built} 之后，{pkg} 依旧依赖 {e.deps}。\n\n{reason}',
-    )
-
-  elif isinstance(e, pkgbuild.DowngradingError):
-    repo.send_error_report(
-      mod, subject='%s 新打的包比仓库里的包旧',
-      msg=f'包 {e.pkgname} 打的版本为 {e.built_version}，但在仓库里已有较新版本 {e.repo_version}。\n',
-    )
-
-  else:
-    repo.send_error_report(mod, exc=e, logfile=logfile)
 
 def main_may_raise(D: Dict[str, Any], pkgs_to_build: List[str]) -> None:
   global DEPMAP
