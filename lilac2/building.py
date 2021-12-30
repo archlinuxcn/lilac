@@ -57,7 +57,6 @@ def build_package(
   rusage = None
   try:
     _G.mod = mod
-    pkgvers = None
     maintainer = repo.find_maintainers(mod)[0]
     time_limit_hours = getattr(mod, 'time_limit_hours', 1)
     os.environ['PACKAGER'] = '%s (on behalf of %s) <%s>' % (
@@ -90,7 +89,7 @@ def build_package(
         os.mkdir(destdir)
     sign_and_copy(destdir)
     if staging:
-      subject = f'{pkgbase} {pkgvers} 刚刚打包了'
+      subject = f'{pkgbase} {pkg_version} 刚刚打包了'
       notify_maintainers(subject, '软件包已被置于 staging 目录，请查验后手动发布。')
       result = BuildResult.staged()
     else:
