@@ -83,7 +83,7 @@ def load_lilac(dir: Path) -> Generator[LilacMod, None, None]:
         raise FileNotFoundError('lilac.{yaml,py}')
 
     mod = cast(LilacMod, mod)
-    mod.pkgbase = dir.name
+    mod.pkgbase = dir.absolute().name
 
     if hasattr(mod, 'update_on'):
       for entry in mod.update_on:
