@@ -31,7 +31,7 @@ Python libraries
 * pyalpm
 * structlog
 * prctl
-* sqlalchemy (and the database driver you configure to use)
+* sqlalchemy (optional; plus the database driver you configure to use)
 
 Setup
 ----

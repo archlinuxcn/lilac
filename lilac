@@ -13,7 +13,6 @@ from pathlib import Path
 import graphlib
 import json
 
-import sqlalchemy
 import prctl
 import structlog
 
@@ -49,7 +48,11 @@ from lilac2 import pkgbuild
 from lilac2.building import lilac_build, MissingDependencies, SkipBuild
 from lilac2 import slogconf
 from lilac2.api import notify_maintainers
-from lilac2 import db
+try:
+  from lilac2 import db
+except ImportError:
+  class db: # type: ignore
+    USE = False
 
 config = read_config()
 
@@ -375,6 +378,7 @@ def main_may_raise(D: Dict[str, Any], pkgs_to_build: List[str]) -> None:
     raise Exception('repo not on master, aborting.')
 
   if dburl := config['lilac'].get('dburl'):
+    import sqlalchemy
     engine = sqlalchemy.create_engine(dburl)
     db.setup(engine)
 
