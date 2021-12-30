@@ -146,7 +146,6 @@ class Repo:
       fallback_git = fallback_git,
     )
 
-  @lru_cache()
   def _find_maintainers_lite(
     self,
     pkgbase: str,
@@ -162,7 +161,11 @@ class Repo:
       else:
         dependents = self.find_dependents(pkgbase)
         for pkg in dependents:
-          dmaints = self._find_maintainers_lite(pkg, fallback_git=False)
+          dmaints = self._find_maintainers_lite(
+            pkg,
+            self.yamls[pkg].get('maintainers'),
+            fallback_git=False,
+          )
           ret.extend(dmaints)
 
     if (not ret and fallback_git) or errors:
