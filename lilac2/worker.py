@@ -13,7 +13,7 @@ from pathlib import Path
 import pyalpm
 
 from . import pkgbuild
-from .typing import LilacMod, Cmd
+from .typing import LilacMod, Cmd, PkgVers
 from .cmd import run_cmd, UNTRUSTED_PREFIX
 from .api import (
   vcs_update, get_pkgver_and_pkgrel, update_pkgrel,
@@ -22,6 +22,7 @@ from .api import (
 from .nvchecker import NvResults
 from .tools import kill_child_processes
 from .lilacpy import load_lilac
+from .const import _G
 
 logger = logging.getLogger(__name__)
 
@@ -51,8 +52,9 @@ def lilac_build(
   build_prefix: Optional[str] = None,
   update_info: NvResults = NvResults(),
   bindmounts: List[str] = [],
-) -> None:
+) -> PkgVers:
   success = False
+  _G.built_version = None
 
   try:
     oldver = update_info.oldver
@@ -83,7 +85,8 @@ def lilac_build(
       run_cmd(['recv_gpg_keys'])
       vcs_update()
 
-    pkgbuild.check_srcinfo()
+    pkgvers = pkgbuild.check_srcinfo()
+    _G.built_version = str(pkgvers) # api uses this
 
     build_prefix = build_prefix or getattr(
       mod, 'build_prefix', 'extra-x86_64')
@@ -114,6 +117,8 @@ def lilac_build(
     if post_build is not None:
       post_build()
     success = True
+
+    return pkgvers
 
   finally:
     post_build_always = getattr(mod, 'post_build_always', None)
@@ -186,9 +191,10 @@ def run_build_cmd(cmd: Cmd) -> None:
 
 def main() -> None:
   input = json.load(sys.stdin)
+  pkgvers = None
   try:
     with load_lilac(Path('.')) as mod:
-      lilac_build(
+      pkgvers = lilac_build(
         mod = mod,
         depend_packages = input['depend_packages'],
         update_info = NvResults.from_list(input['update_info']),
@@ -206,6 +212,7 @@ def main() -> None:
       'msg': repr(e),
     }
 
+  r['pkgvers'] = pkgvers # type: ignore
   with open(input['result'], 'w') as f:
     json.dump(r, f)
 

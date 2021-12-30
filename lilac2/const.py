@@ -13,7 +13,8 @@ PACMAN_DB_DIR.mkdir(exist_ok=True)
 SPECIAL_FILES = ('package.list', 'lilac.py', 'lilac.yaml', '.gitignore')
 
 _G = types.SimpleNamespace()
-# repo: Repo
-# mod: LilacMod
-# pkgver: Optional[str]
-# pkgrel: Optional[str]
+# main process:
+#   repo: Repo
+#   mod: LilacMod
+# worker:
+#   built_version: Optional[str]

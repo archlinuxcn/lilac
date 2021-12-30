@@ -26,7 +26,6 @@ from . import const
 from .const import _G, SPECIAL_FILES
 from .typing import PkgRel, Cmd
 from .pypi2pkgbuild import gen_pkgbuild
-from .pkgbuild import format_package_version as _format_package_version
 from .pkgbuild import get_srcinfo
 
 git_push
@@ -315,9 +314,7 @@ def git_commit(*, check_status: bool = True) -> None:
       return
 
   pkgbase = os.path.basename(os.getcwd())
-  built_version = _format_package_version(
-    _G.epoch, _G.pkgver, _G.pkgrel)
-  msg = f'{pkgbase}: auto updated to {built_version}'
+  msg = f'{pkgbase}: auto updated to {_G.built_version}'
   _run_cmd(['git', 'commit', '-m', msg])
 
 class AurDownloadError(Exception):
@@ -381,9 +378,7 @@ def _update_aur_repo_real(pkgname: str) -> None:
     _run_cmd(['git', 'add', '.'])
     p = subprocess.run(['git', 'diff-index', '--quiet', 'HEAD'])
     if p.returncode != 0:
-      built_version = _format_package_version(
-        _G.epoch, _G.pkgver, _G.pkgrel)
-      msg = f'[lilac] updated to {built_version}'
+      msg = f'[lilac] updated to {_G.built_version}'
       _run_cmd(['git', 'commit', '-m', msg])
       _run_cmd(['git', 'push'])
 
@@ -394,7 +389,7 @@ def update_aur_repo() -> None:
 
   For VCS packages, if only the version changes, the package on AUR won't be updated.
   '''
-  pkgbase = _G.mod.pkgbase
+  pkgbase = os.path.basename(os.getcwd())
   try:
     _update_aur_repo_real(pkgbase)
   except subprocess.CalledProcessError as e:
@@ -577,21 +572,6 @@ def download_official_pkgbuild(name: str) -> List[str]:
       files.append(filename)
 
   return files
-
-def notify_maintainers(msg: Optional[str] = None) -> None:
-  pkgbase = _G.mod.pkgbase
-  built_version = _format_package_version(
-    _G.epoch, _G.pkgver, _G.pkgrel)
-  subject = f'{pkgbase} {built_version} 刚刚打包了'
-  if msg is None:
-    body = '这是由 post_build 配置所发送的邮件通知。'
-  else:
-    body = msg
-
-  repo = _G.repo
-  maintainers = repo.find_maintainers(_G.mod)
-  addresses = [str(x) for x in maintainers]
-  repo.sendmail(addresses, subject, body)
 
 def check_library_provides() -> None:
   pkg_pattern = re.compile(r'\.pkg\.tar\.[^.]+$')

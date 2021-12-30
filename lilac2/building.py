@@ -12,11 +12,9 @@ from pathlib import Path
 import time
 import json
 
-from . import pkgbuild
-from .typing import LilacMod
+from .typing import LilacMod, PkgVers
 from .nvchecker import NvResults
 from .packages import Dependency
-from .api import notify_maintainers
 from .tools import kill_child_processes
 from .nomypy import BuildResult # type: ignore
 from .const import _G
@@ -59,7 +57,7 @@ def build_package(
   rusage = None
   try:
     _G.mod = mod
-    _G.epoch = _G.pkgver = _G.pkgrel = None
+    pkgvers = None
     maintainer = repo.find_maintainers(mod)[0]
     time_limit_hours = getattr(mod, 'time_limit_hours', 1)
     os.environ['PACKAGER'] = '%s (on behalf of %s) <%s>' % (
@@ -68,7 +66,7 @@ def build_package(
     depend_packages = resolve_depends(repo, depends)
     pkgdir = repo.repodir / pkgbase
     try:
-      rusage, error = call_worker(
+      pkg_version, rusage, error = call_worker(
         pkgbase = pkgbase,
         pkgdir = pkgdir,
         depend_packages = [str(x) for x in depend_packages],
@@ -91,15 +89,11 @@ def build_package(
         os.mkdir(destdir)
     sign_and_copy(destdir)
     if staging:
-      notify_maintainers('软件包已被置于 staging 目录，请查验后手动发布。')
+      subject = f'{pkgbase} {pkgvers} 刚刚打包了'
+      notify_maintainers(subject, '软件包已被置于 staging 目录，请查验后手动发布。')
       result = BuildResult.staged()
     else:
       result = BuildResult.successful()
-
-    # mypy thinks they are None...
-    assert _G.pkgver is not None
-    assert _G.pkgrel is not None
-    pkg_version = pkgbuild.format_package_version(_G.epoch, _G.pkgver, _G.pkgrel)
 
   except SkipBuild as e:
     result = BuildResult.skipped(e.msg)
@@ -108,7 +102,7 @@ def build_package(
   except Exception as e:
     result = BuildResult.failed(e)
   finally:
-    del _G.mod, _G.epoch, _G.pkgver, _G.pkgrel
+    del _G.mod
 
   elapsed = time.time() - start_time
   result.rusage = rusage
@@ -159,6 +153,12 @@ def sign_and_copy(dest: str) -> None:
     except FileExistsError:
       pass
 
+def notify_maintainers(subject: str, body: str) -> None:
+  repo = _G.repo
+  maintainers = repo.find_maintainers(_G.mod)
+  addresses = [str(x) for x in maintainers]
+  repo.sendmail(addresses, subject, body)
+
 def call_worker(
   pkgbase: str,
   pkgdir: Path,
@@ -168,7 +168,10 @@ def call_worker(
   bindmounts: List[str],
   deadline: float,
   pythonpath: List[str],
-) -> tuple[None, Optional[Exception]]:
+) -> tuple[Optional[str], None, Optional[Exception]]:
+  '''
+  return: package verion, resource usage, error information
+  '''
   input = {
     'depend_packages': depend_packages,
     'update_info': update_info.to_list(),
@@ -217,6 +220,7 @@ def call_worker(
       break
 
   st = r['status']
+
   error: Optional[Exception]
   if st == 'done':
     error = None
@@ -226,4 +230,10 @@ def call_worker(
     error = BuildFailed(r['msg'])
   else:
     error = RuntimeError('unknown status from worker', st)
-  return None, error
+
+  vers = r['pkgvers']
+  if vers:
+    version = str(PkgVers(*vers))
+  else:
+    version = None
+  return version, None, error

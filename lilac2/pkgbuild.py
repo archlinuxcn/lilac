@@ -5,9 +5,7 @@ from __future__ import annotations
 import os
 import time
 import subprocess
-from typing import (
-  Dict, List, Optional, Set, Tuple,
-)
+from typing import Dict, List, Set
 from pathlib import Path
 
 import pyalpm
@@ -16,6 +14,7 @@ from myutils import safe_overwrite
 
 from .const import _G
 from .cmd import UNTRUSTED_PREFIX
+from .typing import PkgVers
 
 _official_repos = ['core', 'extra', 'community', 'multilib']
 _official_packages: Dict[str, int] = {}
@@ -98,7 +97,7 @@ def init_data(dbpath: Path, *, quiet: bool = False) -> None:
 def get_official_packages() -> Set[str]:
   return _official_packages_current
 
-def check_srcinfo() -> None:
+def check_srcinfo() -> PkgVers:
   srcinfo = get_srcinfo().decode('utf-8').splitlines()
   bad_groups = []
   bad_packages = []
@@ -117,11 +116,11 @@ def check_srcinfo() -> None:
     elif line.startswith('pkgname = '):
       pkgnames.append(line.split()[-1])
 
-  _G.epoch, _G.pkgver, _G.pkgrel = _get_package_version(srcinfo)
+  pkgvers = _get_package_version(srcinfo)
 
   # check if the newly built package is older than the existing
   # package in repos or not
-  built_version = format_package_version(_G.epoch, _G.pkgver, _G.pkgrel)
+  built_version = str(pkgvers)
   for pkgname in pkgnames:
     try:
       repo_version = _repo_package_versions[pkgname]
@@ -134,6 +133,8 @@ def check_srcinfo() -> None:
   if bad_groups or bad_packages:
     raise ConflictWithOfficialError(bad_groups, bad_packages)
 
+  return pkgvers
+
 def get_srcinfo() -> bytes:
   pwd = os.getcwd()
   basename = os.path.basename(pwd)
@@ -144,7 +145,7 @@ def get_srcinfo() -> bytes:
   )
   return out
 
-def _get_package_version(srcinfo: List[str]) -> Tuple[Optional[str], str, str]:
+def _get_package_version(srcinfo: List[str]) -> PkgVers:
   epoch = pkgver = pkgrel = None
 
   for line in srcinfo:
@@ -158,10 +159,4 @@ def _get_package_version(srcinfo: List[str]) -> Tuple[Optional[str], str, str]:
 
   assert pkgver is not None
   assert pkgrel is not None
-  return epoch, pkgver, pkgrel
-
-def format_package_version(epoch: Optional[str], pkgver: str, pkgrel: str) -> str:
-  if epoch:
-    return '{}:{}-{}'.format(epoch, pkgver, pkgrel)
-  else:
-    return '{}-{}'.format(pkgver, pkgrel)
+  return PkgVers(epoch, pkgver, pkgrel)

@@ -45,3 +45,15 @@ class Maintainer(NamedTuple):
     return cls(name, email, github)
 
 PkgRel = Union[int, str]
+
+class PkgVers(NamedTuple):
+  epoch: Optional[str]
+  pkgver: str
+  pkgrel: str
+
+  def __str__(self) -> str:
+    if self.epoch:
+      return f'{self.epoch}:{self.pkgver}-{self.pkgrel}'
+    else:
+      return f'{self.pkgver}-{self.pkgrel}'
+
