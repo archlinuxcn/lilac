@@ -287,6 +287,7 @@ def _call_cmd_systemd(
       setenv = {
         'PYTHONPATH': pythonpath,
         'PATH': os.environ['PATH'], # we've updated our PATH
+        'MAKEFLAGS': os.environ.get('MAKEFLAGS', ''),
       },
     )
   p.stdin.write(input) # type: ignore
