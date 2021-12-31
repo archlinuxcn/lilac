@@ -16,6 +16,7 @@ import toml
 from .cmd import run_cmd
 from .const import mydir
 from .typing import LilacMods, PathLike
+from .tools import reap_zombies
 
 if TYPE_CHECKING:
   from .repo import Repo, Maintainer
@@ -147,6 +148,7 @@ def packages_need_update(
   rebuild -= errors.keys()
 
   ret = process.wait()
+  reap_zombies()
   if ret != 0:
     raise subprocess.CalledProcessError(ret, cmd)
 

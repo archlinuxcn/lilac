@@ -4,6 +4,7 @@ import re
 import subprocess
 from typing import Dict, Any
 from pathlib import Path
+import os
 
 import tomli
 
@@ -24,4 +25,12 @@ def read_config() -> Dict[str, Any]:
         return tomli.load(f)
   else:
     raise Exception('No config files found!')
+
+def reap_zombies() -> None:
+  # reap any possible dead children since we are a subreaper
+  try:
+    while os.waitid(os.P_ALL, 0, os.WEXITED | os.WNOHANG) is not None:
+      pass
+  except ChildProcessError:
+    pass
 

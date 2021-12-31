@@ -15,7 +15,7 @@ import json
 from .typing import LilacMod, PkgVers, Cmd, RUsage
 from .nvchecker import NvResults
 from .packages import Dependency
-from .tools import kill_child_processes
+from .tools import kill_child_processes, reap_zombies
 from .nomypy import BuildResult # type: ignore
 from .const import _G
 from .cmd import run_cmd
@@ -293,12 +293,4 @@ def _call_cmd_systemd(
   p.stdin.close() # type: ignore
 
   return systemd.poll_rusage('lilac-worker', deadline)
-
-def reap_zombies() -> None:
-  # reap any possible dead children since we are a subreaper
-  try:
-    while os.waitid(os.P_ALL, 0, os.WEXITED | os.WNOHANG) is not None:
-      pass
-  except ChildProcessError:
-    pass
 
