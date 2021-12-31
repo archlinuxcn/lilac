@@ -200,6 +200,7 @@ def main() -> None:
   repo = _G.repo = Repo(config)
 
   input = json.load(sys.stdin)
+  logger.debug('got input: %r', input)
   pkgvers = None
   try:
     with load_lilac(Path('.')) as mod:
