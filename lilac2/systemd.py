@@ -53,20 +53,20 @@ def _get_service_info(name: str) -> tuple[int, str, str]:
     'systemctl', '--user', 'show', f'{name}.service',
     '--property=MainPID',
     '--property=ControlGroup',
-    '--property=LoadError',
+    '--property=SubState',
   ], text=True)
   pid = 0
   cgroup = ''
-  error = ''
+  state = ''
   for l in out.splitlines():
     k, v = l.split('=', 1)
     if k == 'MainPID':
       pid = int(v)
     elif k == 'ControlGroup':
       cgroup = v
-    elif k == 'LoadError':
-      error = v
-  return pid, cgroup, error
+    elif k == 'SubState':
+      state = v
+  return pid, cgroup, state
 
 def _poll_cmd(pid: int) -> Generator[None, None, None]:
   try:
@@ -89,16 +89,18 @@ def _poll_cmd(pid: int) -> Generator[None, None, None]:
 
 def poll_rusage(name: str, deadline: float) -> tuple[RUsage, bool]:
   timedout = False
+  done_state = ['exited', 'failed']
   while True:
-    pid, cgroup, error = _get_service_info(name)
-    if error:
-      logger.debug('failed to get %s service info: %s', name, error)
+    pid, cgroup, state = _get_service_info(name)
+    if (not pid or not cgroup) and state not in done_state:
+      logger.debug('%s.service state: %s, waiting', name, state)
       time.sleep(0.1)
     else:
       break
 
   try:
-    if not pid or not cgroup: # exited
+    if state in done_state:
+      logger.warning('%s.service already finished: %s', name, state)
       return RUsage(0, 0), False
 
     mem_file = f'/sys/fs/cgroup{cgroup}/memory.current'
