@@ -47,7 +47,7 @@ def build_package(
   depends: Iterable[Dependency],
   repo: Repo,
   myname: str,
-  destdir: str,
+  destdir: Path,
   logfile: Path,
   pythonpath: List[str],
 ) -> tuple[BuildResult, Optional[str]]:
@@ -84,10 +84,10 @@ def build_package(
 
     staging = getattr(mod, 'staging', False)
     if staging:
-      destdir = os.path.join(destdir, 'staging')
-      if not os.path.isdir(destdir):
-        os.mkdir(destdir)
-    sign_and_copy(destdir)
+      destdir = destdir / 'staging'
+      if not destdir.is_dir():
+        destdir.mkdir()
+    sign_and_copy(pkgdir, destdir)
     if staging:
       subject = f'{pkgbase} {pkg_version} 刚刚打包了'
       notify_maintainers(subject, '软件包已被置于 staging 目录，请查验后手动发布。')
@@ -140,16 +140,16 @@ def may_need_cleanup() -> None:
   if st.f_bavail * st.f_bsize < 60 * 1024 ** 3:
     subprocess.check_call(['sudo', 'build-cleaner'])
 
-def sign_and_copy(dest: str) -> None:
-  pkgs = [x for x in os.listdir() if x.endswith(('.pkg.tar.xz', '.pkg.tar.zst'))]
+def sign_and_copy(pkgdir: Path, dest: Path) -> None:
+  pkgs = [x for x in pkgdir.iterdir() if x.name.endswith(('.pkg.tar.xz', '.pkg.tar.zst'))]
   for pkg in pkgs:
     run_cmd(['gpg', '--pinentry-mode', 'loopback', '--passphrase', '',
              '--detach-sign', '--', pkg])
-  for f in os.listdir():
-    if not f.endswith(('.pkg.tar.xz', '.pkg.tar.xz.sig', '.pkg.tar.zst', '.pkg.tar.zst.sig')):
+  for f in pkgdir.iterdir():
+    if not f.name.endswith(('.pkg.tar.xz', '.pkg.tar.xz.sig', '.pkg.tar.zst', '.pkg.tar.zst.sig')):
       continue
     try:
-      os.link(f, os.path.join(dest, f))
+      (dest / f.name).hardlink_to(f)
     except FileExistsError:
       pass
 

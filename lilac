@@ -66,7 +66,7 @@ config = read_config()
 os.environ.update(config.get('envvars', ()))
 os.environ['PATH'] = str(topdir) + ':' + os.environ['PATH']
 
-DESTDIR = os.path.expanduser(config['repository'].get('destdir', ''))
+DESTDIR = Path(config['repository'].get('destdir', '')).expanduser()
 MYNAME = config['lilac']['name']
 
 def get_bindmounts(
