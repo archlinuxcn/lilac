@@ -1,0 +1,35 @@
+#!/usr/bin/python3
+
+'''
+sign_and_copy missed packages
+
+this is a problem-fixing script.
+'''
+
+from pathlib import Path
+
+from lilac2.lilacyaml import iter_pkgdir
+from lilac2.building import sign_and_copy
+
+REPODIR = Path('~/archgitrepo/archlinuxcn').expanduser()
+DESTDIR = Path('~/repo').expanduser()
+
+def main():
+  with open('/data/repo/lastupdate') as f:
+    lastupdate = int(f.read().strip())
+
+  for pkgdir in iter_pkgdir(REPODIR):
+    pkgs = [x for x in pkgdir.iterdir()
+            if x.name.endswith(('.pkg.tar.xz', '.pkg.tar.zst'))]
+    if not pkgs:
+      continue
+    pkg0 = pkgs[0]
+    st = pkg0.stat()
+    if st.st_nlink > 1:
+      continue
+    if st.st_mtime >= lastupdate:
+      print(f'sign_and_copy {pkgdir.name}')
+      sign_and_copy(pkgdir, DESTDIR)
+
+if __name__ == '__main__':
+  main()

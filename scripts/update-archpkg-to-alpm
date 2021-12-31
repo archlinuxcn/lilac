@@ -1,0 +1,66 @@
+#!/usr/bin/python3
+
+import pathlib
+
+from ruamel.yaml import round_trip_dump
+from ruamel.yaml.util import load_yaml_guess_indent
+from pyalpm import Handle
+
+from lilac2.lilacyaml import iter_pkgdir
+
+handle = None
+dbs = None
+
+def load_alpm():
+  global handle, dbs
+
+  handle = Handle('/', '/var/lib/pacman')
+  dbs = {repo: handle.register_syncdb(repo, 0)
+         for repo in ['core', 'extra', 'community', 'multilib']}
+
+def get_repo(pkg):
+  for repo, db in dbs.items():
+    if db.get_pkg(pkg):
+      return repo
+
+def convert_entry(conf):
+  conf['source'] = 'alpm'
+  conf['alpm'] = conf.pop('archpkg')
+  conf['repo'] = get_repo(conf['alpm'])
+  return conf
+
+def update_lilacyaml(pkgdir: pathlib.Path) -> None:
+  # use ruamel.yaml for yaml manipulation with preserving indents and comments
+  lilac_yaml_path = pkgdir / 'lilac.yaml'
+
+  with open(lilac_yaml_path) as f:
+    lilac_yaml, indent, block_seq_indent = load_yaml_guess_indent(f.read())
+
+  update_on = lilac_yaml.get('update_on', [])
+  if not update_on:
+    return
+
+  changed = False
+  for idx, entry in enumerate(update_on):
+    if 'alias' in entry:
+      continue
+
+    if entry.get('source') != 'archpkg':
+      continue
+
+    changed = True
+    update_on[idx] = convert_entry(entry)
+
+  if changed:
+    with open(lilac_yaml_path, 'w') as f:
+      round_trip_dump(lilac_yaml, stream=f, indent=indent,
+                      block_seq_indent=block_seq_indent)
+
+def main():
+  repodir = pathlib.Path('/ldata/src/archgitrepo/archlinuxcn')
+  load_alpm()
+  for dir in iter_pkgdir(repodir):
+    update_lilacyaml(dir)
+
+if __name__ == '__main__':
+  main()
