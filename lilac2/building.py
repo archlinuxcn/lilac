@@ -12,13 +12,14 @@ from pathlib import Path
 import time
 import json
 
-from .typing import LilacMod, PkgVers
+from .typing import LilacMod, PkgVers, Cmd, RUsage
 from .nvchecker import NvResults
 from .packages import Dependency
 from .tools import kill_child_processes
 from .nomypy import BuildResult # type: ignore
 from .const import _G
 from .cmd import run_cmd
+from . import systemd
 
 if TYPE_CHECKING:
   from .repo import Repo
@@ -49,7 +50,7 @@ def build_package(
   myname: str,
   destdir: Path,
   logfile: Path,
-  pythonpath: List[str],
+  pythonpath: str,
 ) -> tuple[BuildResult, Optional[str]]:
   '''return BuildResult and version string if successful'''
   start_time = time.time()
@@ -167,8 +168,8 @@ def call_worker(
   update_info: NvResults,
   bindmounts: List[str],
   deadline: float,
-  pythonpath: List[str],
-) -> tuple[Optional[str], None, Optional[Exception]]:
+  pythonpath: str,
+) -> tuple[Optional[str], RUsage, Optional[Exception]]:
   '''
   return: package verion, resource usage, error information
   '''
@@ -181,49 +182,37 @@ def call_worker(
   fd, resultpath = tempfile.mkstemp(prefix=pkgbase, suffix='.lilac')
   os.close(fd)
   input['result'] = resultpath
+  input_bytes = json.dumps(input).encode()
 
   cmd = [sys.executable, '-u', '-m', 'lilac2.worker', pkgbase]
-  env = os.environ.copy()
-  env['PYTHONPATH'] = ':'.join(pythonpath)
-  with logfile.open('wb') as logf:
-    p = subprocess.Popen(
-      cmd,
-      stdin = subprocess.PIPE,
-      stdout = logf,
-      stderr = logf,
-      cwd = pkgdir,
-      env = env,
-    )
-  p.stdin.write(json.dumps(input).encode()) # type: ignore
-  p.stdin.close() # type: ignore
+  if systemd.available():
+    _call_cmd = _call_cmd_systemd
+  else:
+    _call_cmd = _call_cmd_subprocess
+  rusage, timedout = _call_cmd(
+    cmd, pythonpath, logfile, pkgdir, deadline, input_bytes,
+  )
 
-  while True:
+  try:
+    with open(resultpath) as f:
+      r = json.load(f)
+  except json.decoder.JSONDecodeError:
+    r = {
+      'status': 'failed',
+      'msg': 'worker did not return a proper result!',
+    }
+  finally:
     try:
-      p.wait(10)
-    except subprocess.TimeoutExpired:
-      if time.time() > deadline:
-        kill_child_processes()
-    else:
-      try:
-        with open(resultpath) as f:
-          r = json.load(f)
-      except json.decoder.JSONDecodeError:
-        r = {
-          'status': 'failed',
-          'msg': 'worker did not return a proper result!',
-        }
-      finally:
-        try:
-          os.unlink(resultpath)
-        except FileNotFoundError:
-          pass
-
-      break
+      os.unlink(resultpath)
+    except FileNotFoundError:
+      pass
 
   st = r['status']
 
   error: Optional[Exception]
-  if st == 'done':
+  if timedout:
+    error = TimeoutError()
+  elif st == 'done':
     error = None
   elif st == 'skipped':
     error = SkipBuild(r['msg'])
@@ -237,7 +226,67 @@ def call_worker(
     version = str(PkgVers(*vers))
   else:
     version = None
-  return version, None, error
+  return version, rusage, error
+
+def _call_cmd_subprocess(
+  cmd: Cmd,
+  pythonpath: str,
+  logfile: Path,
+  pkgdir: Path,
+  deadline: float,
+  input: bytes,
+) -> tuple[RUsage, bool]:
+  '''call cmd as a subprocess'''
+  timedout = False
+  env = os.environ.copy()
+  env['PYTHONPATH'] = pythonpath
+  with logfile.open('wb') as logf:
+    p = subprocess.Popen(
+      cmd,
+      stdin = subprocess.PIPE,
+      stdout = logf,
+      stderr = logf,
+      cwd = pkgdir,
+      env = env,
+    )
+  p.stdin.write(input) # type: ignore
+  p.stdin.close() # type: ignore
+
+  while True:
+    try:
+      p.wait(10)
+    except subprocess.TimeoutExpired:
+      if time.time() > deadline:
+        timedout = True
+        kill_child_processes()
+    else:
+      break
+
+  return RUsage(0, 0), timedout
+
+def _call_cmd_systemd(
+  cmd: Cmd,
+  pythonpath: str,
+  logfile: Path,
+  pkgdir: Path,
+  deadline: float,
+  input: bytes,
+) -> tuple[RUsage, bool]:
+  '''run cmd with systemd-run and collect resource usage'''
+  with logfile.open('wb') as logf:
+    p = systemd.start_cmd(
+      'lilac-worker',
+      cmd,
+      stdin = subprocess.PIPE,
+      stdout = logf,
+      stderr = logf,
+      cwd = pkgdir,
+      setenv = {'PYTHONPATH': pythonpath},
+    )
+  p.stdin.write(input) # type: ignore
+  p.stdin.close() # type: ignore
+
+  return systemd.poll_rusage('lilac-worker', deadline)
 
 def reap_zombies() -> None:
   # reap any possible dead children since we are a subreaper

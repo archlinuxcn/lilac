@@ -57,3 +57,7 @@ class PkgVers(NamedTuple):
     else:
       return f'{self.pkgver}-{self.pkgrel}'
 
+class RUsage(NamedTuple):
+  cputime: float
+  memory: int
+

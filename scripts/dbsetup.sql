@@ -12,7 +12,7 @@ create table pkglog (
   elapsed int not null,
   result buildresult not null,
   cputime int,
-  maxrss bigint,
+  memory bigint,
   msg text,
   build_reasons text
 );

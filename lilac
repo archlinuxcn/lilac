@@ -17,22 +17,23 @@ import prctl
 import structlog
 
 topdir = Path(__file__).resolve().parent
-pythonpath = []
+pythonpath_l = []
 if (topdir / 'lilac2').exists():
   # In-tree
   p = str(topdir)
   sys.path.append(p)
-  pythonpath.append(p)
+  pythonpath_l.append(p)
   p = str(topdir / 'lilac2' / 'vendor')
   sys.path.append(p)
-  pythonpath.append(p)
+  pythonpath_l.append(p)
 else:
   # Installed as a system package
   import lilac2
   p = str(Path(lilac2.__file__).parent / 'vendor')
   sys.path.append(p)
-  pythonpath.append(p)
-del p
+  pythonpath_l.append(p)
+pythonpath = ':'.join(pythonpath_l)
+del p, pythonpath_l
 
 from myutils import lock_file
 from serializer import PickledData
@@ -261,10 +262,10 @@ def start_build(repo: Repo, failed: Set[str], built: Set[str]) -> None:
 
       if db.USE:
         if r.rusage:
-          cputime = r.rusage.ru_utime + r.rusage.ru_stime
-          maxrss = r.rusage.ru_maxrss * 1024
+          cputime = r.rusage.cputime
+          memory = r.rusage.memory
         else:
-          cputime = maxrss = None
+          cputime = memory = None
         rs = [r.to_dict() for r in build_reasons[pkg]]
         with db.get_session() as s:
           p = db.PkgLog(
@@ -274,7 +275,7 @@ def start_build(repo: Repo, failed: Set[str], built: Set[str]) -> None:
             elapsed = elapsed,
             result = r.__class__.__name__,
             cputime = cputime,
-            maxrss = maxrss,
+            memory = memory,
             msg = msg,
             build_reasons = json.dumps(rs),
           )
