@@ -3,10 +3,12 @@ import subprocess
 from typing import ParamSpec, Generator
 import select
 import time
+import logging
 
 from .typing import Cmd, RUsage
 
 _available = None
+logger = logging.getLogger(__name__)
 
 def available() -> bool:
   global _available
@@ -42,6 +44,7 @@ def start_cmd(
 
   cmd_setenv = [f'--setenv={k}={v}' for k, v in setenv.items()]
   cmd_s = cmd_s + cmd_setenv + ['--'] + cmd # type: ignore
+  logger.debug('running %s', subprocess.list2cmdline(cmd_s))
   return subprocess.Popen(cmd_s, **kwargs)
 
 def _get_service_info(name: str) -> tuple[int, str]:

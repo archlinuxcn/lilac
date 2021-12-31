@@ -201,6 +201,7 @@ def call_worker(
     r = {
       'status': 'failed',
       'msg': 'worker did not return a proper result!',
+      'pkgvers': None,
     }
   finally:
     try:
