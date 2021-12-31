@@ -284,7 +284,10 @@ def _call_cmd_systemd(
       stdout = logf,
       stderr = logf,
       cwd = pkgdir,
-      setenv = {'PYTHONPATH': pythonpath},
+      setenv = {
+        'PYTHONPATH': pythonpath,
+        'PATH': os.environ['PATH'], # we've updated our PATH
+      },
     )
   p.stdin.write(input) # type: ignore
   p.stdin.close() # type: ignore
