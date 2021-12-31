@@ -60,7 +60,7 @@ def build_package(
     _G.mod = mod
     maintainer = repo.find_maintainers(mod)[0]
     time_limit_hours = getattr(mod, 'time_limit_hours', 1)
-    os.environ['PACKAGER'] = '%s (on behalf of %s) <%s>' % (
+    packager = '%s (on behalf of %s) <%s>' % (
       myname, maintainer.name, maintainer.email)
 
     depend_packages = resolve_depends(repo, depends)
@@ -75,6 +75,7 @@ def build_package(
         logfile = logfile,
         deadline = start_time + time_limit_hours * 3600,
         pythonpath = pythonpath,
+        packager = packager,
       )
       if error:
         raise error
@@ -169,6 +170,7 @@ def call_worker(
   bindmounts: List[str],
   deadline: float,
   pythonpath: str,
+  packager: str,
 ) -> tuple[Optional[str], RUsage, Optional[Exception]]:
   '''
   return: package verion, resource usage, error information
@@ -191,7 +193,7 @@ def call_worker(
   else:
     _call_cmd = _call_cmd_subprocess
   rusage, timedout = _call_cmd(
-    cmd, pythonpath, logfile, pkgdir, deadline, input_bytes,
+    cmd, pythonpath, logfile, pkgdir, deadline, input_bytes, packager,
   )
 
   try:
@@ -238,11 +240,13 @@ def _call_cmd_subprocess(
   pkgdir: Path,
   deadline: float,
   input: bytes,
+  packager: str,
 ) -> tuple[RUsage, bool]:
   '''call cmd as a subprocess'''
   timedout = False
   env = os.environ.copy()
   env['PYTHONPATH'] = pythonpath
+  env['PACKAGER'] = packager
   with logfile.open('wb') as logf:
     p = subprocess.Popen(
       cmd,
@@ -274,6 +278,7 @@ def _call_cmd_systemd(
   pkgdir: Path,
   deadline: float,
   input: bytes,
+  packager: str,
 ) -> tuple[RUsage, bool]:
   '''run cmd with systemd-run and collect resource usage'''
   with logfile.open('wb') as logf:
@@ -288,6 +293,7 @@ def _call_cmd_systemd(
         'PYTHONPATH': pythonpath,
         'PATH': os.environ['PATH'], # we've updated our PATH
         'MAKEFLAGS': os.environ.get('MAKEFLAGS', ''),
+        'PACKAGER': packager,
       },
     )
   p.stdin.write(input) # type: ignore
