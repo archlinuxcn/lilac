@@ -179,7 +179,7 @@ def call_worker(
     'bindmounts': bindmounts,
     'logfile': str(logfile), # for sending error reports
   }
-  fd, resultpath = tempfile.mkstemp(prefix=pkgbase, suffix='.lilac')
+  fd, resultpath = tempfile.mkstemp(prefix=f'{pkgbase}-', suffix='.lilac')
   os.close(fd)
   input['result'] = resultpath
   input_bytes = json.dumps(input).encode()
