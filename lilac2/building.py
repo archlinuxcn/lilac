@@ -196,6 +196,7 @@ def call_worker(
   try:
     with open(resultpath) as f:
       r = json.load(f)
+    logger.debug('received from worker: %r', r)
   except json.decoder.JSONDecodeError:
     r = {
       'status': 'failed',
