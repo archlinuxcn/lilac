@@ -11,7 +11,7 @@ from typing import (
   Optional, Any, Union, Iterable, TYPE_CHECKING,
 )
 
-import toml
+import tomli_w
 
 from .cmd import run_cmd
 from .const import mydir
@@ -100,7 +100,7 @@ def packages_need_update(
     newconfig['__config__']['proxy'] = proxy
 
   with open(NVCHECKER_FILE, 'w') as f:
-    toml.dump(newconfig, f)
+    tomli_w.dump(newconfig, f)
 
   # vcs source needs to be run in the repo, so cwd=...
   rfd, wfd = os.pipe()

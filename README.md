@@ -45,6 +45,7 @@ Python libraries
 * lxml
 * PyYAML
 * tomli
+* tomli-w
 * pyalpm
 * structlog
 * prctl
