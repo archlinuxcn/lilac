@@ -152,7 +152,8 @@ def run_cmd(
     if outlen > 1024 ** 3: # larger than 1G
       outs += '\n\n输出过多，已击杀。\n'
     if code != 0:
-        raise subprocess.CalledProcessError(code, cmd, outs)
+      # set output by keyword to avoid being included in repr()
+      raise subprocess.CalledProcessError(code, cmd, output=outs)
     return outs
   finally:
     if use_pty:

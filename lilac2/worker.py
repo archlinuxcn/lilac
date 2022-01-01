@@ -230,6 +230,8 @@ def main() -> None:
 def handle_failure(
   e: Exception, repo: Repo, mod: LilacMod, logfile: Path,
 ) -> None:
+  logger.error('build failed', exc_info=e)
+
   if isinstance(e, pkgbuild.ConflictWithOfficialError):
     reason = ''
     if e.groups:
