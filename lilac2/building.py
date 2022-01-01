@@ -12,7 +12,7 @@ from pathlib import Path
 import time
 import json
 
-from .typing import LilacMod, PkgVers, Cmd, RUsage
+from .typing import LilacMod, Cmd, RUsage
 from .nvchecker import NvResults
 from .packages import Dependency
 from .tools import kill_child_processes, reap_zombies
@@ -204,7 +204,7 @@ def call_worker(
     r = {
       'status': 'failed',
       'msg': 'worker did not return a proper result!',
-      'pkgvers': None,
+      'version': None,
     }
   finally:
     try:
@@ -226,11 +226,7 @@ def call_worker(
   else:
     error = RuntimeError('unknown status from worker', st)
 
-  vers = r['pkgvers']
-  if vers:
-    version = str(PkgVers(*vers))
-  else:
-    version = None
+  version = r['version']
   return version, rusage, error
 
 def _call_cmd_subprocess(

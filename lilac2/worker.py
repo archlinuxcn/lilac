@@ -15,7 +15,7 @@ import pyalpm
 from nicelogger import enable_pretty_logging
 
 from . import pkgbuild
-from .typing import LilacMod, Cmd, PkgVers
+from .typing import LilacMod, Cmd
 from .cmd import run_cmd, UNTRUSTED_PREFIX
 from .api import (
   vcs_update, get_pkgver_and_pkgrel, update_pkgrel,
@@ -55,7 +55,7 @@ def lilac_build(
   build_prefix: Optional[str] = None,
   update_info: NvResults = NvResults(),
   bindmounts: List[str] = [],
-) -> PkgVers:
+) -> None:
   success = False
   _G.built_version = None
 
@@ -89,7 +89,7 @@ def lilac_build(
       vcs_update()
 
     pkgvers = pkgbuild.check_srcinfo()
-    _G.built_version = str(pkgvers) # api uses this
+    _G.built_version = str(pkgvers)
 
     build_prefix = build_prefix or getattr(
       mod, 'build_prefix', 'extra-x86_64')
@@ -120,8 +120,6 @@ def lilac_build(
     if post_build is not None:
       post_build()
     success = True
-
-    return pkgvers
 
   finally:
     post_build_always = getattr(mod, 'post_build_always', None)
@@ -201,11 +199,10 @@ def main() -> None:
 
   input = json.load(sys.stdin)
   logger.debug('got input: %r', input)
-  pkgvers = None
   try:
     with load_lilac(Path('.')) as mod:
       _G.mod = mod
-      pkgvers = lilac_build(
+      lilac_build(
         mod = mod,
         depend_packages = input['depend_packages'],
         update_info = NvResults.from_list(input['update_info']),
@@ -225,7 +222,7 @@ def main() -> None:
     sys.stdout.flush()
     handle_failure(e, repo, mod, Path(input['logfile']))
 
-  r['pkgvers'] = pkgvers # type: ignore
+  r['version'] = getattr(_G, 'built_version', None) # type: ignore
 
   with open(input['result'], 'w') as f:
     json.dump(r, f)
