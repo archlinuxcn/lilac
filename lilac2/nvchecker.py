@@ -99,7 +99,7 @@ def packages_need_update(
   if proxy:
     newconfig['__config__']['proxy'] = proxy
 
-  with open(NVCHECKER_FILE, 'w') as f:
+  with open(NVCHECKER_FILE, 'wb') as f:
     tomli_w.dump(newconfig, f)
 
   # vcs source needs to be run in the repo, so cwd=...
