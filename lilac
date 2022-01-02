@@ -189,6 +189,7 @@ def start_build(repo: Repo, failed: Set[str], built: Set[str]) -> None:
           build_reasons = json.dumps(rs),
         )
         s.add(p)
+      db.build_updated(s)
 
   try:
     logger.info('building these packages: %r', packages)
@@ -210,6 +211,7 @@ def start_build(repo: Repo, failed: Set[str], built: Set[str]) -> None:
             status = 'building',
           )
           s.execute(stmt)
+          db.build_updated(s)
 
       r, version = build_package(
         pkg, repo.mods[pkg],
@@ -317,6 +319,8 @@ def start_build(repo: Repo, failed: Set[str], built: Set[str]) -> None:
             status = 'done',
           )
           s.execute(stmt)
+
+          db.build_updated(s)
 
       if r:
         built.add(pkg)

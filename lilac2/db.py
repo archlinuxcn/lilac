@@ -38,3 +38,10 @@ def get_session():
     raise
   finally:
     session.close()
+
+def build_updated(s):
+  if s.bind.dialect.name != 'postgresql':
+    return
+
+  from sqlalchemy import text
+  s.execute(text('notify build_updated'))
