@@ -29,3 +29,31 @@ create table batch (
 );
 
 create index batch_ts_idx on batch (ts);
+
+create type buildstatus as enum ('pending', 'building', 'done');
+
+CREATE OR REPLACE FUNCTION updated_at_trigger()
+RETURNS TRIGGER AS $$
+BEGIN
+   IF row(NEW.*) IS DISTINCT FROM row(OLD.*) THEN
+      NEW.updated_at = now();
+      RETURN NEW;
+   ELSE
+      RETURN OLD;
+   END IF;
+   RETURN NEW;
+END;
+$$ language 'plpgsql';
+
+create table pkgcurrent (
+  id serial primary key,
+  ts timestamp with time zone not null default current_timestamp,
+  updated_at timestamp with time zone not null default current_timestamp,
+  pkgbase text unique not null,
+  status buildstatus not null,
+  build_reasons text not null
+);
+
+CREATE TRIGGER pkgcurrent_updated BEFORE UPDATE
+  ON pkgcurrent FOR EACH ROW EXECUTE PROCEDURE updated_at_trigger();
+

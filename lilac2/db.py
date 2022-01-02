@@ -13,6 +13,10 @@ class Batch(Base):
   __tablename__ = 'batch'
   __table_args__ = {'schema': 'lilac'}
 
+class PkgCurrent(Base):
+  __tablename__ = 'pkgcurrent'
+  __table_args__ = {'schema': 'lilac'}
+
 USE = False
 
 def setup(engine):
