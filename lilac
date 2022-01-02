@@ -256,7 +256,8 @@ def start_build(repo: Repo, failed: Set[str], built: Set[str]) -> None:
         else:
           build_logger.error(
             'failed', pkgbase = pkg,
-            nv_version = newver, elapsed = elapsed, error = r.error,
+            nv_version = newver, pkg_version = version,
+            elapsed = elapsed, error = r.error,
           )
           msg = r.error
 
