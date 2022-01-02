@@ -50,6 +50,7 @@ create table pkgcurrent (
   ts timestamp with time zone not null default current_timestamp,
   updated_at timestamp with time zone not null default current_timestamp,
   pkgbase text unique not null,
+  index integer not null,
   status buildstatus not null,
   build_reasons text not null
 );

@@ -180,10 +180,11 @@ def start_build(repo: Repo, failed: Set[str], built: Set[str]) -> None:
       stmt = delete(db.PkgCurrent)
       s.execute(stmt)
 
-      for pkg in packages:
+      for idx, pkg in enumerate(packages):
         rs = [r.to_dict() for r in build_reasons[pkg]]
         p = db.PkgCurrent(
           pkgbase = pkg,
+          index = idx,
           status = 'pending',
           build_reasons = json.dumps(rs),
         )
