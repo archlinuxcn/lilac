@@ -14,7 +14,7 @@ create table pkglog (
   cputime int,
   memory bigint,
   msg text,
-  build_reasons text
+  build_reasons jsonb
 );
 
 create index pkglog_ts_idx on pkglog (ts);
@@ -52,7 +52,7 @@ create table pkgcurrent (
   pkgbase text unique not null,
   index integer not null,
   status buildstatus not null,
-  build_reasons text not null
+  build_reasons jsonb not null
 );
 
 CREATE TRIGGER pkgcurrent_updated BEFORE UPDATE
