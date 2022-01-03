@@ -4,6 +4,7 @@ import sys, pathlib
 import select
 import os
 from math import atan2, degrees, sqrt, fabs, cos, radians, sin, exp
+import datetime
 
 import psycopg2
 import psycopg2.extras
@@ -475,15 +476,15 @@ def iter_pkglog():
 
     cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
     cursor.execute('select * from lilac.batch where ts > %s', (logs[-1]['ts'],))
-    logs.extend(list(cursor))
+    logs.extend(cursor)
     logs.sort(key=lambda x: x['ts'])
 
     cursor = conn.cursor()
     cursor.execute('listen build_updated')
 
   yield from logs
-  last_id = logs[-1]['id']
-  last_ts = logs[-1]['ts']
+
+  last_ts = datetime.datetime.now().astimezone()
   poll = select.poll()
   poll.register(conn, select.POLLIN)
 
@@ -493,16 +494,15 @@ def iter_pkglog():
 
     with conn:
       cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
-      cursor.execute('select * from lilac.pkglog where id > %s order by ts asc', (last_id,))
+      cursor.execute('select * from lilac.pkglog where ts > %s', (last_ts,))
       logs = list(cursor)
 
-      if logs:
-        last_ts = logs[-1]['ts']
-        last_id = logs[-1]['id']
       cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
       cursor.execute('select * from lilac.batch where ts > %s', (last_ts,))
-      logs.extend(list(cursor))
+      logs.extend(cursor)
+
       logs.sort(key=lambda x: x['ts'])
+      last_ts = datetime.datetime.now().astimezone()
 
       yield from logs
 
@@ -510,7 +510,11 @@ def main():
   load_colors()
 
   for log in iter_pkglog():
-    pretty_print(log)
+    try:
+      pretty_print(log)
+    except Exception:
+      print(log)
+      raise
 
 if __name__ == '__main__':
   try:
