@@ -433,6 +433,7 @@ def main_may_raise(D: Dict[str, Any], pkgs_to_build: List[str]) -> None:
       with db.get_session() as s:
         b = db.Batch(event='start')
         s.add(b)
+        db.build_updated(s)
     start_build(REPO, failed, update_succeeded)
     D['last_commit'] = git_last_commit()
   finally:
@@ -460,6 +461,7 @@ def main_may_raise(D: Dict[str, Any], pkgs_to_build: List[str]) -> None:
       with db.get_session() as s:
         b = db.Batch(event='stop')
         s.add(b)
+        db.build_updated(s)
 
     git_reset_hard()
     if config['lilac']['git_push']:
