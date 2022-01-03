@@ -22,7 +22,8 @@ FMT = {
   'staged': f'[{c(12)}%(ts)s{c(7)}] {c(15)}%(pkgbase)s{c(7)} %(nv_version)s %(action)s{c(7)} as {c(15)}%(pkg_version)s{c(7)} in {c(6)}%(elapsed)s',
   'failed': f'[{c(12)}%(ts)s{c(7)}] {c(15)}%(pkgbase)s{c(7)} %(nv_version)s %(action)s{c(7)} to build as {c(15)}%(pkg_version)s{c(7)} in {c(6)}%(elapsed)s',
   'skipped': f'[{c(12)}%(ts)s{c(7)}] {c(15)}%(pkgbase)s{c(7)} %(nv_version)s %(action)s{c(7)} because {c(15)}%(msg)s',
-  '_rusage': f'{c(7)}; CPU time: {c(6)}%(cputime)s{c(7)} (%(cpupercent)s%%{c(7)}), Memory: {c(5)}%(memory)s\n'
+  '_rusage': f'{c(7)}; CPU time: {c(6)}%(cputime)s{c(7)} (%(cpupercent)s%%{c(7)}), Memory: {c(5)}%(memory)s\n',
+  '_batch': f'[{c(12)}%(ts)s{c(7)}] {c(14)}build %(event)s\n',
 }
 
 ACTION = {
@@ -433,6 +434,16 @@ class Color:
     return L, a, b
 
 def pretty_print(log):
+  if 'event' in log:
+    fmt = FMT['_batch']
+    args = {
+      'ts': log['ts'].strftime('%Y-%m-%d %H:%M:%S'),
+      'event': log['event'],
+    }
+    out = c(7) + fmt % args
+    sys.stdout.write(out)
+    return
+
   result = log['result']
   cpupercent = round(100 * log['cputime'] / log['elapsed'])
   cpupercent = color_gradient(1 - cpupercent / 100 / N_CORES) + str(cpupercent)
@@ -451,6 +462,8 @@ def pretty_print(log):
 
   fmt = FMT[result]
   out = c(7) + fmt % args + FMT['_rusage'] % args
+  if result == 'failed':
+    out += f'{c(8)}{log["msg"]}\n'
   sys.stdout.write(out)
 
 def iter_pkglog():
@@ -459,12 +472,18 @@ def iter_pkglog():
     cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
     cursor.execute('select * from lilac.pkglog order by ts desc limit 40')
     logs = list(cursor)
-    logs = logs[::-1]
+
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+    cursor.execute('select * from lilac.batch where ts > %s', (logs[-1]['ts'],))
+    logs.extend(list(cursor))
+    logs.sort(key=lambda x: x['ts'])
+
     cursor = conn.cursor()
     cursor.execute('listen build_updated')
 
   yield from logs
   last_id = logs[-1]['id']
+  last_ts = logs[-1]['ts']
   poll = select.poll()
   poll.register(conn, select.POLLIN)
 
@@ -476,9 +495,16 @@ def iter_pkglog():
       cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
       cursor.execute('select * from lilac.pkglog where id > %s order by ts asc', (last_id,))
       logs = list(cursor)
+
       if logs:
+        last_ts = logs[-1]['ts']
         last_id = logs[-1]['id']
-        yield from logs
+      cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+      cursor.execute('select * from lilac.batch where ts > %s', (last_ts,))
+      logs.extend(list(cursor))
+      logs.sort(key=lambda x: x['ts'])
+
+      yield from logs
 
 def main():
   load_colors()
