@@ -163,7 +163,8 @@ def start_build(
 
   for name, deps in nonexistent.items():
     repo.send_error_report(
-      repo.mods[name], subject='软件包 %s 的 lilac.{py,yaml} 指定了不存在的依赖',
+      repo.lilacinfos[name],
+      subject='软件包 %s 的 lilac.{py,yaml} 指定了不存在的依赖',
       msg = f'软件包 {name} 的 lilac.py 或者 lilac.yaml 指定了 repo_depends，然而其直接或者间接的依赖项 {deps!r} 并不在本仓库中。'
     )
 
@@ -218,7 +219,7 @@ def start_build(
           db.build_updated(s)
 
       r, version = build_package(
-        pkg, repo.mods[pkg],
+        pkg, repo.lilacinfos[pkg],
         update_info = nvdata[pkg],
         bindmounts = BIND_MOUNTS,
         depends = DEPENDS.get(pkg, ()),
@@ -275,7 +276,7 @@ def start_build(
             nv_version = newver, elapsed = elapsed, exc_info = e,
           )
           msg = repr(e)
-          mod = repo.mods[pkg]
+          mod = repo.lilacinfos[pkg]
 
           if isinstance(e, MissingDependencies):
             faileddeps = e.deps.intersection(failed)
@@ -351,15 +352,15 @@ def main_may_raise(D: Dict[str, Any], pkgs_to_build: List[str]) -> None:
   failed = REPO.load_managed_lilac_and_report()
 
   depman = DependencyManager(REPO.repodir)
-  DEPMAP = get_dependency_map(depman, REPO.mods)
+  DEPMAP = get_dependency_map(depman, REPO.lilacinfos)
 
   if pkgs_to_build:
-    all_mods = REPO.mods
-    REPO.mods = {}
+    all_infos = REPO.lilacinfos
+    REPO.lilacinfos = {}
     for pkg_to_build in pkgs_to_build:
       for dep in DEPMAP[pkg_to_build]:
-        REPO.mods[dep.pkgname] = all_mods[dep.pkgname]
-      REPO.mods[pkg_to_build] = all_mods[pkg_to_build]
+        REPO.lilacinfos[dep.pkgname] = all_infos[dep.pkgname]
+      REPO.lilacinfos[pkg_to_build] = all_infos[pkg_to_build]
 
   proxy = config['nvchecker'].get('proxy')
   _nvdata, unknown, rebuild = packages_need_update(
@@ -373,7 +374,7 @@ def main_may_raise(D: Dict[str, Any], pkgs_to_build: List[str]) -> None:
     need_rebuild_failed: Set[str] = set()
     need_rebuild_pkgrel: Set[str] = set()
   else:
-    U = set(REPO.mods)
+    U = set(REPO.lilacinfos)
     last_commit = D.get('last_commit', EMPTY_COMMIT)
     changed = get_changed_packages(last_commit, 'HEAD') & U
 
@@ -401,8 +402,8 @@ def main_may_raise(D: Dict[str, Any], pkgs_to_build: List[str]) -> None:
     diff_idxs = [i for i, v in enumerate(vers)
                  if v.oldver != v.newver]
     if diff_idxs:
-      mod = REPO.mods[p]
-      confs = mod.update_on
+      info = REPO.lilacinfos[p]
+      confs = info.update_on
       sources = [(i, confs[i]['source']) for i in diff_idxs]
       build_reasons[p].append(BuildReason.NvChecker(sources))
 
@@ -462,14 +463,14 @@ def main_may_raise(D: Dict[str, Any], pkgs_to_build: List[str]) -> None:
 
     if config['lilac']['rebuild_failed_pkgs']:
       if update_succeeded:
-        nvtake(update_succeeded, REPO.mods)
+        nvtake(update_succeeded, REPO.lilacinfos)
     else:
       if need_update or rebuild:
         # only nvtake packages we have tried to build (excluding unbuilt
         # packages due to internal errors)
         built = update_succeeded.union(failed)
         update_nv = built & (need_update | rebuild)
-        nvtake(update_nv, REPO.mods)
+        nvtake(update_nv, REPO.lilacinfos)
 
     build_logger.info('build end')
     if db.USE:

@@ -12,12 +12,11 @@ from pathlib import Path
 import time
 import json
 
-from .typing import LilacMod, Cmd, RUsage
+from .typing import LilacInfo, Cmd, RUsage
 from .nvchecker import NvResults
 from .packages import Dependency
 from .tools import kill_child_processes, reap_zombies
 from .nomypy import BuildResult # type: ignore
-from .const import _G
 from .cmd import run_cmd
 from . import systemd
 
@@ -42,7 +41,7 @@ class BuildFailed(Exception):
 
 def build_package(
   pkgbase: str,
-  mod: LilacMod,
+  lilacinfo: LilacInfo,
   bindmounts: List[str],
   update_info: NvResults,
   depends: Iterable[Dependency],
@@ -57,9 +56,8 @@ def build_package(
   pkg_version = None
   rusage = None
   try:
-    _G.mod = mod
-    maintainer = repo.find_maintainers(mod)[0]
-    time_limit_hours = getattr(mod, 'time_limit_hours', 1)
+    maintainer = repo.find_maintainers(lilacinfo)[0]
+    time_limit_hours = lilacinfo.time_limit_hours
     packager = '%s (on behalf of %s) <%s>' % (
       myname, maintainer.name, maintainer.email)
 
@@ -84,15 +82,18 @@ def build_package(
       may_need_cleanup()
       reap_zombies()
 
-    staging = getattr(mod, 'staging', False)
+    staging = lilacinfo.staging
     if staging:
       destdir = destdir / 'staging'
       if not destdir.is_dir():
         destdir.mkdir()
     sign_and_copy(pkgdir, destdir)
     if staging:
-      subject = f'{pkgbase} {pkg_version} 刚刚打包了'
-      notify_maintainers(subject, '软件包已被置于 staging 目录，请查验后手动发布。')
+      notify_maintainers(
+        repo, lilacinfo,
+        f'{pkgbase} {pkg_version} 刚刚打包了',
+        '软件包已被置于 staging 目录，请查验后手动发布。',
+      )
       result = BuildResult.staged()
     else:
       result = BuildResult.successful()
@@ -104,8 +105,6 @@ def build_package(
   except Exception as e:
     logger.exception('build failed with exception')
     result = BuildResult.failed(e)
-  finally:
-    del _G.mod
 
   elapsed = time.time() - start_time
   result.rusage = rusage
@@ -156,9 +155,11 @@ def sign_and_copy(pkgdir: Path, dest: Path) -> None:
     except FileExistsError:
       pass
 
-def notify_maintainers(subject: str, body: str) -> None:
-  repo = _G.repo
-  maintainers = repo.find_maintainers(_G.mod)
+def notify_maintainers(
+  repo: Repo, lilacinfo: LilacInfo,
+  subject: str, body: str,
+) -> None:
+  maintainers = repo.find_maintainers(lilacinfo)
   addresses = [str(x) for x in maintainers]
   repo.sendmail(addresses, subject, body)
 

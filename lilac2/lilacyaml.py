@@ -1,15 +1,18 @@
 from __future__ import annotations
 
-import pathlib
-from typing import Dict, Any, Iterator, List
+from pathlib import Path
+from typing import Any, Iterator, cast
 import importlib.resources
+import sys
 
 import yaml
 
 from . import api
+from .const import _G, PACMAN_DB_DIR
+from .typing import LilacInfo, LilacInfos, ExcInfo
 
-ALIASES: Dict[str, Any]
-FUNCTIONS: List[str] = [
+ALIASES: dict[str, Any]
+FUNCTIONS: list[str] = [
   'pre_build', 'post_build', 'post_build_always',
 ]
 
@@ -20,10 +23,7 @@ def _load_aliases() -> None:
 
 _load_aliases()
 
-def iter_pkgdir(
-  repodir: pathlib.Path,
-) -> Iterator[pathlib.Path]:
-
+def iter_pkgdir(repodir: Path) -> Iterator[Path]:
   for x in repodir.iterdir():
     if x.name[0] == '.':
       continue
@@ -34,7 +34,7 @@ def iter_pkgdir(
 
     yield x
 
-def load_lilac_yaml(dir: pathlib.Path) -> Dict[str, Any]:
+def load_lilac_yaml(dir: Path) -> dict[str, Any]:
   with open(dir / 'lilac.yaml') as f:
     conf = yaml.safe_load(f)
 
@@ -56,3 +56,83 @@ def load_lilac_yaml(dir: pathlib.Path) -> Dict[str, Any]:
       conf[func] = funcvalue
 
   return conf
+
+def load_managed_lilacinfos(repodir: Path) -> tuple[LilacInfos, dict[str, ExcInfo]]:
+  infos: LilacInfos = {}
+  errors = {}
+
+  for x in iter_pkgdir(repodir):
+    try:
+      info = load_lilacinfo(x)
+      if not info.managed:
+        continue
+      if info.time_limit_hours < 0:
+        raise ValueError('time_limit_hours should be positive.')
+    except Exception:
+      errors[x.name] = cast(ExcInfo, sys.exc_info())
+
+  return infos, errors
+
+def load_lilacinfo(dir: Path) -> LilacInfo:
+  yamlconf = load_lilac_yaml(dir)
+  if update_on := yamlconf.get('update_on'):
+    update_on_nv, update_on_self = parse_update_on(update_on)
+  else:
+    update_on_nv = []
+    update_on_self = []
+
+  return LilacInfo(
+    pkgbase = dir.absolute().name,
+    maintainers = yamlconf.get('maintainers', []),
+    update_on = update_on_nv,
+    update_on_self = update_on_self,
+    repo_depends = yamlconf.get('repo_depends', []),
+    time_limit_hours = yamlconf.get('time_limit_hours', 1),
+    staging = yamlconf.get('staging', False),
+    managed = yamlconf.get('managed', True),
+  )
+
+def expand_alias_arg(value: str) -> str:
+  return value.format(
+    pacman_db_dir = PACMAN_DB_DIR,
+    repo_name = _G.repo.name,
+  )
+
+def parse_update_on(
+  update_on: list[dict[str, Any]],
+) -> tuple[list[dict[str, str]], list[str]]:
+  ret_nv = []
+  ret_self = []
+
+  for entry in update_on:
+    if entry.get('source') == 'lilac':
+      ret_self.extend(entry['pkgbases'])
+      continue
+
+    # fix wrong key for 'alpm-lilac'
+    if entry.get('source') == 'alpm-lilac':
+      del entry['source']
+      entry['alias'] = 'alpm-lilac'
+
+    alias = entry.pop('alias', None)
+
+    # fill alpm-lilac parameters
+    if alias == 'alpm-lilac':
+      entry['source'] = 'alpm'
+      entry.setdefault('dbpath', str(PACMAN_DB_DIR))
+      entry.setdefault('repo', _G.repo.name)
+
+    elif alias is not None:
+      for k, v in ALIASES[alias].items():
+        if isinstance(v, str):
+          entry.setdefault(k, expand_alias_arg(v))
+        else:
+          entry.setdefault(k, v)
+
+    # fill our dbpath if not provided
+    if entry.get('source') == 'alpm':
+      entry.setdefault('dbpath', str(PACMAN_DB_DIR))
+
+    ret_nv.append(entry)
+
+  return ret_nv, ret_self

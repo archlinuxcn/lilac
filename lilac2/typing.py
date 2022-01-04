@@ -6,6 +6,7 @@ from typing import (
   Sequence,
 )
 from pathlib import Path
+import dataclasses
 
 class LilacMod(types.ModuleType):
   time_limit_hours: float
@@ -16,7 +17,18 @@ class LilacMod(types.ModuleType):
   build_args: List[str]
   update_on: List[Dict[str, str]]
 
-LilacMods = Dict[str, LilacMod]
+@dataclasses.dataclass
+class LilacInfo:
+  pkgbase: str
+  maintainers: list[dict[str, str]]
+  update_on: list[dict[str, str]]
+  update_on_self: list[str]
+  repo_depends: list[tuple[str, str]]
+  time_limit_hours: float
+  staging: bool
+  managed: bool
+
+LilacInfos = Dict[str, LilacInfo]
 
 ExcInfo = Tuple[Type[BaseException], BaseException, types.TracebackType]
 

@@ -16,8 +16,8 @@ from github import GitHub
 from .mail import MailService
 from .typing import LilacMod, Maintainer
 from .tools import ansi_escape_re
-from . import api, lilacpy, lilacyaml
-from .typing import LilacMods
+from . import api, lilacyaml
+from .typing import LilacInfos, LilacInfo
 if TYPE_CHECKING:
   from .packages import Dependency
   del Dependency
@@ -46,7 +46,7 @@ class Repo:
     else:
       self.gh = None
 
-    self.mods: LilacMods = {}  # to be filled by self.load_all_lilac_and_report()
+    self.lilacinfos: LilacInfos = {}  # to be filled by self.load_all_lilac_and_report()
     self.yamls: Dict[str, Any] = {}
 
   @lru_cache()
@@ -92,7 +92,7 @@ class Repo:
   def find_dependents(
     self, pkgbase: str,
   ) -> List[str]:
-    if self.mods:
+    if self.lilacinfos:
       return self._find_dependents_heavy(pkgbase)
     else:
       return self._find_dependents_lite(pkgbase)
@@ -100,18 +100,20 @@ class Repo:
   def _find_dependents_heavy(
     self, pkgbase: str,
   ) -> List[str]:
+    '''find_dependents for main process'''
     ret = []
 
-    for mod in self.mods.values():
-      ds = getattr(mod, 'repo_depends', ())
+    for info in self.lilacinfos.values():
+      ds = info.repo_depends
       if any(x == pkgbase for x, y in ds):
-        ret.append(mod.pkgbase)
+        ret.append(info.pkgbase)
 
     return ret
 
   def _find_dependents_lite(
     self, pkgbase: str,
   ) -> List[str]:
+    '''find_dependents for worker process'''
     ret = []
     self._load_yamls_ignore_errors()
 
@@ -136,16 +138,16 @@ class Repo:
 
   @lru_cache()
   def find_maintainers(
-    self, mod: LilacMod,
+    self, mod: Union[LilacInfo, LilacMod],
     fallback_git: bool = True,
   ) -> List[Maintainer]:
-    return self._find_maintainers_lite(
+    return self._find_maintainers_impl(
       mod.pkgbase,
       maintainers = getattr(mod, 'maintainers', None),
       fallback_git = fallback_git,
     )
 
-  def _find_maintainers_lite(
+  def _find_maintainers_impl(
     self,
     pkgbase: str,
     maintainers: Optional[List[Dict[str, str]]],
@@ -160,10 +162,12 @@ class Repo:
       else:
         dependents = self.find_dependents(pkgbase)
         for pkg in dependents:
-          dmaints = self._find_maintainers_lite(
-            pkg,
-            self.yamls[pkg].get('maintainers'),
-            fallback_git=False,
+          if self.lilacinfos:
+            maintainers = self.lilacinfos[pkg].maintainers
+          else:
+            maintainers = self.yamls[pkg].get('maintainers')
+          dmaints = self._find_maintainers_impl(
+            pkg, maintainers, fallback_git=False,
           )
           ret.extend(dmaints)
 
@@ -222,14 +226,14 @@ class Repo:
 
   def send_error_report(
     self,
-    mod: Union[LilacMod, str], *,
+    mod: Union[LilacInfo, LilacMod, str], *,
     msg: Optional[str] = None,
     exc: Optional[Exception] = None,
     subject: Optional[str] = None,
     logfile: Optional[Path] = None,
   ) -> None:
     '''
-    the mod argument can be a LilacMod, or a str in case the module cannot be loaded,
+    the mod argument can be a LilacInfo, or LilacMod (for worker), or a str in case the module cannot be loaded,
     in that case we use git to find a maintainer.
     '''
     if msg is None and exc is None:
@@ -310,10 +314,10 @@ class Repo:
     self.ms.sendmail(self.repomail, subject, msg)
 
   def manages(self, dep: Dependency) -> bool:
-    return dep.pkgdir.name in self.mods
+    return dep.pkgdir.name in self.lilacinfos
 
   def load_managed_lilac_and_report(self) -> dict[str, tuple[str, ...]]:
-    self.mods, errors = lilacpy.load_managed(self.repodir)
+    self.lilacinfos, errors = lilacyaml.load_managed_lilacinfos(self.repodir)
     failed: dict[str, tuple[str, ...]] = {p: () for p in errors}
     for name, exc_info in errors.items():
       logger.error('error while loading lilac.py for %s', name, exc_info=exc_info)

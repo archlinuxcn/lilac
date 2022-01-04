@@ -11,9 +11,9 @@ REPOPATH = pathlib.Path('/ldata/src/archgitrepo/archlinuxcn')
 PkgPattern = re.compile(r'[\w.+-]+')
 
 def main():
-  mods = {}
+  infos = {}
   for dir in iter_pkgdir(REPOPATH):
-    mods[dir.name] = load_lilac_yaml(dir)
+    infos[dir.name] = load_lilac_yaml(dir)
 
   for line in sys.stdin:
     m = PkgPattern.search(line)
@@ -22,11 +22,11 @@ def main():
       continue
 
     pkg = m.group(0)
-    if pkg not in mods:
+    if pkg not in infos:
       sys.stdout.write(line)
       continue
 
-    m = mods[pkg]
+    m = infos[pkg]
     maints = [x['github'] for x in m['maintainers']]
     line = line.rstrip() + ' (%s)\n' % ' '.join(f'@{x}' for x in maints)
     sys.stdout.write(line)

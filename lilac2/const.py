@@ -17,6 +17,6 @@ _G = types.SimpleNamespace()
 #   repo: Repo
 #   mod: LilacMod
 # worker:
-#   repo: Repo (for sending reports; not loading all mods)
+#   repo: Repo (for sending reports; not loading all lilacinfos)
 #   mod: LilacMod
 #   built_version: Optional[str]

@@ -9,11 +9,11 @@ import graphlib
 import archpkg
 
 from .api import run_cmd
-from .typing import LilacMods
+from .typing import LilacInfos
 from . import lilacyaml
 
 def get_dependency_map(
-  depman: DependencyManager, mods: LilacMods,
+  depman: DependencyManager, lilacinfos: LilacInfos,
 ) -> Dict[str, Set[Dependency]]:
   '''compute ordered, complete dependency relations between pkgbases (the directory names)
 
@@ -24,8 +24,8 @@ def get_dependency_map(
   pkgdir_map: Dict[str, Set[str]] = defaultdict(set)
   rmap: Dict[str, Set[str]] = defaultdict(set)
 
-  for pkgbase, mod in mods.items():
-    depends = getattr(mod, 'repo_depends', ())
+  for pkgbase, info in lilacinfos.items():
+    depends = info.repo_depends
 
     ds = [depman.get(d) for d in depends]
     if ds:

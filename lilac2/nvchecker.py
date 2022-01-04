@@ -15,7 +15,7 @@ import tomli_w
 
 from .cmd import run_cmd
 from .const import mydir
-from .typing import LilacMods, PathLike
+from .typing import LilacInfos, PathLike
 from .tools import reap_zombies
 
 if TYPE_CHECKING:
@@ -55,14 +55,14 @@ class NvResults(UserList):
       return self.data[0].newver
     return None
 
-def _gen_config_from_mods(
-  mods: LilacMods,
+def _gen_config_from_lilacinfos(
+  infos: LilacInfos,
 ) -> Tuple[Dict[str, Any], Dict[str, int], Dict[str, str]]:
   errors = {}
   newconfig = {}
   counts = {}
-  for name, mod in mods.items():
-    confs = getattr(mod, 'update_on', None)
+  for name, info in infos.items():
+    confs = info.update_on
     if not confs:
       errors[name] = 'unknown'
       continue
@@ -87,7 +87,7 @@ def packages_need_update(
   repo: Repo,
   proxy: Optional[str] = None,
 ) -> Tuple[Dict[str, NvResults], Set[str], Set[str]]:
-  newconfig, update_on_counts, update_on_errors = _gen_config_from_mods(repo.mods)
+  newconfig, update_on_counts, update_on_errors = _gen_config_from_lilacinfos(repo.lilacinfos)
 
   if not OLDVER_FILE.exists():
     open(OLDVER_FILE, 'a').close()
@@ -158,12 +158,12 @@ def packages_need_update(
       continue
     pkg = pkg.split(':', 1)[0]
 
-    maintainers = repo.find_maintainers(repo.mods[pkg])
+    maintainers = repo.find_maintainers(repo.lilacinfos[pkg])
     for maintainer in maintainers:
       error_owners[maintainer].extend(pkgerrs)
 
   for pkg, error in update_on_errors.items():
-    maintainers = repo.find_maintainers(repo.mods[pkg])
+    maintainers = repo.find_maintainers(repo.lilacinfos[pkg])
     for maintainer in maintainers:
       error_owners[maintainer].append({
         'name': pkg,
@@ -198,7 +198,7 @@ def packages_need_update(
         # item at this index has failed; insert a dummy one
         nrs.append(NvResult(None, None))
 
-  for pkgbase in repo.mods:
+  for pkgbase in repo.lilacinfos:
     if pkgbase not in nvdata:
       # we know nothing about these versions
       # maybe nvchecker has failed
@@ -219,10 +219,10 @@ def _format_error(error) -> str:
     ret += '\n' + exception + '\n'
   return ret
 
-def nvtake(L: Iterable[str], mods: LilacMods) -> None:
+def nvtake(L: Iterable[str], infos: LilacInfos) -> None:
   names: List[str] = []
   for name in L:
-    confs = getattr(mods[name], 'update_on', None)
+    confs = infos[name].update_on
     if confs:
       names += [f'{name}:{i}' for i in range(len(confs))]
       names[-len(confs)] = name
