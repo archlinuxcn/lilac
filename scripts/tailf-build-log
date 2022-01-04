@@ -446,7 +446,14 @@ def pretty_print(log):
     return
 
   result = log['result']
-  cpupercent = round(100 * log['cputime'] / log['elapsed'])
+  cputime = log['cputime']
+  memory = log['memory']
+  if cputime is None:
+    print(f'{c(1)}WARNING: cputime should not be None!\nLog entry: {log}')
+    cputime = 0
+    memory = 0
+
+  cpupercent = round(100 * cputime / log['elapsed'])
   cpupercent = color_gradient(1 - cpupercent / 100 / N_CORES) + str(cpupercent)
   args = {
     'ts': log['ts'].strftime('%Y-%m-%d %H:%M:%S'),
@@ -456,9 +463,9 @@ def pretty_print(log):
     'pkg_version': log['pkg_version'],
     'elapsed': humantime(log['elapsed']),
     'msg': log['msg'],
-    'cputime': humantime(log['cputime']),
+    'cputime': humantime(cputime),
     'cpupercent': cpupercent,
-    'memory': filesize(log['memory']),
+    'memory': filesize(memory),
   }
 
   fmt = FMT[result]
