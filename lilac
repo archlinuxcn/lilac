@@ -459,6 +459,11 @@ def main_may_raise(D: Dict[str, Any], pkgs_to_build: List[str]) -> None:
     for x in update_succeeded:
       if x in failed_info:
         del failed_info[x]
+    # cleanup remvoed package failed_info
+    if not pkgs_to_build:
+      for x in tuple(failed_info.keys()):
+        if x not in REPO.lilacinfos:
+          del failed_info[x]
     D['failed'] = failed_info
 
     if config['lilac']['rebuild_failed_pkgs']:
