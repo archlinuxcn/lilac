@@ -116,10 +116,15 @@ def poll_rusage(name: str, deadline: float) -> tuple[RUsage, bool]:
         timedout = True
         break
 
-    with open(cpu_file) as f:
-      for l in f:
-        if l.startswith('usage_usec '):
-          usec = int(l.split(None, 1)[-1])
+    try:
+      with open(cpu_file) as f:
+        for l in f:
+          if l.startswith('usage_usec '):
+            usec = int(l.split(None, 1)[-1])
+    except FileNotFoundError:
+      # FIXME: I don't know why, but it sometimes no longer exists
+      logger.warning('cgroup cpu.stat no longer available.')
+      usec = 0
 
   finally:
     if timedout:
