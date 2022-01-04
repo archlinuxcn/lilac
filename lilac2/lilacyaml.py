@@ -68,6 +68,7 @@ def load_managed_lilacinfos(repodir: Path) -> tuple[LilacInfos, dict[str, ExcInf
         continue
       if info.time_limit_hours < 0:
         raise ValueError('time_limit_hours should be positive.')
+      infos[x.name] = info
     except Exception:
       errors[x.name] = cast(ExcInfo, sys.exc_info())
 
