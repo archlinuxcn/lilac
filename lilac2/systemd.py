@@ -82,6 +82,7 @@ def _poll_cmd(pid: int) -> Generator[None, None, None]:
     while True:
       ret = poll.poll(1_000)
       if ret:
+        logger.debug('worker exited')
         return
       yield
   finally:
@@ -122,7 +123,9 @@ def poll_rusage(name: str, deadline: float) -> tuple[RUsage, bool]:
 
   finally:
     if timedout:
+      logger.debug('killing worker service')
       subprocess.run(['systemctl', '--user', 'kill', '--signal=SIGKILL', name])
     else:
+      logger.debug('stopping worker service')
       subprocess.run(['systemctl', '--user', 'stop', '--quiet', name])
   return RUsage(usec / 1_000_000, mem_max), timedout
