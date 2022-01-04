@@ -3,8 +3,7 @@ from __future__ import annotations
 import subprocess
 from pathlib import Path
 from typing import (
-  Optional, Tuple, List, Union, Dict, Set,
-  TYPE_CHECKING, Any
+  Optional, Tuple, List, Union, Dict, TYPE_CHECKING, Any,
 )
 import logging
 from functools import lru_cache
@@ -313,9 +312,9 @@ class Repo:
   def manages(self, dep: Dependency) -> bool:
     return dep.pkgdir.name in self.mods
 
-  def load_managed_lilac_and_report(self) -> Set[str]:
+  def load_managed_lilac_and_report(self) -> dict[str, tuple[str, ...]]:
     self.mods, errors = lilacpy.load_managed(self.repodir)
-    failed = set(errors)
+    failed: dict[str, tuple[str, ...]] = {p: () for p in errors}
     for name, exc_info in errors.items():
       logger.error('error while loading lilac.py for %s', name, exc_info=exc_info)
       exc = exc_info[1]

@@ -8,7 +8,7 @@ import traceback
 import logging
 import time
 from collections import defaultdict
-from typing import Set, Dict, List, Any, Optional, Tuple
+from typing import Set, Dict, List, Any, Optional
 from pathlib import Path
 import graphlib
 import json
@@ -84,7 +84,7 @@ def get_bindmounts(
 BIND_MOUNTS = get_bindmounts(config.get('bindmounts'))
 
 # dict for perserving insertion order
-building_packages: Dict[str, Tuple[()]] = {}
+building_packages: Dict[str, tuple[()]] = {}
 nvdata: Dict[str, NvResults] = {}
 DEPMAP: Dict[str, Set[Dependency]] = {}
 DEPENDS: Dict[str, Set[Dependency]] = {}
@@ -124,7 +124,11 @@ def git_last_commit() -> str:
   cmd = ['git', 'log', '-1', '--format=%H']
   return run_cmd(cmd).strip()
 
-def start_build(repo: Repo, failed: Set[str], built: Set[str]) -> None:
+def start_build(
+  repo: Repo,
+  failed: dict[str, tuple[str, ...]],
+  built: Set[str],
+) -> None:
   # built is used to collect built package names
   global DEPENDS
 
@@ -195,7 +199,7 @@ def start_build(repo: Repo, failed: Set[str], built: Set[str]) -> None:
     logger.info('building these packages: %r', packages)
     for pkg in packages:
       if pkg in failed:
-        # marked as failed, skip
+        # marked as failed (by lilac loader), skip
         continue
 
       logger.info('building %s', pkg)
@@ -274,7 +278,8 @@ def start_build(repo: Repo, failed: Set[str], built: Set[str]) -> None:
           mod = repo.mods[pkg]
 
           if isinstance(e, MissingDependencies):
-            faileddeps = e.deps & failed
+            faileddeps = e.deps.intersection(failed)
+            failed[pkg] = tuple(faileddeps)
             repo.send_error_report(
               mod, subject='%s 出现依赖问题',
               msg = f'{pkg} 缺少依赖 {e.deps}，其中 {faileddeps} 打包失败了。',
@@ -324,16 +329,14 @@ def start_build(repo: Repo, failed: Set[str], built: Set[str]) -> None:
 
       if r:
         built.add(pkg)
-      else:
-        failed.add(pkg)
+      elif 'pkg' not in failed:
+        failed[pkg] = ()
 
   except KeyboardInterrupt:
     logger.info('keyboard interrupted, bye~')
 
 def main_may_raise(D: Dict[str, Any], pkgs_to_build: List[str]) -> None:
   global DEPMAP
-
-  failed_info = D.get('failed', {})
 
   if get_git_branch() != 'master':
     raise Exception('repo not on master, aborting.')
@@ -363,6 +366,8 @@ def main_may_raise(D: Dict[str, Any], pkgs_to_build: List[str]) -> None:
     REPO, proxy)
   nvdata.update(_nvdata) # update to the global object
 
+  failed_info = D.get('failed', {})
+
   if pkgs_to_build:
     need_update: Set[str] = set()
     need_rebuild_failed: Set[str] = set()
@@ -382,8 +387,13 @@ def main_may_raise(D: Dict[str, Any], pkgs_to_build: List[str]) -> None:
 
   updated = {x for x, y in nvdata.items()
               if y.oldver != y.newver}
-  failed_updated = {k for k, v in failed_info.items()
-                    if k in nvdata and nvdata[k].newver != v}
+  if failed_info and isinstance(next(iter(failed_info.values())), str):
+    # to be removed
+    failed_updated = {k for k, v in failed_info.items()
+                      if k in nvdata and nvdata[k].newver != v}
+  else:
+    failed_updated = {k for k, v in failed_info.items()
+                      if k in nvdata and nvdata[k].newver != v['version']}
   # build updated; if last build failed but it gets updated once more,
   # build it again
   need_update = updated | failed_updated
@@ -438,7 +448,12 @@ def main_may_raise(D: Dict[str, Any], pkgs_to_build: List[str]) -> None:
     D['last_commit'] = git_last_commit()
   finally:
     # handle what has been processed even on exception
-    failed_info.update({k: nvdata[k].newver for k in failed if k in nvdata})
+    for k, v in failed.items():
+      if nv := nvdata.get(k):
+        failed_info[k] = {
+          'version': nv.newver,
+          'missing': v,
+        }
 
     for x in update_succeeded:
       if x in failed_info:
@@ -452,7 +467,7 @@ def main_may_raise(D: Dict[str, Any], pkgs_to_build: List[str]) -> None:
       if need_update or rebuild:
         # only nvtake packages we have tried to build (excluding unbuilt
         # packages due to internal errors)
-        built = update_succeeded | failed
+        built = update_succeeded.union(failed)
         update_nv = built & (need_update | rebuild)
         nvtake(update_nv, REPO.mods)
 
