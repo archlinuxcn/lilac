@@ -29,7 +29,7 @@ build_logger = structlog.get_logger(logger_name='build')
 class Repo:
   gh: Optional[GitHub]
 
-  def __init__(self, config: Dict[str, Any]) -> None:
+  def __init__(self, config: dict[str, Any]) -> None:
     self.myaddress = config['lilac']['email']
     self.mymaster = config['lilac']['master']
     self.logurl_template = config['lilac'].get('logurl')
@@ -47,7 +47,8 @@ class Repo:
       self.gh = None
 
     self.lilacinfos: LilacInfos = {}  # to be filled by self.load_all_lilac_and_report()
-    self.yamls: Dict[str, Any] = {}
+    self.yamls: dict[str, Any] = {}
+    self._maint_cache: dict[str, list[Maintainer]] = {}
 
   @lru_cache()
   def maintainer_from_github(self, username: str) -> Optional[Maintainer]:
@@ -136,16 +137,18 @@ class Repo:
       else:
         self.yamls[dir.name] = yamlconf
 
-  @lru_cache()
   def find_maintainers(
     self, mod: Union[LilacInfo, LilacMod],
     fallback_git: bool = True,
   ) -> List[Maintainer]:
-    return self._find_maintainers_impl(
-      mod.pkgbase,
-      maintainers = getattr(mod, 'maintainers', None),
-      fallback_git = fallback_git,
-    )
+    if mod.pkgbase not in self._maint_cache:
+      mts = self._find_maintainers_impl(
+        mod.pkgbase,
+        maintainers = getattr(mod, 'maintainers', None),
+        fallback_git = fallback_git,
+      )
+      self._maint_cache[mod.pkgbase] = mts
+    return self._maint_cache[mod.pkgbase]
 
   def _find_maintainers_impl(
     self,
