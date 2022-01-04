@@ -102,6 +102,7 @@ def build_package(
   except BuildFailed as e:
     result = BuildResult.failed(e.msg)
   except Exception as e:
+    logger.exception('build failed with exception')
     result = BuildResult.failed(e)
   finally:
     del _G.mod
