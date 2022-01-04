@@ -388,13 +388,8 @@ def main_may_raise(D: Dict[str, Any], pkgs_to_build: List[str]) -> None:
 
   updated = {x for x, y in nvdata.items()
               if y.oldver != y.newver}
-  if failed_info and isinstance(next(iter(failed_info.values())), str):
-    # to be removed
-    failed_updated = {k for k, v in failed_info.items()
-                      if k in nvdata and nvdata[k].newver != v}
-  else:
-    failed_updated = {k for k, v in failed_info.items()
-                      if k in nvdata and nvdata[k].newver != v['version']}
+  failed_updated = {k for k, v in failed_info.items()
+                    if k in nvdata and nvdata[k].newver != v['version']}
   # build updated; if last build failed but it gets updated once more,
   # build it again
   need_update = updated | failed_updated
