@@ -105,7 +105,6 @@ def poll_rusage(name: str, deadline: float) -> tuple[RUsage, bool]:
       return RUsage(0, 0), False
 
     mem_file = f'/sys/fs/cgroup{cgroup}/memory.current'
-    cpu_file = f'/sys/fs/cgroup{cgroup}/cpu.stat'
 
     mem_max = 0
     for _ in _poll_cmd(pid):
@@ -116,21 +115,17 @@ def poll_rusage(name: str, deadline: float) -> tuple[RUsage, bool]:
         timedout = True
         break
 
-    try:
-      with open(cpu_file) as f:
-        for l in f:
-          if l.startswith('usage_usec '):
-            usec = int(l.split(None, 1)[-1])
-    except FileNotFoundError:
-      # FIXME: I don't know why, but it sometimes no longer exists
-      logger.warning('cgroup cpu.stat no longer available.')
-      usec = 0
-    except OSError as e:
-      if e.errno == 19: # No such device
-        logger.warning('cgroup cpu.stat no longer disappeared while reading.')
-        usec = 0
-      else:
-        raise
+    # systemd will remove the cgroup as soon as the process exits
+    # instead of racing with systemd, we just ask it for the data
+    nsec = 0
+    out = subprocess.check_output([
+      'systemctl', '--user', 'show', f'{name}.service',
+      '--property=CPUUsageNSec',
+    ], text=True)
+    for l in out.splitlines():
+      k, v = l.split('=', 1)
+      if k == 'CPUUsageNSec':
+        nsec = int(v)
 
   finally:
     if timedout:
@@ -139,4 +134,4 @@ def poll_rusage(name: str, deadline: float) -> tuple[RUsage, bool]:
     else:
       logger.debug('stopping worker service')
       subprocess.run(['systemctl', '--user', 'stop', '--quiet', name])
-  return RUsage(usec / 1_000_000, mem_max), timedout
+  return RUsage(nsec / 1_000_000_000, mem_max), timedout
