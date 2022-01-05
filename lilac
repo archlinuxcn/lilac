@@ -437,8 +437,9 @@ def main_may_raise(D: Dict[str, Any], pkgs_to_build: List[str]) -> None:
   try:
     build_logger.info('build start')
     if db.USE:
+      logdir_name = logdir.name
       with db.get_session() as s:
-        b = db.Batch(event='start')
+        b = db.Batch(event='start', logdir=logdir_name)
         s.add(b)
         db.build_updated(s)
     start_build(REPO, failed, update_succeeded)

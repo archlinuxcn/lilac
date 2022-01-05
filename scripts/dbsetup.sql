@@ -25,7 +25,8 @@ create type batchevent as enum ('start', 'stop');
 create table batch (
   id serial primary key,
   ts timestamp with time zone not null default current_timestamp,
-  event batchevent not null
+  event batchevent not null,
+  logdir text
 );
 
 create index batch_ts_idx on batch (ts);
