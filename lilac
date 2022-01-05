@@ -330,7 +330,7 @@ def start_build(
 
       if r:
         built.add(pkg)
-      elif 'pkg' not in failed:
+      elif pkg not in failed:
         failed[pkg] = ()
 
   except KeyboardInterrupt:
