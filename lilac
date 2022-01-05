@@ -281,10 +281,11 @@ def start_build(
           if isinstance(e, MissingDependencies):
             faileddeps = e.deps.intersection(failed)
             failed[pkg] = tuple(faileddeps)
-            repo.send_error_report(
-              mod, subject='%s 出现依赖问题',
-              msg = f'{pkg} 缺少依赖 {e.deps}，其中 {faileddeps} 打包失败了。',
-            )
+            if e.deps == faileddeps:
+              msg = f'{pkg} 的依赖 {faileddeps} 打包失败了。'
+            else:
+              msg = f'{pkg} 缺少依赖 {e.deps}，其中 {faileddeps} 打包失败了。'
+            repo.send_error_report(mod, subject='%s 出现依赖问题', msg = msg)
           else:
             repo.send_error_report(mod, exc=e, logfile=logfile)
 
