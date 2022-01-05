@@ -125,6 +125,12 @@ def poll_rusage(name: str, deadline: float) -> tuple[RUsage, bool]:
       # FIXME: I don't know why, but it sometimes no longer exists
       logger.warning('cgroup cpu.stat no longer available.')
       usec = 0
+    except OSError as e:
+      if e.errno == 19: # No such device
+        logger.warning('cgroup cpu.stat no longer disappeared while reading.')
+        usec = 0
+      else:
+        raise
 
   finally:
     if timedout:
