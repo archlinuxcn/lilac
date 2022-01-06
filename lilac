@@ -193,7 +193,7 @@ def buildreason_priority(r: BuildReason) -> int:
   if isinstance(r, BuildReason.NvChecker):
     if any(source == 'manual' for _, source in r.items):
       return 0
-    if len(r.items) > 1 or r.items[0] > 0:
+    if len(r.items) > 1 or r.items[0][0] > 0:
       # rebuild seen by nvchecker
       return 1
 
