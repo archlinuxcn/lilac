@@ -215,6 +215,7 @@ class BuildSorter:
     return self.sorter.is_active()
 
   def done(self, pkg: str) -> None:
+    self.ready.remove(pkg)
     self.sorter.done(pkg)
 
   def get_ready(self) -> tuple[str, ...]:
