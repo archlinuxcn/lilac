@@ -467,11 +467,15 @@ def main_may_raise(D: Dict[str, Any], pkgs_from_args: List[str]) -> None:
       if update_succeeded:
         nvtake(update_succeeded, REPO.lilacinfos)
     else:
-      if need_update or rebuild:
+      updated_by_nv = {
+        p for p, rs in build_reasons.items()
+        if any(isinstance(r, BuildReason.NvChecker) for r in rs)
+      }
+      if updated_by_nv:
         # only nvtake packages we have tried to build (excluding unbuilt
         # packages due to internal errors)
         built = update_succeeded.union(failed)
-        update_nv = built & (need_update | rebuild)
+        update_nv = built & updated_by_nv
         nvtake(update_nv, REPO.lilacinfos)
 
     build_logger.info('build end')
