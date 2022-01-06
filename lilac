@@ -123,12 +123,9 @@ def git_last_commit() -> str:
   cmd = ['git', 'log', '-1', '--format=%H']
   return run_cmd(cmd).strip()
 
-def start_build(
+def packages_with_depends(
   repo: Repo,
-  failed: dict[str, tuple[str, ...]],
-  built: Set[str],
-) -> None:
-  # built is used to collect built package names
+) -> list[str]:
   dep_building_map: Dict[str, Set[str]] = {}
   nonexistent: Dict[str, List[Dependency]] = defaultdict(list)
   for name in building_packages:
@@ -165,6 +162,15 @@ def start_build(
   packages = graphlib.TopologicalSorter(dep_building_map).static_order()
   # filter out already built packages
   packages = [x for x in packages if x in building_packages]
+  return packages
+
+def start_build(
+  repo: Repo,
+  failed: dict[str, tuple[str, ...]],
+  built: Set[str],
+) -> None:
+  # built is used to collect built package names
+  packages = packages_with_depends(repo)
 
   if db.USE:
     from sqlalchemy import delete, update
