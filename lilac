@@ -337,7 +337,7 @@ def start_build(
   except KeyboardInterrupt:
     logger.info('keyboard interrupted, bye~')
 
-def main_may_raise(D: Dict[str, Any], pkgs_to_build: List[str]) -> None:
+def main_may_raise(D: Dict[str, Any], pkgs_from_args: List[str]) -> None:
   global DEPMAP
 
   if get_git_branch() != 'master':
@@ -355,10 +355,10 @@ def main_may_raise(D: Dict[str, Any], pkgs_to_build: List[str]) -> None:
   depman = DependencyManager(REPO.repodir)
   DEPMAP = get_dependency_map(depman, REPO.lilacinfos)
 
-  if pkgs_to_build:
+  if pkgs_from_args:
     all_infos = REPO.lilacinfos
     REPO.lilacinfos = {}
-    for pkg_to_build in pkgs_to_build:
+    for pkg_to_build in pkgs_from_args:
       for dep in DEPMAP[pkg_to_build]:
         REPO.lilacinfos[dep.pkgname] = all_infos[dep.pkgname]
       REPO.lilacinfos[pkg_to_build] = all_infos[pkg_to_build]
@@ -370,7 +370,7 @@ def main_may_raise(D: Dict[str, Any], pkgs_to_build: List[str]) -> None:
 
   failed_info = D.get('failed', {})
 
-  if pkgs_to_build:
+  if pkgs_from_args:
     need_update: Set[str] = set()
     need_rebuild_failed: Set[str] = set()
     need_rebuild_pkgrel: Set[str] = set()
@@ -407,8 +407,8 @@ def main_may_raise(D: Dict[str, Any], pkgs_to_build: List[str]) -> None:
   all_building: List[str] = []
   all_building.extend(rebuild)
 
-  all_building.extend(pkgs_to_build)
-  for p in pkgs_to_build:
+  all_building.extend(pkgs_from_args)
+  for p in pkgs_from_args:
     build_reasons[p].append(BuildReason.Cmdline())
 
   all_building.extend(need_rebuild_pkgrel)
@@ -457,7 +457,7 @@ def main_may_raise(D: Dict[str, Any], pkgs_to_build: List[str]) -> None:
       if x in failed_info:
         del failed_info[x]
     # cleanup remvoed package failed_info
-    if not pkgs_to_build:
+    if not pkgs_from_args:
       for x in tuple(failed_info.keys()):
         if x not in REPO.lilacinfos:
           del failed_info[x]
@@ -485,11 +485,11 @@ def main_may_raise(D: Dict[str, Any], pkgs_to_build: List[str]) -> None:
     if config['lilac']['git_push']:
       git_push()
 
-def main(pkgs_to_build: List[str]) -> None:
+def main(pkgs_from_args: List[str]) -> None:
   store = mydir / 'store'
   with PickledData(store, default={}) as D:
     try:
-      main_may_raise(D, pkgs_to_build)
+      main_may_raise(D, pkgs_from_args)
     except Exception:
       tb = traceback.format_exc()
       logger.exception('unexpected error')

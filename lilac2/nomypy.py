@@ -90,11 +90,10 @@ class Depended(BuildReason):
   def _extra_info(self) -> str:
     return self.depender
 
-# TODO
-class DepsRecovered(BuildReason):
+class FailedByDeps(BuildReason):
   def __init__(self, deps: list[str]) -> None:
     self.deps = deps
 
 class Cmdline(BuildReason): pass
 
-del NvChecker, UpdatedFailed, UpdatedPkgrel, Depended, DepsRecovered, Cmdline
+del NvChecker, UpdatedFailed, UpdatedPkgrel, Depended, FailedByDeps, Cmdline
