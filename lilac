@@ -8,7 +8,7 @@ import traceback
 import logging
 import time
 from collections import defaultdict
-from typing import Set, Dict, List, Any, Optional, Generator
+from typing import Set, Dict, List, Any, Optional
 from pathlib import Path
 import graphlib
 import json
@@ -201,14 +201,24 @@ def building_priority(pkg: str) -> int:
     return 4
   return 3
 
-def iter_packages(sorter: graphlib.TopologicalSorter) -> Generator[str, None, None]:
-  sorter.prepare()
-  while sorter.is_active():
-    node_group = sorter.get_ready()
-    nodes = [x for x in node_group if x in build_reasons]
-    nodes.sort(key=building_priority)
-    yield from nodes
-    sorter.done(*node_group)
+class BuildSorter:
+  def __init__(self, sorter: graphlib.TopologicalSorter) -> None:
+    sorter.prepare()
+    self.sorter = sorter
+    self.ready: list[str] = []
+
+  def is_active(self) -> bool:
+    return self.sorter.is_active()
+
+  def done(self, pkg: str) -> None:
+    self.sorter.done(pkg)
+
+  def get_ready(self) -> tuple[str, ...]:
+    new = self.sorter.get_ready()
+    if new:
+      self.ready += [x for x in new if x in build_reasons]
+      self.ready.sort(key=building_priority)
+    return tuple(self.ready)
 
 def start_build(
   repo: Repo,
@@ -223,8 +233,12 @@ def start_build(
     from sqlalchemy import update
 
   try:
-    for pkg in iter_packages(sorter):
+    buildsorter = BuildSorter(sorter)
+    while buildsorter.is_active():
+      pkg = buildsorter.get_ready()[0]
+
       if pkg in failed:
+        buildsorter.done(pkg)
         # marked as failed (by lilac loader), skip
         continue
 
@@ -353,6 +367,8 @@ def start_build(
           s.execute(stmt)
 
           db.build_updated(s)
+
+      buildsorter.done(pkg)
 
       if r:
         built.add(pkg)
