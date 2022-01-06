@@ -83,10 +83,9 @@ def get_bindmounts(
 
 BIND_MOUNTS = get_bindmounts(config.get('bindmounts'))
 
-building_packages: set[str] = set()
 nvdata: Dict[str, NvResults] = {}
 DEPMAP: Dict[str, Set[Dependency]] = {}
-build_reasons: Dict[str, List[BuildReason]] = defaultdict(list)
+build_reasons: dict[str, list[BuildReason]] = defaultdict(list)
 
 logger = logging.getLogger(__name__)
 build_logger_old = logging.getLogger('build')
@@ -127,7 +126,7 @@ def packages_with_depends(
 ) -> graphlib.TopologicalSorter:
   dep_building_map: Dict[str, Set[str]] = {}
   nonexistent: Dict[str, List[Dependency]] = defaultdict(list)
-  for name in building_packages:
+  for name in tuple(build_reasons):
     ds = DEPMAP[name]
     for d in ds:
       if not d.resolve():
@@ -139,7 +138,6 @@ def packages_with_depends(
         # we need build this too
         logger.info('build %s as a dependency of %s because no built package found',
                     d.pkgname, name)
-        building_packages.add(d.pkgname)
         build_reasons[d.pkgname].append(BuildReason.Depended(name))
 
     dep_building_map[name] = set()
@@ -162,7 +160,7 @@ def packages_with_depends(
 
   packages = graphlib.TopologicalSorter(dep_building_map).static_order()
   # filter out already built packages
-  packages = [x for x in packages if x in building_packages]
+  packages = [x for x in packages if x in build_reasons]
   logger.info('building these packages: %r', packages)
 
   if db.USE:
@@ -202,7 +200,7 @@ def iter_packages(sorter: graphlib.TopologicalSorter) -> Generator[str, None, No
   sorter.prepare()
   while sorter.is_active():
     node_group = sorter.get_ready()
-    nodes = [x for x in node_group if x in building_packages]
+    nodes = [x for x in node_group if x in build_reasons]
     nodes.sort(key=building_priority)
     yield from nodes
     sorter.done(*node_group)
@@ -424,23 +422,14 @@ def main_may_raise(D: Dict[str, Any], pkgs_from_args: List[str]) -> None:
       sources = [(i, confs[i]['source']) for i in diff_idxs]
       build_reasons[p].append(BuildReason.NvChecker(sources))
 
-  # rebuild first, update later
-  all_building: List[str] = []
-  all_building.extend(rebuild)
-
-  all_building.extend(pkgs_from_args)
   for p in pkgs_from_args:
     build_reasons[p].append(BuildReason.Cmdline())
 
-  all_building.extend(need_rebuild_pkgrel)
   for p in need_rebuild_pkgrel:
     build_reasons[p].append(BuildReason.UpdatedPkgrel())
 
-  all_building.extend(need_rebuild_failed)
   for p in need_rebuild_failed:
     build_reasons[p].append(BuildReason.UpdatedFailed())
-
-  all_building.extend(need_update)
 
   logger.info('these updated (pkgrel) packages should be rebuilt: %r',
               need_rebuild_pkgrel or None)
@@ -452,7 +441,6 @@ def main_may_raise(D: Dict[str, Any], pkgs_from_args: List[str]) -> None:
               ' as detected by nvchecker or manually specified: %r',
               rebuild or None)
 
-  building_packages.update(all_building)
   update_succeeded: Set[str] = set()
 
   try:
