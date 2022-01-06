@@ -8,7 +8,7 @@ import traceback
 import logging
 import time
 from collections import defaultdict
-from typing import Set, Dict, List, Any, Optional
+from typing import Set, Dict, List, Any, Optional, Generator
 from pathlib import Path
 import graphlib
 import json
@@ -83,8 +83,7 @@ def get_bindmounts(
 
 BIND_MOUNTS = get_bindmounts(config.get('bindmounts'))
 
-# dict for perserving insertion order
-building_packages: Dict[str, tuple[()]] = {}
+building_packages: set[str] = set()
 nvdata: Dict[str, NvResults] = {}
 DEPMAP: Dict[str, Set[Dependency]] = {}
 build_reasons: Dict[str, List[BuildReason]] = defaultdict(list)
@@ -125,7 +124,7 @@ def git_last_commit() -> str:
 
 def packages_with_depends(
   repo: Repo,
-) -> list[str]:
+) -> graphlib.TopologicalSorter:
   dep_building_map: Dict[str, Set[str]] = {}
   nonexistent: Dict[str, List[Dependency]] = defaultdict(list)
   for name in building_packages:
@@ -140,7 +139,7 @@ def packages_with_depends(
         # we need build this too
         logger.info('build %s as a dependency of %s because no built package found',
                     d.pkgname, name)
-        building_packages[d.pkgname] = ()
+        building_packages.add(d.pkgname)
         build_reasons[d.pkgname].append(BuildReason.Depended(name))
 
     dep_building_map[name] = set()
@@ -159,21 +158,15 @@ def packages_with_depends(
       msg = f'软件包 {name} 的 lilac.py 或者 lilac.yaml 指定了 repo_depends，然而其直接或者间接的依赖项 {deps!r} 并不在本仓库中。'
     )
 
+  sorter = graphlib.TopologicalSorter(dep_building_map)
+
   packages = graphlib.TopologicalSorter(dep_building_map).static_order()
   # filter out already built packages
   packages = [x for x in packages if x in building_packages]
-  return packages
-
-def start_build(
-  repo: Repo,
-  failed: dict[str, tuple[str, ...]],
-  built: Set[str],
-) -> None:
-  # built is used to collect built package names
-  packages = packages_with_depends(repo)
+  logger.info('building these packages: %r', packages)
 
   if db.USE:
-    from sqlalchemy import delete, update
+    from sqlalchemy import delete
     with db.get_session() as s:
       stmt = delete(db.PkgCurrent)
       s.execute(stmt)
@@ -189,9 +182,44 @@ def start_build(
         s.add(p)
       db.build_updated(s)
 
+  return sorter
+
+def building_priority(pkg: str) -> int:
+  br = build_reasons[pkg]
+  if any(isinstance(r, BuildReason.UpdatedPkgrel) for r in BuildReason):
+    return 0
+  for r in br:
+    if isinstance(r, BuildReason.NvChecker):
+      if any(source == 'manual' for _, source in r.items):
+        return 0
+  if any(isinstance(r, BuildReason.UpdatedFailed) for r in BuildReason):
+    return 1
+  if all(isinstance(r, BuildReason.Depended) for r in BuildReason):
+    return 3
+  return 2
+
+def iter_packages(sorter: graphlib.TopologicalSorter) -> Generator[str, None, None]:
+  sorter.prepare()
+  while sorter.is_active():
+    node_group = sorter.get_ready()
+    nodes = [x for x in node_group if x in building_packages]
+    nodes.sort(key=building_priority)
+    yield from nodes
+    sorter.done(*node_group)
+
+def start_build(
+  repo: Repo,
+  failed: dict[str, tuple[str, ...]],
+  built: Set[str],
+) -> None:
+  # built is used to collect built package names
+  sorter = packages_with_depends(repo)
+
+  if db.USE:
+    from sqlalchemy import update
+
   try:
-    logger.info('building these packages: %r', packages)
-    for pkg in packages:
+    for pkg in iter_packages(sorter):
       if pkg in failed:
         # marked as failed (by lilac loader), skip
         continue
@@ -424,7 +452,7 @@ def main_may_raise(D: Dict[str, Any], pkgs_from_args: List[str]) -> None:
               ' as detected by nvchecker or manually specified: %r',
               rebuild or None)
 
-  building_packages.update({x: () for x in all_building})
+  building_packages.update(all_building)
   update_succeeded: Set[str] = set()
 
   try:
