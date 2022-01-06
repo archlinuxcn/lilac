@@ -183,16 +183,16 @@ def packages_with_depends(
   return sorter
 
 def building_priority(pkg: str) -> int:
-  br = build_reasons[pkg]
-  if any(isinstance(r, BuildReason.UpdatedPkgrel) for r in BuildReason):
+  rs = build_reasons[pkg]
+  if any(isinstance(r, BuildReason.UpdatedPkgrel) for r in rs):
     return 0
-  for r in br:
+  for r in rs:
     if isinstance(r, BuildReason.NvChecker):
       if any(source == 'manual' for _, source in r.items):
         return 0
-  if any(isinstance(r, BuildReason.UpdatedFailed) for r in BuildReason):
+  if any(isinstance(r, BuildReason.UpdatedFailed) for r in rs):
     return 1
-  if all(isinstance(r, BuildReason.Depended) for r in BuildReason):
+  if all(isinstance(r, BuildReason.Depended) for r in rs):
     return 3
   return 2
 
