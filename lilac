@@ -87,7 +87,6 @@ BIND_MOUNTS = get_bindmounts(config.get('bindmounts'))
 building_packages: Dict[str, tuple[()]] = {}
 nvdata: Dict[str, NvResults] = {}
 DEPMAP: Dict[str, Set[Dependency]] = {}
-DEPENDS: Dict[str, Set[Dependency]] = {}
 build_reasons: Dict[str, List[BuildReason]] = defaultdict(list)
 
 logger = logging.getLogger(__name__)
@@ -130,15 +129,10 @@ def start_build(
   built: Set[str],
 ) -> None:
   # built is used to collect built package names
-  global DEPENDS
-
-  building_depmap = {}
-  for p in building_packages:
-    building_depmap[p] = DEPMAP[p]
-
   dep_building_map: Dict[str, Set[str]] = {}
   nonexistent: Dict[str, List[Dependency]] = defaultdict(list)
-  for name, ds in building_depmap.items():
+  for name in building_packages:
+    ds = DEPMAP[name]
     for d in ds:
       if not d.resolve():
         if not repo.manages(d):
@@ -171,13 +165,6 @@ def start_build(
   packages = graphlib.TopologicalSorter(dep_building_map).static_order()
   # filter out already built packages
   packages = [x for x in packages if x in building_packages]
-
-  # ensure all packages including dependents are included
-  for p in packages:
-    building_depmap[p] = DEPMAP[p]
-
-  # used to decide what to install when building
-  DEPENDS = building_depmap
 
   if db.USE:
     from sqlalchemy import delete, update
@@ -222,7 +209,7 @@ def start_build(
         pkg, repo.lilacinfos[pkg],
         update_info = nvdata[pkg],
         bindmounts = BIND_MOUNTS,
-        depends = DEPENDS.get(pkg, ()),
+        depends = DEPMAP.get(pkg, ()),
         repo = REPO,
         myname = MYNAME,
         destdir = DESTDIR,
