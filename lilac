@@ -161,7 +161,8 @@ def packages_with_depends(
   packages = graphlib.TopologicalSorter(dep_building_map).static_order()
   # filter out already built packages
   packages = [x for x in packages if x in build_reasons]
-  logger.info('building these packages: %r', packages)
+  for p in packages:
+    logger.info('building %s because of %r', p, build_reasons[p])
 
   if db.USE:
     from sqlalchemy import delete
@@ -390,7 +391,6 @@ def main_may_raise(D: Dict[str, Any], pkgs_from_args: List[str]) -> None:
   failed_info = D.get('failed', {})
 
   if pkgs_from_args:
-    need_update: Set[str] = set()
     need_rebuild_failed: Set[str] = set()
     need_rebuild_pkgrel: Set[str] = set()
   else:
@@ -406,13 +406,6 @@ def main_may_raise(D: Dict[str, Any], pkgs_from_args: List[str]) -> None:
     need_rebuild_pkgrel = {x for x in changed
                           if pkgrel_changed(last_commit, 'HEAD', x)} - unknown
 
-  updated = {x for x, y in nvdata.items()
-              if y.oldver != y.newver}
-  failed_updated = {k for k, v in failed_info.items()
-                    if k in nvdata and nvdata[k].newver != v['version']}
-  # build updated; if last build failed but it gets updated once more,
-  # build it again
-  need_update = updated | failed_updated
   for p, vers in nvdata.items():
     diff_idxs = [i for i, v in enumerate(vers)
                  if v.oldver != v.newver]
@@ -431,16 +424,6 @@ def main_may_raise(D: Dict[str, Any], pkgs_from_args: List[str]) -> None:
   for p in need_rebuild_failed:
     build_reasons[p].append(BuildReason.UpdatedFailed())
 
-  logger.info('these updated (pkgrel) packages should be rebuilt: %r',
-              need_rebuild_pkgrel or None)
-  logger.info('these previously-failed packages should be rebuilt: %r',
-              need_rebuild_failed or None)
-  logger.info('these packages are updated as detected by nvchecker: %r',
-              need_update or None)
-  logger.info('these packages need rebuilding'
-              ' as detected by nvchecker or manually specified: %r',
-              rebuild or None)
-
   update_succeeded: Set[str] = set()
 
   try:
@@ -458,7 +441,7 @@ def main_may_raise(D: Dict[str, Any], pkgs_from_args: List[str]) -> None:
     for k, v in failed.items():
       if nv := nvdata.get(k):
         failed_info[k] = {
-          'version': nv.newver,
+          'version': nv.newver, # not used
           'missing': v,
         }
 
