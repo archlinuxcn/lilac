@@ -220,10 +220,11 @@ class BuildSorter:
 
   def get_ready(self) -> tuple[str, ...]:
     new = self.sorter.get_ready()
-    if new:
+    while new:
       self.ready += [x for x in new if x in build_reasons]
       self.ready.sort(key=building_priority)
       self.sorter.done(*[x for x in new if x not in build_reasons])
+      new = self.sorter.get_ready()
     logger.debug('ready-to-build packages: %s', self.ready)
     return tuple(self.ready)
 
