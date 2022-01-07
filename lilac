@@ -223,6 +223,7 @@ class BuildSorter:
     if new:
       self.ready += [x for x in new if x in build_reasons]
       self.ready.sort(key=building_priority)
+    logger.debug('ready-to-build packages: %s', self.ready)
     return tuple(self.ready)
 
 def start_build(
