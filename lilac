@@ -464,8 +464,8 @@ def main_may_raise(
         s.add(b)
         db.build_updated(s)
     start_build(REPO, logdir, failed, update_succeeded)
-    D['last_commit'] = git_last_commit()
   finally:
+    D['last_commit'] = git_last_commit()
     # handle what has been processed even on exception
     for k, v in failed.items():
       if nv := nvdata.get(k):
