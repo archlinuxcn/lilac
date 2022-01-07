@@ -391,8 +391,8 @@ def main_may_raise(
 ) -> None:
   global DEPMAP
 
-  if get_git_branch() != 'master':
-    raise Exception('repo not on master, aborting.')
+  if get_git_branch() not in ['master', 'main']:
+    raise Exception('repo not on master or main, aborting.')
 
   if dburl := config['lilac'].get('dburl'):
     import sqlalchemy
