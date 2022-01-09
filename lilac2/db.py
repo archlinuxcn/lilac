@@ -45,3 +45,11 @@ def build_updated(s):
 
   from sqlalchemy import text
   s.execute(text('notify build_updated'))
+
+def is_last_build_failed(pkgbase: str) -> bool:
+  with get_session() as s:
+    r = s.query(PkgLog.result).filter(
+      PkgLog.pkgbase == pkgbase,
+    ).order_by(PkgLog.ts.desc()).limit(1).one_or_none()
+
+  return r and r == 'failed'

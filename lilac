@@ -134,7 +134,11 @@ def packages_with_depends(
                          name, d)
           nonexistent[name].append(d)
           continue
-        # we need build this too
+
+        # don't rebuild a failed dep
+        if db.USE and db.is_last_build_failed(d.pkgname):
+          continue
+
         logger.info('build %s as a dependency of %s because no built package found',
                     d.pkgname, name)
         build_reasons[d.pkgname].append(BuildReason.Depended(name))
@@ -151,8 +155,8 @@ def packages_with_depends(
   for name, deps in nonexistent.items():
     repo.send_error_report(
       repo.lilacinfos[name],
-      subject='软件包 %s 的 lilac.{py,yaml} 指定了不存在的依赖',
-      msg = f'软件包 {name} 的 lilac.py 或者 lilac.yaml 指定了 repo_depends，然而其直接或者间接的依赖项 {deps!r} 并不在本仓库中。'
+      subject='软件包 %s 的 lilac.yaml 指定了不存在的依赖',
+      msg = f'软件包 {name} 的 lilac.yaml 指定了 repo_depends，然而其直接或者间接的依赖项 {deps!r} 并不在本仓库中。'
     )
 
   sorter = graphlib.TopologicalSorter(dep_building_map)
@@ -341,7 +345,7 @@ def start_build(
             if e.deps == faileddeps:
               msg = f'{pkg} 的依赖 {faileddeps} 打包失败了。'
             else:
-              msg = f'{pkg} 缺少依赖 {e.deps}，其中 {faileddeps} 打包失败了。'
+              msg = f'{pkg} 缺少依赖 {e.deps}，其中 {faileddeps} 本次打包失败了。'
             repo.send_error_report(mod, subject='%s 出现依赖问题', msg = msg)
           else:
             repo.send_error_report(mod, exc=e, logfile=logfile)
