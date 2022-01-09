@@ -52,4 +52,4 @@ def is_last_build_failed(pkgbase: str) -> bool:
       PkgLog.pkgbase == pkgbase,
     ).order_by(PkgLog.ts.desc()).limit(1).one_or_none()
 
-  return r and r == 'failed'
+  return r and r[0] == 'failed'
