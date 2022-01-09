@@ -221,10 +221,20 @@ class BuildSorter:
   def get_ready(self) -> tuple[str, ...]:
     new = self.sorter.get_ready()
     while new:
-      self.ready += [x for x in new if x in build_reasons]
+      for x in new:
+        if rs := build_reasons.get(x):
+          if len(rs) == 1 and isinstance(rs[0], BuildReason.FailedByDeps):
+            ds = DEPMAP[x]
+            if not all(d.resolve() for d in ds):
+              self.sorter.done(x)
+              continue
+          self.ready.append(x)
+        else:
+          self.sorter.done(x)
+
       self.ready.sort(key=building_priority)
-      self.sorter.done(*[x for x in new if x not in build_reasons])
       new = self.sorter.get_ready()
+
     logger.debug('ready-to-build packages: %s', self.ready)
     return tuple(self.ready)
 
@@ -232,7 +242,7 @@ def start_build(
   repo: Repo,
   logdir: Path,
   failed: dict[str, tuple[str, ...]],
-  built: Set[str],
+  built: set[str],
 ) -> None:
   # built is used to collect built package names
   sorter = packages_with_depends(repo)
@@ -454,6 +464,10 @@ def main_may_raise(
 
   for p in need_rebuild_failed:
     build_reasons[p].append(BuildReason.UpdatedFailed())
+
+  for p, i in failed_info.items():
+    if deps := i['missing']:
+      build_reasons[p].append(BuildReason.FailedByDeps(deps))
 
   update_succeeded: Set[str] = set()
 

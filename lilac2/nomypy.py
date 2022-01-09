@@ -91,7 +91,7 @@ class Depended(BuildReason):
     return self.depender
 
 class FailedByDeps(BuildReason):
-  def __init__(self, deps: list[str]) -> None:
+  def __init__(self, deps: tuple[str]) -> None:
     self.deps = deps
 
 class Cmdline(BuildReason): pass
