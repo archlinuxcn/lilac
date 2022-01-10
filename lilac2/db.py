@@ -1,5 +1,6 @@
 from contextlib import contextmanager
 
+from sqlalchemy import update
 from sqlalchemy.orm import sessionmaker, declarative_base
 from sqlalchemy.ext.declarative import DeclarativeMeta, DeferredReflection
 
@@ -39,7 +40,7 @@ def get_session():
   finally:
     session.close()
 
-def build_updated(s):
+def build_updated(s) -> None:
   if s.bind.dialect.name != 'postgresql':
     return
 
@@ -53,3 +54,13 @@ def is_last_build_failed(pkgbase: str) -> bool:
     ).order_by(PkgLog.ts.desc()).limit(1).one_or_none()
 
   return r and r[0] == 'failed'
+
+def mark_pkg_as(s, pkg: str, status: str) -> None:
+  stmt = update(
+    PkgCurrent
+  ).where(
+    PkgCurrent.pkgbase == pkg,
+  ).values(
+    status = status,
+  )
+  s.execute(stmt)

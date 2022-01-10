@@ -241,9 +241,6 @@ def start_build(
   # built is used to collect built package names
   sorter = packages_with_depends(repo)
 
-  if db.USE:
-    from sqlalchemy import update
-
   try:
     buildsorter = BuildSorter(sorter)
     while buildsorter.is_active():
@@ -251,6 +248,10 @@ def start_build(
 
       if pkg in failed:
         buildsorter.done(pkg)
+        if db.USE:
+          with db.get_session() as s:
+            db.mark_pkg_as(s, pkg, 'done')
+            db.build_updated(s)
         # marked as failed (by lilac loader), skip
         continue
 
@@ -258,8 +259,12 @@ def start_build(
         if len(rs) == 1 and isinstance(rs[0], BuildReason.FailedByDeps):
           ds = DEPMAP[pkg]
           if not all(d.resolve() for d in ds):
-            # deps are still missing, skip
             buildsorter.done(pkg)
+            if db.USE:
+              with db.get_session() as s:
+                db.mark_pkg_as(s, pkg, 'done')
+                db.build_updated(s)
+            # deps are still missing, skip
             continue
 
       logger.info('building %s', pkg)
@@ -267,14 +272,7 @@ def start_build(
 
       if db.USE:
         with db.get_session() as s:
-          stmt = update(
-            db.PkgCurrent
-          ).where(
-            db.PkgCurrent.pkgbase == pkg,
-          ).values(
-            status = 'building',
-          )
-          s.execute(stmt)
+          db.mark_pkg_as(s, pkg, 'building')
           db.build_updated(s)
 
       r, version = build_package(
@@ -376,16 +374,7 @@ def start_build(
             build_reasons = json.dumps(rs),
           )
           s.add(p)
-
-          stmt = update(
-            db.PkgCurrent
-          ).where(
-            db.PkgCurrent.pkgbase == pkg,
-          ).values(
-            status = 'done',
-          )
-          s.execute(stmt)
-
+          db.mark_pkg_as(s, pkg, 'done')
           db.build_updated(s)
 
       buildsorter.done(pkg)
