@@ -225,20 +225,10 @@ class BuildSorter:
   def get_ready(self) -> tuple[str, ...]:
     new = self.sorter.get_ready()
     while new:
-      for x in new:
-        if rs := build_reasons.get(x):
-          if len(rs) == 1 and isinstance(rs[0], BuildReason.FailedByDeps):
-            ds = DEPMAP[x]
-            if not all(d.resolve() for d in ds):
-              self.sorter.done(x)
-              continue
-          self.ready.append(x)
-        else:
-          self.sorter.done(x)
-
+      self.ready += [x for x in new if x in build_reasons]
       self.ready.sort(key=building_priority)
+      self.sorter.done(*[x for x in new if x not in build_reasons])
       new = self.sorter.get_ready()
-
     logger.debug('ready-to-build packages: %s', self.ready)
     return tuple(self.ready)
 
@@ -263,6 +253,14 @@ def start_build(
         buildsorter.done(pkg)
         # marked as failed (by lilac loader), skip
         continue
+
+      if rs := build_reasons.get(pkg):
+        if len(rs) == 1 and isinstance(rs[0], BuildReason.FailedByDeps):
+          ds = DEPMAP[pkg]
+          if not all(d.resolve() for d in ds):
+            # deps are still missing, skip
+            buildsorter.done(pkg)
+            continue
 
       logger.info('building %s', pkg)
       logfile = logdir / f'{pkg}.log'
