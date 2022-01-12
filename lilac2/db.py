@@ -1,6 +1,8 @@
 from contextlib import contextmanager
+import datetime
 
 from sqlalchemy import update
+from sqlalchemy.sql import functions
 from sqlalchemy.orm import sessionmaker, declarative_base
 from sqlalchemy.ext.declarative import DeclarativeMeta, DeferredReflection
 
@@ -64,3 +66,13 @@ def mark_pkg_as(s, pkg: str, status: str) -> None:
     status = status,
   )
   s.execute(stmt)
+
+def get_pkgs_last_success_times(pkgs: list[str]) -> list[tuple[str, datetime.datetime]]:
+  with get_session() as s:
+    r = s.query(
+      PkgLog.pkgbase, functions.max(PkgLog.ts),
+    ).filter(
+      PkgLog.pkgbase.in_(pkgs),
+      PkgLog.result.in_(['successful', 'staged']),
+    ).group_by(PkgLog.pkgbase).all()
+  return r
