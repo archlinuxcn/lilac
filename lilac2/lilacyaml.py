@@ -4,12 +4,15 @@ from pathlib import Path
 from typing import Any, Iterator, cast
 import importlib.resources
 import sys
+import datetime
 
 import yaml
 
+from myutils import dehumantime
+
 from . import api
 from .const import _G, PACMAN_DB_DIR
-from .typing import LilacInfo, LilacInfos, ExcInfo
+from .typing import LilacInfo, LilacInfos, ExcInfo, NvEntries
 
 ALIASES: dict[str, Any]
 FUNCTIONS: list[str] = [
@@ -77,16 +80,16 @@ def load_managed_lilacinfos(repodir: Path) -> tuple[LilacInfos, dict[str, ExcInf
 def load_lilacinfo(dir: Path) -> LilacInfo:
   yamlconf = load_lilac_yaml(dir)
   if update_on := yamlconf.get('update_on'):
-    update_on_nv, update_on_self = parse_update_on(update_on)
+    update_ons, throttle_info = parse_update_on(update_on)
   else:
-    update_on_nv = []
-    update_on_self = []
+    update_ons = []
+    throttle_info = {}
 
   return LilacInfo(
     pkgbase = dir.absolute().name,
     maintainers = yamlconf.get('maintainers', []),
-    update_on = update_on_nv,
-    update_on_self = update_on_self,
+    update_on = update_ons,
+    throttle_info = throttle_info,
     repo_depends = yamlconf.get('repo_depends', []),
     time_limit_hours = yamlconf.get('time_limit_hours', 1),
     staging = yamlconf.get('staging', False),
@@ -101,14 +104,15 @@ def expand_alias_arg(value: str) -> str:
 
 def parse_update_on(
   update_on: list[dict[str, Any]],
-) -> tuple[list[dict[str, str]], list[str]]:
-  ret_nv = []
-  ret_self = []
+) -> tuple[NvEntries, dict[int, datetime.timedelta]]:
+  ret_update: NvEntries = []
+  ret_throttle = {}
 
-  for entry in update_on:
-    if entry.get('source') == 'lilac':
-      ret_self.extend(entry['pkgbases'])
-      continue
+  for idx, entry in enumerate(update_on):
+    t = entry.get('lilac-throttle')
+    if t is not None:
+      t_secs = dehumantime(t)
+      ret_throttle[idx] = datetime.timedelta(seconds=t_secs)
 
     # fix wrong key for 'alpm-lilac'
     if entry.get('source') == 'alpm-lilac':
@@ -134,6 +138,7 @@ def parse_update_on(
     if entry.get('source') == 'alpm':
       entry.setdefault('dbpath', str(PACMAN_DB_DIR))
 
-    ret_nv.append(entry)
+    ret_update.append(entry)
 
-  return ret_nv, ret_self
+  return ret_update, ret_throttle
+

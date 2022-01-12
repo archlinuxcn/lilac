@@ -51,7 +51,7 @@ def load_lilac(dir: Path) -> Generator[LilacMod, None, None]:
     mod.pkgbase = dir.absolute().name
 
     if hasattr(mod, 'update_on'):
-      mod.update_on = lilacyaml.parse_update_on(mod.update_on)[0]
+      mod.update_on = lilacyaml.parse_update_on(yamlconf['update_on'])[0]
 
     yield mod
 

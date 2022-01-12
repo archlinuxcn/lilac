@@ -2,27 +2,31 @@ from __future__ import annotations
 
 import types
 from typing import (
-  Union, Dict, Tuple, Type, List, NamedTuple, Optional,
+  Union, Dict, Tuple, Type, NamedTuple, Optional,
   Sequence,
 )
 from pathlib import Path
 import dataclasses
+import datetime
 
 class LilacMod(types.ModuleType):
   time_limit_hours: float
   pkgbase: str
   _G: types.SimpleNamespace
-  makechrootpkg_args: List[str]
-  makepkg_args: List[str]
-  build_args: List[str]
-  update_on: List[Dict[str, str]]
+  makechrootpkg_args: list[str]
+  makepkg_args: list[str]
+  build_args: list[str]
+  update_on: NvEntries
+
+NvEntry = dict[str, str]
+NvEntries = list[NvEntry]
 
 @dataclasses.dataclass
 class LilacInfo:
   pkgbase: str
   maintainers: list[dict[str, str]]
-  update_on: list[dict[str, str]]
-  update_on_self: list[str]
+  update_on: NvEntries
+  throttle_info: dict[int, datetime.timedelta]
   repo_depends: list[tuple[str, str]]
   time_limit_hours: float
   staging: bool
