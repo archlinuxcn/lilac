@@ -109,7 +109,7 @@ def parse_update_on(
   ret_throttle = {}
 
   for idx, entry in enumerate(update_on):
-    t = entry.get('lilac-throttle')
+    t = entry.get('lilac_throttle')
     if t is not None:
       t_secs = dehumantime(t)
       ret_throttle[idx] = datetime.timedelta(seconds=t_secs)
