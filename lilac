@@ -12,6 +12,7 @@ from typing import Set, Dict, List, Any, Optional
 from pathlib import Path
 import graphlib
 import json
+import datetime
 
 import prctl
 import structlog
@@ -438,6 +439,7 @@ def main_may_raise(
     need_rebuild_pkgrel = {x for x in changed
                           if pkgrel_changed(last_commit, 'HEAD', x)} - unknown
 
+  nv_changed = {}
   for p, vers in nvdata.items():
     diff_idxs = [i for i, v in enumerate(vers)
                  if v.oldver != v.newver]
@@ -445,6 +447,23 @@ def main_may_raise(
       info = REPO.lilacinfos[p]
       confs = info.update_on
       sources = [(i, confs[i]['source']) for i in diff_idxs]
+      nv_changed[p] = sources
+
+  if db.USE:
+    now = datetime.datetime.now().astimezone()
+    pkgs_may_throttle = [p for p in nv_changed if REPO.lilacinfos[p].throttle_info]
+    last_times = dict(db.get_pkgs_last_success_times(pkgs_may_throttle))
+    for p, sources in nv_changed.items():
+      ss = []
+      for idx, source in sources:
+        if interval := REPO.lilacinfos[p].throttle_info.get(idx):
+          if last := last_times.get(p):
+            if last + interval > now:
+              continue
+        ss.append((idx, source))
+      build_reasons[p].append(BuildReason.NvChecker(ss))
+  else:
+    for p, sources in nv_changed.items():
       build_reasons[p].append(BuildReason.NvChecker(sources))
 
   for p in pkgs_from_args:
