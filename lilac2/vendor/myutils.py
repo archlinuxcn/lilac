@@ -11,7 +11,7 @@ import signal
 import hashlib
 import base64
 import fcntl
-from typing import Union, Optional, Dict, Any, Generator
+from typing import Tuple, Union, Optional, Dict, Any, Generator
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +32,13 @@ def safe_overwrite(fname: str, data: Union[bytes, str], *,
 UNITS = 'KMGTPEZY'
 
 def filesize(size: int) -> str:
-  '''将 数字 转化为 xxKiB 的形式'''
+  amt, unit = filesize_ex(size)
+  if unit:
+    return '%.1f%siB' % (amt, unit)
+  else:
+    return '%dB' % amt
+
+def filesize_ex(size: int) -> Tuple[Union[float, int], str]:
   left: Union[int, float] = abs(size)
   unit = -1
   n = len(UNITS)
@@ -40,11 +46,11 @@ def filesize(size: int) -> str:
     left = left / 1024
     unit += 1
   if unit == -1:
-    return '%dB' % size
+    return size, ''
   else:
     if size < 0:
       left = -left
-    return '%.1f%siB' % (left, UNITS[unit])
+    return left, UNITS[unit]
 
 class FileSize(int):
   def __str__(self) -> str:
@@ -96,7 +102,7 @@ def dehumantime(s: str) -> int:
       int(m.group('d') or 0) * 3600 * 24 +
       int(m.group('h') or 0) * 3600 +
       int(m.group('m') or 0) * 60 +
-      int(m.group('h') or 0)
+      int(m.group('s') or 0)
     )
   else:
     raise ValueError(s)
@@ -170,8 +176,8 @@ def restart_if_failed(func, max_tries, args=(), kwargs={}, secs=60, sleep=None):
   while True:
     dq.append(time.time())
     try:
-      func(*args, **kwargs)
-    except:
+      return func(*args, **kwargs)
+    except Exception:
       traceback.print_exc()
       if len(dq) == max_tries and time.time() - dq[0] < secs:
         break
@@ -337,8 +343,8 @@ def xsel(input=None):
   import subprocess
 
   if input is None:
-    return subprocess.getoutput('xsel')
+    return subprocess.getoutput('uniclip')
   else:
-    p = subprocess.Popen('xsel', stdin=subprocess.PIPE)
+    p = subprocess.Popen(['uniclip', '-i'], stdin=subprocess.PIPE)
     p.communicate(input.encode())
     return p.wait()
