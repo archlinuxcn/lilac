@@ -461,7 +461,8 @@ def main_may_raise(
             if last + interval > now:
               continue
         ss.append((idx, source))
-      build_reasons[p].append(BuildReason.NvChecker(ss))
+      if ss:
+        build_reasons[p].append(BuildReason.NvChecker(ss))
   else:
     for p, sources in nv_changed.items():
       build_reasons[p].append(BuildReason.NvChecker(sources))
