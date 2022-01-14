@@ -80,6 +80,18 @@ If you have a lot of memory (e.g. >100G), you may want to mount `/var/lib/archbu
 
 There are other scripts in [misc_scripts](https://github.com/archlinuxcn/misc_scripts) that does things like cleanups, issue processing.
 
+Routine Cleanups
+----
+
+There are a lot of files that are no longer needed. To save space, you need to setup cron jobs or systemd.timer for these things:
+
+* chroots used by devtools: these chroots are re-usable but they can be too many. Use `build-cleaner` in the `scripts/` directory to remove not-in-use ones.
+* Files downloaded and extracted during packaging. They are in the git repository, side-by-side with PKGBUILDs and built packages. Use `lilac-cleaner` in the `scripts/` directory to clean them up. (Note a `-f` argument is needed to actually delete files.)
+* Old packages inside the package repository: use `repocleaner` from [here](https://github.com/archlinuxcn/misc_scripts) to clean up.
+* Build logs: in `~/.lilac/log` there are build logs for each package in every build batch. You can use systemd-tmpfiles to delete old files. Or a simple command line `find ~/.lilac/log -mtime +30 -delete`.
+
+Note that you need to adjust these scripts to your paths.
+
 Usage
 ----
 
