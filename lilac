@@ -22,16 +22,16 @@ pythonpath_l = []
 if (topdir / 'lilac2').exists():
   # In-tree
   p = str(topdir)
-  sys.path.append(p)
+  sys.path.insert(0, p)
   pythonpath_l.append(p)
   p = str(topdir / 'lilac2' / 'vendor')
-  sys.path.append(p)
+  sys.path.insert(0, p)
   pythonpath_l.append(p)
 else:
   # Installed as a system package
   import lilac2
   p = str(Path(lilac2.__file__).parent / 'vendor')
-  sys.path.append(p)
+  sys.path.insert(0, p)
   pythonpath_l.append(p)
 pythonpath = ':'.join(pythonpath_l)
 del p, pythonpath_l
