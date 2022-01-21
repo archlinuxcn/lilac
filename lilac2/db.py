@@ -1,10 +1,12 @@
 from contextlib import contextmanager
 import datetime
 
-from sqlalchemy import update
+from sqlalchemy import update, select, func
 from sqlalchemy.sql import functions
 from sqlalchemy.orm import sessionmaker, declarative_base
 from sqlalchemy.ext.declarative import DeclarativeMeta, DeferredReflection
+
+from .typing import RUsage
 
 Base: DeclarativeMeta = declarative_base(cls=DeferredReflection)
 
@@ -76,3 +78,30 @@ def get_pkgs_last_success_times(pkgs: list[str]) -> list[tuple[str, datetime.dat
       PkgLog.result.in_(['successful', 'staged']),
     ).group_by(PkgLog.pkgbase).all()
   return r
+
+def get_pkgs_last_rusage(pkgs: list[str]) -> dict[str, RUsage]:
+  # select pkgbase, cputime from  (
+  #   select id, pkgbase, row_number() over (partition by pkgbase order by ts desc) as k
+  #   from pkglog
+  #   where pkgbase in ('vim-lily', 'julia-git')
+  # ) as w where k = 1
+  with get_session() as s:
+    w = select(
+      func.row_number().over(
+        partition_by = PkgLog.pkgbase,
+        order_by = PkgLog.ts.desc(),
+      ).label('k'),
+      PkgLog.pkgbase, PkgLog.cputime, PkgLog.memory,
+    ).where(
+      PkgLog.pkgbase.in_(pkgs),
+      PkgLog.result.in_(['successful', 'staged']),
+    ).subquery()
+
+    stmt = select(
+      w.c.pkgbase, w.c.cputime, w.c.memory,
+    ).select_from(w).where(w.c.k == 1)
+
+    rs = s.execute(stmt).all()
+    ret = {r[0]: RUsage(r[1], r[2]) for r in rs}
+
+  return ret
