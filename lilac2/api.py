@@ -14,6 +14,7 @@ from types import SimpleNamespace
 import tarfile
 import io
 from collections.abc import Container
+from urllib.parse import quote
 
 import requests
 
@@ -39,7 +40,6 @@ s = requests.Session()
 s.headers['User-Agent'] = UserAgent
 
 VCS_SUFFIXES = ('-git', '-hg', '-svn', '-bzr')
-AUR_URL = 'https://aur.archlinux.org/rpc/'
 
 def _unquote_item(s: str) -> Optional[str]:
   m = re.search(r'''[ \t'"]*([^ '"]+)[ \t'"]*''', s)
@@ -334,7 +334,17 @@ def _allow_update_aur_repo(pkgname: str, diff: str) -> bool:
       return True
   return False
 
+def _aur_exists(pkgname: str) -> bool:
+  arg = quote(pkgname)
+  url = f'https://aur.archlinux.org/rpc/?v=5&type=info&arg[]={arg}'
+  r = s.get(url)
+  j = r.json()
+  return bool(j['results'])
+
 def _update_aur_repo_real(pkgname: str) -> None:
+  if not _aur_exists(pkgname):
+    raise Exception('AUR package not exists, not updating!', pkgname)
+
   aurpath = const.AUR_REPO_DIR / pkgname
   if not aurpath.is_dir():
     logger.info('cloning AUR repo: %s', aurpath)
