@@ -289,10 +289,9 @@ class Repo:
           try:
             if self.logurl_template and len(logfile.parts) >= 2:
               # assume the directory name is the time stamp for now.
-              ts = time.strptime(logfile.parts[-2], '%Y-%m-%dT%H:%M:%S')
               logurl = string.Template(self.logurl_template).substitute(
                 datetime = logfile.parts[-2],
-                timestamp = int(time.mktime(ts)),
+                timestamp = int(time.time()),
                 pkgbase = pkgbase,
               )
               log_header += ' ' + logurl
