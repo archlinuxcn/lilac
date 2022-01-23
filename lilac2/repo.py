@@ -9,6 +9,7 @@ import logging
 from functools import lru_cache
 import traceback
 import string
+import time
 
 import structlog
 from github import GitHub
@@ -288,8 +289,12 @@ class Repo:
           try:
             if self.logurl_template and len(logfile.parts) >= 2:
               # assume the directory name is the time stamp for now.
+              ts = time.strptime(logfile.parts[-2], '%Y-%m-%dT%H:%M:%S')
               logurl = string.Template(self.logurl_template).substitute(
-                datetime=logfile.parts[-2], pkgbase=pkgbase)
+                datetime = logfile.parts[-2],
+                timestamp = int(time.mktime(ts)),
+                pkgbase = pkgbase,
+              )
               log_header += ' ' + logurl
           except (ValueError, KeyError): # invalid template or wrong key
             pass
