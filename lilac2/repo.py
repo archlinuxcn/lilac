@@ -282,7 +282,9 @@ class Repo:
 
     if logfile:
       try:
-        with logfile.open(errors='surrogateescape') as f:
+        # we need to replace error characters because the mail will be
+        # strictly encoded, disallowing surrogate pairs
+        with logfile.open(errors='replace') as f:
           build_output = f.read()
         if build_output:
           log_header = '打包日志：'
