@@ -33,10 +33,11 @@ def start_cmd(
   setenv: dict[str, str] = {},
   **kwargs: P.kwargs, # type: ignore
 ) -> subprocess.Popen:
+  # don't use --collect here because it will be immediately collected when
+  # failed
   cmd_s: Cmd = [
     'systemd-run', '--pipe', '--quiet', '--user',
-    '--wait', '--remain-after-exit', '--collect',
-    '-u', name,
+    '--wait', '--remain-after-exit', '-u', name,
   ]
 
   if cwd := kwargs.pop('cwd', None):
@@ -131,7 +132,10 @@ def poll_rusage(name: str, deadline: float) -> tuple[RUsage, bool]:
     if timedout:
       logger.debug('killing worker service')
       subprocess.run(['systemctl', '--user', 'kill', '--signal=SIGKILL', name])
-    else:
-      logger.debug('stopping worker service')
-      subprocess.run(['systemctl', '--user', 'stop', '--quiet', name])
+    logger.debug('stopping worker service')
+    subprocess.run(['systemctl', '--user', 'stop', '--quiet', name])
+
+    p = subprocess.run(['systemctl', '--user', 'is-failed', '--quiet', name])
+    if p.returncode == 0:
+      subprocess.run(['systemctl', '--user', 'reset-failed', '--quiet', name])
   return RUsage(nsec / 1_000_000_000, mem_max), timedout
