@@ -5,20 +5,18 @@ from __future__ import annotations
 import os
 import time
 import subprocess
-from typing import Dict, List, Set
+from typing import Dict, List
 from pathlib import Path
 
 import pyalpm
 
 from myutils import safe_overwrite
 
-from .const import _G
+from .const import _G, OFFICIAL_REPOS
 from .cmd import UNTRUSTED_PREFIX
 from .typing import PkgVers
 
-_official_repos = ['core', 'extra', 'community', 'multilib']
 _official_packages: Dict[str, int] = {}
-_official_packages_current: Set[str] = set()
 _official_groups: Dict[str, int] = {}
 _repo_package_versions: Dict[str, str] = {}
 
@@ -55,9 +53,7 @@ def _save_timed_dict(
   data_str = ''.join(f'{k} {v}\n' for k, v in data.items())
   safe_overwrite(str(path), data_str, mode='w')
 
-def init_data(dbpath: Path, *, quiet: bool = False) -> None:
-  global _repo_package_versions
-
+def update_pacmandb(dbpath: Path, *, quiet: bool = False) -> None:
   if quiet:
     kwargs = {'stdout': subprocess.DEVNULL}
   else:
@@ -73,6 +69,26 @@ def init_data(dbpath: Path, *, quiet: bool = False) -> None:
   else:
     p.check_returncode()
 
+def update_data(dbpath: Path, *, quiet: bool = False) -> None:
+  update_pacmandb(dbpath, quiet=quiet)
+
+  now = int(time.time())
+  deadline = now - 90 * 86400
+  pkgs = _load_timed_dict(dbpath / 'packages.txt', deadline)
+  groups = _load_timed_dict(dbpath / 'groups.txt', deadline)
+
+  H = pyalpm.Handle('/', str(dbpath))
+  for repo in OFFICIAL_REPOS:
+    db = H.register_syncdb(repo, 0)
+    pkgs.update((p.name, now) for p in db.pkgcache)
+    groups.update((g[0], now) for g in db.grpcache)
+
+  _save_timed_dict(dbpath / 'packages.txt', pkgs)
+  _save_timed_dict(dbpath / 'groups.txt', groups)
+
+def load_data(dbpath: Path) -> None:
+  global _repo_package_versions
+
   now = int(time.time())
   deadline = now - 90 * 86400
   _official_packages.update(
@@ -80,22 +96,10 @@ def init_data(dbpath: Path, *, quiet: bool = False) -> None:
   _official_groups.update(
     _load_timed_dict(dbpath / 'groups.txt', deadline))
 
-  H = pyalpm.Handle('/', str(dbpath))
-  for repo in _official_repos:
-    db = H.register_syncdb(repo, 0)
-    _official_packages.update((p.name, now) for p in db.pkgcache)
-    _official_packages_current.update(p.name for p in db.pkgcache)
-    _official_groups.update((g[0], now) for g in db.grpcache)
-
-  _save_timed_dict(dbpath / 'packages.txt', _official_packages)
-  _save_timed_dict(dbpath / 'groups.txt', _official_groups)
-
   if hasattr(_G, 'repo'):
+    H = pyalpm.Handle('/', str(dbpath))
     db = H.register_syncdb(_G.repo.name, 0)
     _repo_package_versions = {p.name: p.version for p in db.pkgcache}
-
-def get_official_packages() -> Set[str]:
-  return _official_packages_current
 
 def check_srcinfo() -> PkgVers:
   srcinfo = get_srcinfo().decode('utf-8').splitlines()

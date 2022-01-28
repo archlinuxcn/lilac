@@ -24,7 +24,7 @@ from .api import (
 from .nvchecker import NvResults
 from .tools import kill_child_processes
 from .lilacpy import load_lilac
-from .const import _G
+from .const import _G, PACMAN_DB_DIR
 from .repo import Repo
 
 logger = logging.getLogger(__name__)
@@ -200,6 +200,7 @@ def main() -> None:
   from .tools import read_config
   config = read_config()
   repo = _G.repo = Repo(config)
+  pkgbuild.load_data(PACMAN_DB_DIR)
 
   input = json.load(sys.stdin)
   logger.debug('got input: %r', input)

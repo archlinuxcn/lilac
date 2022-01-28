@@ -571,7 +571,7 @@ def setup() -> Path:
   setup_build_logger()
   os.chdir(REPO.repodir)
 
-  pkgbuild.init_data(PACMAN_DB_DIR)
+  pkgbuild.update_data(PACMAN_DB_DIR)
 
   return logdir
 

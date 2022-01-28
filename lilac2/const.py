@@ -11,6 +11,7 @@ PACMAN_DB_DIR.mkdir(exist_ok=True)
 (mydir / 'gnupg').mkdir(exist_ok=True)
 
 SPECIAL_FILES = ('package.list', 'lilac.py', 'lilac.yaml', '.gitignore')
+OFFICIAL_REPOS = ('core', 'extra', 'community', 'multilib')
 
 _G = types.SimpleNamespace()
 # main process:
