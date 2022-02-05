@@ -481,10 +481,12 @@ def git_rm_files(files: List[str]) -> None:
     _run_cmd(['git', 'rm', '--cached', '--'] + files)
 
 def _get_aur_packager(name: str) -> Tuple[Optional[str], str]:
-  doc = parse_document_from_requests(f'https://aur.archlinux.org/packages/{name}/', s)
-  maintainer: Optional[str] = str(doc.xpath('//th[text()="Maintainer: "]/following::td[1]/text()')[0])
-  last_packager = str(doc.xpath('//th[text()="Last Packager: "]/following::td[1]/text()')[0])
-  if maintainer == 'None':
+  doc = parse_document_from_requests(f'https://aur.archlinux.org/packages/{name}', s)
+  maintainer_cell = doc.xpath('//th[text()="Maintainer:"]/following::td[1]')[0]
+  maintainer: Optional[str] = maintainer_cell.text_content().strip()
+  last_packager_cell = doc.xpath('//th[text()="Last Packager:"]/following::td[1]')[0]
+  last_packager = last_packager_cell.text_content().strip()
+  if not maintainer:
     maintainer = None
   return maintainer, last_packager
 
