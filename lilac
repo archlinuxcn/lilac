@@ -13,6 +13,10 @@ from pathlib import Path
 import graphlib
 import json
 import datetime
+from concurrent.futures import (
+  ThreadPoolExecutor, Future,
+  wait as futures_wait, FIRST_COMPLETED,
+)
 
 import prctl
 import structlog
@@ -244,34 +248,68 @@ def start_build(
 
   try:
     buildsorter = BuildSorter(sorter)
-    while buildsorter.is_active():
-      pkg = buildsorter.get_ready()[0]
+    max_concurrency = 1
+    futures: list[Future] = []
+    with ThreadPoolExecutor(max_workers=max_concurrency) as executor:
+      while True:
+        while len(futures) < max_concurrency:
+          pkg = try_pick_one(buildsorter, failed)
+          if not pkg:
+            # cannot pick one more: no more doable task
+            break
+          fu = executor.submit(
+            build_it, pkg, repo, buildsorter, built, failed)
+          futures.append(fu)
 
-      if pkg in failed:
-        buildsorter.done(pkg)
-        if db.USE:
-          with db.get_session() as s:
-            db.mark_pkg_as(s, pkg, 'done')
-            db.build_updated(s)
-        # marked as failed (by lilac loader), skip
-        continue
+        if not futures:
+          # no task is running: we're done
+          break
 
-      if rs := build_reasons.get(pkg):
-        if len(rs) == 1 and isinstance(rs[0], BuildReason.FailedByDeps):
-          ds = DEPMAP[pkg]
-          if not all(d.resolve() for d in ds):
-            buildsorter.done(pkg)
-            if db.USE:
-              with db.get_session() as s:
-                db.mark_pkg_as(s, pkg, 'done')
-                db.build_updated(s)
-            # deps are still missing, skip
-            continue
+        done, pending = futures_wait(futures, return_when=FIRST_COMPLETED)
+        for fu in done:
+          futures.remove(fu)
+          fu.result()
 
-      build_it(pkg, repo, buildsorter, built, failed)
+        # at least one task is done, try pick new tasks
 
   except KeyboardInterrupt:
     logger.info('keyboard interrupted, bye~')
+
+def try_pick_one(
+  buildsorter: BuildSorter,
+  failed: dict[str, tuple[str, ...]],
+) -> Optional[str]:
+  while buildsorter.is_active():
+    ready = buildsorter.get_ready()
+    if not ready:
+      return None
+
+    pkg = ready[0]
+
+    if pkg in failed:
+      buildsorter.done(pkg)
+      if db.USE:
+        with db.get_session() as s:
+          db.mark_pkg_as(s, pkg, 'done')
+          db.build_updated(s)
+      # marked as failed (by lilac loader), skip
+      continue
+
+    if rs := build_reasons.get(pkg):
+      if len(rs) == 1 and isinstance(rs[0], BuildReason.FailedByDeps):
+        ds = DEPMAP[pkg]
+        if not all(d.resolve() for d in ds):
+          buildsorter.done(pkg)
+          if db.USE:
+            with db.get_session() as s:
+              db.mark_pkg_as(s, pkg, 'done')
+              db.build_updated(s)
+          # deps are still missing, skip
+          continue
+
+    return pkg
+
+  return None
 
 def build_it(
   pkg: str, repo: Repo, buildsorter: BuildSorter,
