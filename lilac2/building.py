@@ -17,7 +17,6 @@ from .nvchecker import NvResults
 from .packages import Dependency
 from .tools import kill_child_processes, reap_zombies
 from .nomypy import BuildResult # type: ignore
-from .cmd import run_cmd
 from . import systemd
 
 if TYPE_CHECKING:
@@ -145,8 +144,10 @@ def may_need_cleanup() -> None:
 def sign_and_copy(pkgdir: Path, dest: Path) -> None:
   pkgs = [x for x in pkgdir.iterdir() if x.name.endswith(('.pkg.tar.xz', '.pkg.tar.zst'))]
   for pkg in pkgs:
-    run_cmd(['gpg', '--pinentry-mode', 'loopback', '--passphrase', '',
-             '--detach-sign', '--', pkg])
+    subprocess.run([
+      'gpg', '--pinentry-mode', 'loopback',
+       '--passphrase', '', '--detach-sign', '--', pkg,
+    ])
   for f in pkgdir.iterdir():
     if not f.name.endswith(('.pkg.tar.xz', '.pkg.tar.xz.sig', '.pkg.tar.zst', '.pkg.tar.zst.sig')):
       continue
