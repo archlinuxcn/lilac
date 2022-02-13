@@ -268,125 +268,131 @@ def start_build(
             # deps are still missing, skip
             continue
 
-      logger.info('building %s', pkg)
-      logfile = logdir / f'{pkg}.log'
-
-      if db.USE:
-        with db.get_session() as s:
-          db.mark_pkg_as(s, pkg, 'building')
-          db.build_updated(s)
-
-      r, version = build_package(
-        pkg, repo.lilacinfos[pkg],
-        update_info = nvdata[pkg],
-        bindmounts = BIND_MOUNTS,
-        depends = DEPMAP.get(pkg, ()),
-        repo = REPO,
-        myname = MYNAME,
-        destdir = DESTDIR,
-        logfile = logfile,
-        pythonpath = pythonpath,
-      )
-
-      elapsed = r.elapsed
-      logger.info(
-        'package %s (version %s) finished in %ds with result: %r',
-        pkg, version, elapsed, r,
-      )
-
-      newver = nvdata[pkg].newver
-      msg = None
-
-      if isinstance(r, BuildResult.successful):
-        build_logger_old.info(
-          '%s %s [%s] successful after %ds',
-          pkg, newver, version, elapsed)
-        build_logger.info(
-          'successful', pkgbase = pkg,
-          nv_version = newver, pkg_version = version, elapsed = elapsed,
-        )
-
-      elif isinstance(r, BuildResult.staged):
-        build_logger_old.info(
-          '%s %s [%s] staged after %ds',
-          pkg, newver, version, elapsed)
-        build_logger.info(
-          'staged', pkgbase = pkg,
-          nv_version = newver, pkg_version = version, elapsed = elapsed,
-        )
-
-      elif isinstance(r, BuildResult.skipped):
-        build_logger_old.warning('%s %s skipped after %ds', pkg, newver, elapsed)
-        build_logger.warning(
-          'skipped', pkgbase = pkg,
-          nv_version = newver, msg = r.reason, elapsed = elapsed,
-        )
-        msg = r.reason
-
-      elif isinstance(r, BuildResult.failed):
-        build_logger_old.error('%s %s [%s] failed after %ds', pkg, newver, version, elapsed)
-        assert r.error is not None
-
-        if isinstance(r.error, Exception):
-          e = r.error
-          build_logger.error(
-            'failed', pkgbase = pkg,
-            nv_version = newver, elapsed = elapsed, exc_info = e,
-          )
-          msg = repr(e)
-          mod = repo.lilacinfos[pkg]
-
-          if isinstance(e, MissingDependencies):
-            faileddeps = e.deps.intersection(failed)
-            failed[pkg] = tuple(faileddeps)
-            if e.deps == faileddeps:
-              msg = f'{pkg} 的依赖 {faileddeps} 打包失败了。'
-            else:
-              msg = f'{pkg} 缺少依赖 {e.deps}，其中 {faileddeps} 本次打包失败了。'
-            repo.send_error_report(mod, subject='%s 出现依赖问题', msg = msg)
-          else:
-            repo.send_error_report(mod, exc=e, logfile=logfile)
-
-        else:
-          build_logger.error(
-            'failed', pkgbase = pkg,
-            nv_version = newver, pkg_version = version,
-            elapsed = elapsed, error = r.error,
-          )
-          msg = r.error
-
-      if db.USE:
-        if r.rusage:
-          cputime = r.rusage.cputime
-          memory = r.rusage.memory
-        else:
-          cputime = memory = None
-        rs = [r.to_dict() for r in build_reasons[pkg]]
-        with db.get_session() as s:
-          p = db.PkgLog(
-            pkgbase = pkg,
-            nv_version = newver,
-            pkg_version = version,
-            elapsed = elapsed,
-            result = r.__class__.__name__,
-            cputime = cputime,
-            memory = memory,
-            msg = msg,
-            build_reasons = json.dumps(rs),
-          )
-          s.add(p)
-          db.mark_pkg_as(s, pkg, 'done')
-          db.build_updated(s)
-
-      buildsorter.done(pkg)
-
-      if r:
-        built.add(pkg)
-      elif pkg not in failed:
-        failed[pkg] = ()
+      build_it(pkg, repo, buildsorter, built, failed)
 
   except KeyboardInterrupt:
     logger.info('keyboard interrupted, bye~')
+
+def build_it(
+  pkg: str, repo: Repo, buildsorter: BuildSorter,
+  built: set[str], failed: dict[str, tuple[str, ...]],
+) -> None:
+  logger.info('building %s', pkg)
+  logfile = logdir / f'{pkg}.log'
+
+  if db.USE:
+    with db.get_session() as s:
+      db.mark_pkg_as(s, pkg, 'building')
+      db.build_updated(s)
+
+  r, version = build_package(
+    pkg, repo.lilacinfos[pkg],
+    update_info = nvdata[pkg],
+    bindmounts = BIND_MOUNTS,
+    depends = DEPMAP.get(pkg, ()),
+    repo = REPO,
+    myname = MYNAME,
+    destdir = DESTDIR,
+    logfile = logfile,
+    pythonpath = pythonpath,
+  )
+
+  elapsed = r.elapsed
+  logger.info(
+    'package %s (version %s) finished in %ds with result: %r',
+    pkg, version, elapsed, r,
+  )
+
+  newver = nvdata[pkg].newver
+  msg = None
+
+  if isinstance(r, BuildResult.successful):
+    build_logger_old.info(
+      '%s %s [%s] successful after %ds',
+      pkg, newver, version, elapsed)
+    build_logger.info(
+      'successful', pkgbase = pkg,
+      nv_version = newver, pkg_version = version, elapsed = elapsed,
+    )
+
+  elif isinstance(r, BuildResult.staged):
+    build_logger_old.info(
+      '%s %s [%s] staged after %ds',
+      pkg, newver, version, elapsed)
+    build_logger.info(
+      'staged', pkgbase = pkg,
+      nv_version = newver, pkg_version = version, elapsed = elapsed,
+    )
+
+  elif isinstance(r, BuildResult.skipped):
+    build_logger_old.warning('%s %s skipped after %ds', pkg, newver, elapsed)
+    build_logger.warning(
+      'skipped', pkgbase = pkg,
+      nv_version = newver, msg = r.reason, elapsed = elapsed,
+    )
+    msg = r.reason
+
+  elif isinstance(r, BuildResult.failed):
+    build_logger_old.error('%s %s [%s] failed after %ds', pkg, newver, version, elapsed)
+    assert r.error is not None
+
+    if isinstance(r.error, Exception):
+      e = r.error
+      build_logger.error(
+        'failed', pkgbase = pkg,
+        nv_version = newver, elapsed = elapsed, exc_info = e,
+      )
+      msg = repr(e)
+      mod = repo.lilacinfos[pkg]
+
+      if isinstance(e, MissingDependencies):
+        faileddeps = e.deps.intersection(failed)
+        failed[pkg] = tuple(faileddeps)
+        if e.deps == faileddeps:
+          msg = f'{pkg} 的依赖 {faileddeps} 打包失败了。'
+        else:
+          msg = f'{pkg} 缺少依赖 {e.deps}，其中 {faileddeps} 本次打包失败了。'
+        repo.send_error_report(mod, subject='%s 出现依赖问题', msg = msg)
+      else:
+        repo.send_error_report(mod, exc=e, logfile=logfile)
+
+    else:
+      build_logger.error(
+        'failed', pkgbase = pkg,
+        nv_version = newver, pkg_version = version,
+        elapsed = elapsed, error = r.error,
+      )
+      msg = r.error
+
+  if db.USE:
+    if r.rusage:
+      cputime = r.rusage.cputime
+      memory = r.rusage.memory
+    else:
+      cputime = memory = None
+    rs = [r.to_dict() for r in build_reasons[pkg]]
+    with db.get_session() as s:
+      p = db.PkgLog(
+        pkgbase = pkg,
+        nv_version = newver,
+        pkg_version = version,
+        elapsed = elapsed,
+        result = r.__class__.__name__,
+        cputime = cputime,
+        memory = memory,
+        msg = msg,
+        build_reasons = json.dumps(rs),
+      )
+      s.add(p)
+      db.mark_pkg_as(s, pkg, 'done')
+      db.build_updated(s)
+
+  buildsorter.done(pkg)
+
+  if r:
+    built.add(pkg)
+  elif pkg not in failed:
+    failed[pkg] = ()
 
 def main_may_raise(
   D: Dict[str, Any], pkgs_from_args: List[str], logdir: Path,
