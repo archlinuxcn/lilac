@@ -322,7 +322,7 @@ def try_pick_some(
           continue
 
     ret.append(pkg)
-    if len(pkg) == limit:
+    if len(ret) == limit:
       break
 
   return ret
