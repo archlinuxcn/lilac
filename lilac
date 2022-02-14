@@ -453,9 +453,9 @@ WORKER_NO_LOCK = threading.Lock()
 
 def setup_thread():
   global WORKER_NO
-  tls = threading.local()
+  from lilac2.building import TLS
   with WORKER_NO_LOCK:
-    tls.worker_no = WORKER_NO
+    TLS.worker_no = WORKER_NO
     WORKER_NO += 1
 
 def main_may_raise(

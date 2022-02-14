@@ -26,6 +26,7 @@ if TYPE_CHECKING:
   del Repo
 
 logger = logging.getLogger(__name__)
+TLS = threading.local()
 
 class MissingDependencies(Exception):
   def __init__(self, pkgs: Set[str]) -> None:
@@ -179,13 +180,12 @@ def call_worker(
   '''
   return: package verion, resource usage, error information
   '''
-  tls = threading.local()
   input = {
     'depend_packages': depend_packages,
     'update_info': update_info.to_list(),
     'bindmounts': bindmounts,
     'logfile': str(logfile), # for sending error reports
-    'worker_no': tls.worker_no,
+    'worker_no': TLS.worker_no,
   }
   fd, resultpath = tempfile.mkstemp(prefix=f'{pkgbase}-', suffix='.lilac')
   os.close(fd)
@@ -198,7 +198,7 @@ def call_worker(
     _call_cmd = _call_cmd_systemd
   else:
     _call_cmd = _call_cmd_subprocess
-  name = f'lilac-worker-{tls.worker_no}'
+  name = f'lilac-worker-{TLS.worker_no}'
   rusage, timedout = _call_cmd(
     name, cmd, pythonpath, logfile, pkgdir, deadline,
     input_bytes, packager,
