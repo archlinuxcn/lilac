@@ -11,6 +11,7 @@ import tempfile
 from pathlib import Path
 import time
 import json
+import threading
 
 from .typing import LilacInfo, Cmd, RUsage
 from .nvchecker import NvResults
@@ -178,11 +179,13 @@ def call_worker(
   '''
   return: package verion, resource usage, error information
   '''
+  tls = threading.local()
   input = {
     'depend_packages': depend_packages,
     'update_info': update_info.to_list(),
     'bindmounts': bindmounts,
     'logfile': str(logfile), # for sending error reports
+    'worker_no': tls.worker_no,
   }
   fd, resultpath = tempfile.mkstemp(prefix=f'{pkgbase}-', suffix='.lilac')
   os.close(fd)
@@ -195,8 +198,10 @@ def call_worker(
     _call_cmd = _call_cmd_systemd
   else:
     _call_cmd = _call_cmd_subprocess
+  name = f'lilac-worker-{tls.worker_no}'
   rusage, timedout = _call_cmd(
-    cmd, pythonpath, logfile, pkgdir, deadline, input_bytes, packager,
+    name, cmd, pythonpath, logfile, pkgdir, deadline,
+    input_bytes, packager,
   )
 
   try:
@@ -233,6 +238,7 @@ def call_worker(
   return version, rusage, error
 
 def _call_cmd_subprocess(
+  name: str,
   cmd: Cmd,
   pythonpath: str,
   logfile: Path,
@@ -271,6 +277,7 @@ def _call_cmd_subprocess(
   return RUsage(0, 0), timedout
 
 def _call_cmd_systemd(
+  name: str,
   cmd: Cmd,
   pythonpath: str,
   logfile: Path,
@@ -282,7 +289,7 @@ def _call_cmd_systemd(
   '''run cmd with systemd-run and collect resource usage'''
   with logfile.open('wb') as logf:
     p = systemd.start_cmd(
-      'lilac-worker',
+      name,
       cmd,
       stdin = subprocess.PIPE,
       stdout = logf,
@@ -298,5 +305,5 @@ def _call_cmd_systemd(
   p.stdin.write(input) # type: ignore
   p.stdin.close() # type: ignore
 
-  return systemd.poll_rusage('lilac-worker', deadline)
+  return systemd.poll_rusage(name, deadline)
 

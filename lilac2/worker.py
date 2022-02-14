@@ -54,6 +54,7 @@ def may_update_pkgrel() -> Generator[None, None, None]:
       update_pkgrel(1)
 
 def lilac_build(
+  worker_no: int,
   mod: LilacMod,
   depend_packages: List[str] = [],
   build_prefix: Optional[str] = None,
@@ -104,9 +105,9 @@ def lilac_build(
     if hasattr(mod, 'build_args'):
       build_args = mod.build_args
 
-    makechrootpkg_args: List[str] = []
+    makechrootpkg_args = ['-l', f'lilac-{worker_no}']
     if hasattr(mod, 'makechrootpkg_args'):
-      makechrootpkg_args = mod.makechrootpkg_args
+      makechrootpkg_args.extend(mod.makechrootpkg_args)
 
     makepkg_args = ['--noprogressbar']
     if hasattr(mod, 'makepkg_args'):
@@ -208,6 +209,7 @@ def main() -> None:
     with load_lilac(Path('.')) as mod:
       _G.mod = mod
       lilac_build(
+        worker_no = input['worker_no'],
         mod = mod,
         depend_packages = input['depend_packages'],
         update_info = NvResults.from_list(input['update_info']),

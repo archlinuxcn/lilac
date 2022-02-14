@@ -13,6 +13,7 @@ from pathlib import Path
 import graphlib
 import json
 import datetime
+import threading
 from concurrent.futures import (
   ThreadPoolExecutor, Future,
   wait as futures_wait, FIRST_COMPLETED,
@@ -248,9 +249,12 @@ def start_build(
 
   try:
     buildsorter = BuildSorter(sorter)
-    max_concurrency = 1
+    max_concurrency = 2
     futures: list[Future] = []
-    with ThreadPoolExecutor(max_workers=max_concurrency) as executor:
+    with ThreadPoolExecutor(
+      max_workers = max_concurrency,
+      initializer = setup_thread,
+    ) as executor:
       while True:
         while len(futures) < max_concurrency:
           pkg = try_pick_one(buildsorter, failed)
@@ -431,6 +435,16 @@ def build_it(
     built.add(pkg)
   elif pkg not in failed:
     failed[pkg] = ()
+
+WORKER_NO = 0
+WORKER_NO_LOCK = threading.Lock()
+
+def setup_thread():
+  global WORKER_NO
+  tls = threading.local()
+  with WORKER_NO_LOCK:
+    tls.worker_no = WORKER_NO
+    WORKER_NO += 1
 
 def main_may_raise(
   D: Dict[str, Any], pkgs_from_args: List[str], logdir: Path,
