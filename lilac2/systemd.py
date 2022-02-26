@@ -4,17 +4,22 @@ from typing import ParamSpec, Generator
 import select
 import time
 import logging
+import threading
 
 from .typing import Cmd, RUsage
 
-_available = None
 logger = logging.getLogger(__name__)
+
+_available = None
+_check_lock = threading.Lock()
 
 def available() -> bool:
   global _available
 
-  if _available is None:
-    _available = _check_availability()
+  with _check_lock:
+    if _available is None:
+      _available = _check_availability()
+      logger.debug('systemd availability: %s', _available)
   return _available
 
 def _check_availability() -> bool:
