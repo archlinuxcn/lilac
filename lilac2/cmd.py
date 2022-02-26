@@ -12,7 +12,6 @@ import types
 from pathlib import Path
 
 from .typing import Cmd
-from .tools import kill_child_processes
 
 logger = logging.getLogger(__name__)
 
@@ -139,7 +138,7 @@ def run_cmd(
       out.append(r)
       outlen += len(r)
       if outlen > 1024 ** 3: # larger than 1G
-        kill_child_processes()
+        p.kill()
 
     code = p.wait()
     if old_hdl is not None:

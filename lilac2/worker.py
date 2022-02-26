@@ -178,22 +178,18 @@ def run_build_cmd(cmd: Cmd) -> None:
     stdin = subprocess.DEVNULL,
   )
 
-  try:
-    while True:
-      try:
-        code = p.wait(10)
-      except subprocess.TimeoutExpired:
-        st = os.stat(1)
-        if st.st_size > 1024 ** 3: # larger than 1G
-          kill_child_processes()
-          logger.error('\n\n输出过多，已击杀。')
-      else:
-        if code != 0:
-          raise subprocess.CalledProcessError(code, cmd)
-        break
-  finally:
-    # say goodbye to all our children
-    kill_child_processes()
+  while True:
+    try:
+      code = p.wait(10)
+    except subprocess.TimeoutExpired:
+      st = os.stat(1)
+      if st.st_size > 1024 ** 3: # larger than 1G
+        kill_child_processes()
+        logger.error('\n\n输出过多，已击杀。')
+    else:
+      if code != 0:
+        raise subprocess.CalledProcessError(code, cmd)
+      break
 
 def main() -> None:
   enable_pretty_logging('DEBUG')
@@ -228,6 +224,9 @@ def main() -> None:
     }
     sys.stdout.flush()
     handle_failure(e, repo, mod, Path(input['logfile']))
+  finally:
+    # say goodbye to all our children
+    kill_child_processes()
 
   r['version'] = getattr(_G, 'built_version', None) # type: ignore
 

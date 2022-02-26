@@ -12,11 +12,12 @@ from pathlib import Path
 import time
 import json
 import threading
+import signal
 
 from .typing import LilacInfo, Cmd, RUsage
 from .nvchecker import NvResults
 from .packages import Dependency
-from .tools import kill_child_processes, reap_zombies
+from .tools import reap_zombies
 from .nomypy import BuildResult # type: ignore
 from . import systemd
 
@@ -79,7 +80,6 @@ def build_package(
       if error:
         raise error
     finally:
-      kill_child_processes()
       may_need_cleanup()
       reap_zombies()
 
@@ -270,7 +270,12 @@ def _call_cmd_subprocess(
     except subprocess.TimeoutExpired:
       if time.time() > deadline:
         timedout = True
-        kill_child_processes()
+        # we need to rely on worker to kill child processes
+        p.send_signal(signal.SIGINT)
+        try:
+          p.wait(3)
+        except subprocess.TimeoutExpired:
+          p.kill()
     else:
       break
 

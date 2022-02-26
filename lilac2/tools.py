@@ -5,14 +5,18 @@ import subprocess
 from typing import Dict, Any
 from pathlib import Path
 import os
+import logging
 
 import tomli
 
 from .const import mydir
 
+logger = logging.getLogger(__name__)
+
 ansi_escape_re = re.compile(r'\x1B(\[[0-?]*[ -/]*[@-~]|\(B)')
 
 def kill_child_processes() -> None:
+  logger.debug('killing child processes (if any)')
   subprocess.run(['kill_children'])
 
 def read_config() -> Dict[str, Any]:
