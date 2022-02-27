@@ -30,6 +30,7 @@ logurl = "https://example.com/${pkgbase}/${datetime}.html"
 # keep build logs; you need to manually run the script "scripts/dbsetup.sql" once
 # requires SQLAlchemy and a corresponding driver
 # dburl = "postgresql:///"
+max_concurrency = 1
 
 [nvchecker]
 # set proxy for nvchecker

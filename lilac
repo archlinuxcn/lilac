@@ -244,13 +244,13 @@ def start_build(
   logdir: Path,
   failed: dict[str, tuple[str, ...]],
   built: set[str],
+  max_concurrency: int,
 ) -> None:
   # built is used to collect built package names
   sorter = packages_with_depends(repo)
 
   try:
     buildsorter = BuildSorter(sorter)
-    max_concurrency = 2
     futures: dict[Future, str] = {}
     with ThreadPoolExecutor(
       max_workers = max_concurrency,
@@ -560,7 +560,8 @@ def main_may_raise(
         b = db.Batch(event='start', logdir=logdir_name)
         s.add(b)
         db.build_updated(s)
-    start_build(REPO, logdir, failed, update_succeeded)
+    start_build(REPO, logdir, failed, update_succeeded,
+                config['lilac'].get('max_concurrency', 1))
   finally:
     D['last_commit'] = git_last_commit()
     # handle what has been processed even on exception
