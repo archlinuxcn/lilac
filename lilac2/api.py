@@ -334,22 +334,26 @@ def _allow_update_aur_repo(pkgname: str, diff: str) -> bool:
       return True
   return False
 
-def _aur_exists(pkgname: str) -> bool:
-  arg = quote(pkgname)
-  url = f'https://aur.archlinux.org/rpc/?v=5&type=info&arg[]={arg}'
+def _aur_exists(pkgbase: str) -> bool:
+  arg = quote(pkgbase)
+  url = f'https://aur.archlinux.org/pkgbase/{arg}'
+  # The API uses only pkgname, not pkgbase
+  # url = f'https://aur.archlinux.org/rpc/?v=5&type=info&arg[]={arg}'
   r = s.get(url)
-  j = r.json()
-  return bool(j['results'])
+  code = r.status_code
+  if code >= 500:
+    r.raise_for_status()
+  return r.status_code != 404
 
-def _update_aur_repo_real(pkgname: str) -> None:
-  if not _aur_exists(pkgname):
-    raise Exception('AUR package not exists, not updating!', pkgname)
+def _update_aur_repo_real(pkgbase: str) -> None:
+  if not _aur_exists(pkgbase):
+    raise Exception('AUR package not exists, not updating!', pkgbase)
 
-  aurpath = const.AUR_REPO_DIR / pkgname
+  aurpath = const.AUR_REPO_DIR / pkgbase
   if not aurpath.is_dir():
     logger.info('cloning AUR repo: %s', aurpath)
     with at_dir(const.AUR_REPO_DIR):
-      _run_cmd(['git', 'clone', f'aur@aur.archlinux.org:{pkgname}.git'])
+      _run_cmd(['git', 'clone', f'aur@aur.archlinux.org:{pkgbase}.git'])
   else:
     with at_dir(aurpath):
       # reset everything, dropping local commits
@@ -379,7 +383,7 @@ def _update_aur_repo_real(pkgname: str) -> None:
       except OSError as e:
         logger.warning('failed to remove file %s: %s', f, e)
 
-    if not _allow_update_aur_repo(pkgname, _run_cmd(['git', 'diff'])):
+    if not _allow_update_aur_repo(pkgbase, _run_cmd(['git', 'diff'])):
       return
 
     with open('.SRCINFO', 'wb') as srcinfo:
