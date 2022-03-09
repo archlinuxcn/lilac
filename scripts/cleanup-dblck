@@ -1,0 +1,36 @@
+#!/usr/bin/python3
+
+'''cleanup leftover pacman db.lck files.
+
+Pacman doesn't use flock or similiar reliable locks, and it frequently gets
+killed by SIGHUP or Ctrl-C without removing the lock file.
+
+So we clean up old locks hoping that pacman doesn't get stuck for a long time.
+Hopefully we're more reliable than pacman's file lock.
+'''
+
+import glob
+import os
+import time
+
+EXPIRATION_TIME = 120
+
+def run_once():
+  t = time.time()
+  for lock in glob.glob('/var/lib/archbuild/*/*/var/lib/pacman/db.lck'):
+    try:
+      m = os.path.getmtime(lock)
+    except FileNotFoundError:
+      continue
+
+    if t - m > EXPIRATION_TIME:
+      print(time.strftime('%Y-%m-%d %H:%M:%S'), 'unlinking stale lock file:', lock)
+      os.unlink(lock)
+
+def main():
+  while True:
+    run_once()
+    time.sleep(60)
+
+if __name__ == '__main__':
+  main()
