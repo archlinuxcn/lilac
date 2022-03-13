@@ -66,6 +66,12 @@ Setup your mail server so that lilac can send out error reports. You may want to
 
 Setup your database if you configure to use one.
 
+Add the following line to `/etc/sudoers` to make those environment available across `sudo`s:
+
+```
+Defaults env_keep += "PACKAGER MAKEFLAGS GNUPGHOME"
+```
+
 lilac only produces packages and put them in a directory, but doesn't update the pacman repository database. You may use [archrepo2](https://github.com/lilydjwg/archrepo2) to do that.
 
 Make sure you have `kill_children` install as privileged program. Try to execute: `kill_children && echo ok`. If you install from [archlinuxcn] or AUR, you'll need to be in the `pkg` group (remember to re-login after modifying your groups). Note taht there may be security implications for people who can execute this program.
