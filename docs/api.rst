@@ -5,7 +5,7 @@
    :members:
    :undoc-members:
    :imported-members:
-   :exclude-members: Path, Container, SimpleNamespace
+   :exclude-members: Path, Container, SimpleNamespace, quote
 
 .. py:data:: s
    :type: requests.Session
