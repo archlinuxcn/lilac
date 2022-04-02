@@ -13,6 +13,7 @@ from pathlib import Path
 import pyalpm
 
 from nicelogger import enable_pretty_logging
+from myutils import file_lock
 
 from . import pkgbuild
 from .typing import LilacMod, Cmd
@@ -24,7 +25,7 @@ from .api import (
 from .nvchecker import NvResults
 from .tools import kill_child_processes
 from .lilacpy import load_lilac
-from .const import _G, PACMAN_DB_DIR
+from .const import _G, PACMAN_DB_DIR, mydir
 from .repo import Repo
 
 logger = logging.getLogger(__name__)
@@ -123,7 +124,8 @@ def lilac_build(
       raise Exception('no package built')
     post_build = getattr(mod, 'post_build', None)
     if post_build is not None:
-      post_build()
+      with file_lock(mydir / 'post_build.lock'):
+        post_build()
     success = True
 
   finally:
