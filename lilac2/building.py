@@ -178,7 +178,7 @@ def call_worker(
   packager: str,
 ) -> tuple[Optional[str], RUsage, Optional[Exception]]:
   '''
-  return: package verion, resource usage, error information
+  return: package version, resource usage, error information
   '''
   input = {
     'depend_packages': depend_packages,

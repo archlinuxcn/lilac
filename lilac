@@ -70,7 +70,7 @@ except ImportError:
 
 config = read_config()
 
-# Setting up enviroment variables
+# Setting up environment variables
 os.environ.update(config.get('envvars', ()))
 os.environ['PATH'] = str(topdir) + ':' + os.environ['PATH']
 

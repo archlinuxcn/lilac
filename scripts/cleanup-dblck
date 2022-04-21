@@ -2,7 +2,7 @@
 
 '''cleanup leftover pacman db.lck files.
 
-Pacman doesn't use flock or similiar reliable locks, and it frequently gets
+Pacman doesn't use flock or similar reliable locks, and it frequently gets
 killed by SIGHUP or Ctrl-C without removing the lock file.
 
 So we clean up old locks hoping that pacman doesn't get stuck for a long time.

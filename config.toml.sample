@@ -47,7 +47,7 @@ proxy = "http://localhost:8000"
 #use_ansi = false
 
 [bindmounts]
-# bind mounts in the devtools enviroment, e.g. for caching
+# bind mounts in the devtools environment, e.g. for caching
 # source directories will be created if not yet
 "~/.cache/archbuild-bind-cache" = "/build/.cache"
 "~/.cache/archbuild-bind-cache/stack" = "/build/.stack"
