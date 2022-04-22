@@ -551,7 +551,8 @@ def aur_pre_build(
 
 def aur_post_build() -> None:
   git_rm_files(_g.aur_pre_files)
-  git_add_files(_g.aur_building_files, force=True)
+  existing_files = [x for x in _g.aur_building_files if os.path.exists(x)]
+  git_add_files(existing_files, force=True)
   output = _run_cmd(["git", "status", "-s", "."]).strip()
   if output:
     git_commit()
