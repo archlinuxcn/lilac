@@ -51,9 +51,13 @@ proxy = "http://localhost:8000"
 # source directories will be created if not yet
 "~/.cache/archbuild-bind-cache" = "/build/.cache"
 "~/.cache/archbuild-bind-cache/stack" = "/build/.stack"
-"~/.cache/go-build" = "/build/.cache/go-build"
 "~/.cache/pip" = "/build/.cache/pip"
 "~/.cargo" = "/build/.cargo"
-"~/go" = "/build/go"
+
+[misc]
+# run some commands before each run
+# prerun = [
+#   ["sudo", "rsync-packages-pool"],
+# ]
 
 # vim: se ft=toml:

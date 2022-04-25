@@ -19,6 +19,7 @@ from concurrent.futures import (
   ThreadPoolExecutor, Future,
   wait as futures_wait, FIRST_COMPLETED,
 )
+import subprocess
 
 import prctl
 import structlog
@@ -470,6 +471,10 @@ def main_may_raise(
     import sqlalchemy
     engine = sqlalchemy.create_engine(dburl)
     db.setup(engine)
+
+  if cmds := config.get('misc', {}).get('prerun'):
+    for cmd in cmds:
+      subprocess.check_call(cmd)
 
   git_reset_hard()
   git_pull_override()
