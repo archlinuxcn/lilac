@@ -145,6 +145,10 @@ Edit ``/etc/sudoers`` like::
 
 The first line to allow setting some environment variables and the second line is to configure packagers to run build commands without a password. You should add devtools commands you'll need to run.
 
+To avoid using too much CPU, you can use cgroups v2 and put the following in ``/etc/systemd/system/user@.service.d/resources.conf`` to fairly share CPU among users (and between system and users).
+
+  [Service]
+  CPUWeight=100
 
 Run
 ---
@@ -175,4 +179,4 @@ Now it's time to run ``lilac``::
 
   lilac
 
-Check ``~/.lilac/log`` for the logs. If everything goes well, you can proceed to create real packages.
+Check ``~/.lilac/log`` for the logs. If everything goes well, you can change the ``config.toml`` to do git pushes, send email reports, setup a [HTTP service for build status and logs](https://github.com/imlonghao/archlinuxcn-packages), etc.
