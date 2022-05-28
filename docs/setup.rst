@@ -41,9 +41,6 @@ Make sure in ``/etc/makepkg.conf`` or similar files there aren't any changes to 
 
 The ``PKGBUILD`` files needs to be in a git repo. A subdirectory inside it is recommended.
 
-Configuration
-=============
-
 Configure lilac
 ---------------
 
@@ -150,7 +147,7 @@ The first line to allow setting some environment variables and the second line i
 
 
 Run
-===
+---
 
 Let create our first lilac-managed package.
 
