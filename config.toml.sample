@@ -6,6 +6,7 @@ TERM = "xterm"
 
 [repository]
 name = "archlinuxcn"
+# The email address where undirected nvchecker error reports should go.
 email = "repo@example.com"
 repodir = "/path/to/gitrepo"
 # The path where built packages and signatures are copied to
@@ -34,7 +35,7 @@ max_concurrency = 1
 
 [nvchecker]
 # set proxy for nvchecker
-proxy = "http://localhost:8000"
+# proxy = "http://localhost:8000"
 
 [smtp]
 # You can configure a SMTP account here; it defaults to localhost:53

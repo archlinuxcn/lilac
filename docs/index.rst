@@ -11,6 +11,7 @@ Welcome to lilac's documentation!
    :caption: Contents:
 
    api
+   setup
 
 
 Indices and tables

@@ -77,7 +77,7 @@ def _get_service_info(name: str) -> tuple[int, str, str]:
 
 def _poll_cmd(pid: int) -> Generator[None, None, None]:
   try:
-    pidfd = os.pidfd_open(pid) # type: ignore
+    pidfd = os.pidfd_open(pid)
   except OSError as e:
     if e.errno == 22:
       return

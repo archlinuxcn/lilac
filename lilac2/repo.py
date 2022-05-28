@@ -36,7 +36,7 @@ class Repo:
     self.logurl_template = config['lilac'].get('logurl')
     self.repomail = config['repository']['email']
     self.name = config['repository']['name']
-    self.trim_ansi_codes = not config['smtp']['use_ansi']
+    self.trim_ansi_codes = not config['smtp'].get('use_ansi', False)
 
     self.repodir = Path(config['repository']['repodir']).expanduser()
 

@@ -54,7 +54,7 @@ Python libraries
 Setup
 ----
 
-lilac runs under a normal Linux user that has `sudo` setup to run devtools commands. It's prefered to use a dedicated user but it's not required. lilac will put its own data under `~/.lilac`.
+lilac runs under a normal Linux user that has `sudo` setup to run devtools commands. It's preferred to use a dedicated user but it's not required. lilac will put its own data under `~/.lilac`.
 
 Setup the git repository containing `PKGBUILD`. Give the account `git push` permissions (e.g. setup a ssh key without passphrase). The repository should have the structure `pkgbase/{PKGBUILD,lilac.yaml,...}` under the root or a subdirectory. Setup gpg so that you can sign files without entering a passphrase. No passphrase is expected by lilac.
 
@@ -74,7 +74,7 @@ Defaults env_keep += "PACKAGER MAKEFLAGS GNUPGHOME"
 
 lilac only produces packages and put them in a directory, but doesn't update the pacman repository database. You may use [archrepo2](https://github.com/lilydjwg/archrepo2) to do that.
 
-Make sure you have `kill_children` install as privileged program. Try to execute: `kill_children && echo ok`. If you install from [archlinuxcn] or AUR, you'll need to be in the `pkg` group (remember to re-login after modifying your groups). Note taht there may be security implications for people who can execute this program.
+Make sure you have `kill_children` install as privileged program. Try to execute: `kill_children && echo ok`. If you install from [archlinuxcn] or AUR, you'll need to be in the `pkg` group (remember to re-login after modifying your groups). Note that there may be security implications for people who can execute this program.
 
 The `build-cleaner` inside `scripts/` needs to be in `$PATH` and runs with `sudo` without a password to release space.
 
