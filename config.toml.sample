@@ -8,14 +8,18 @@ TERM = "xterm"
 name = "archlinuxcn"
 # The email address where undirected nvchecker error reports should go.
 email = "repo@example.com"
+# this can point into a directory inside the git repo.
 repodir = "/path/to/gitrepo"
 # The path where built packages and signatures are copied to
 # comment out if there's no need to copy built packages
 destdir = "/path/to/pkgdir"
 
 [lilac]
+# this is the name in the mail header and subject
 name = "lilac"
+# where lilac sends mails from
 email = "lilac@example.com"
+# for internal error reports
 master = "Your Name <youremail@example.com>"
 # Set and unsubscribe_address to receive unsubscribe requests
 # unsubscribe_address = "unsubscribe@example.com"
@@ -25,7 +29,7 @@ git_push = false
 send_email = false
 # Optional: template for log file URL. Used in package error emails
 logurl = "https://example.com/${pkgbase}/${datetime}.html"
-# for searching github
+# for searching github; this is NOT for nvchecker, which should be configured via ~/.lilac/nvchecker_keyfile.toml
 # github_token = "xxx"
 
 # keep build logs; you need to manually run the script "scripts/dbsetup.sql" once
