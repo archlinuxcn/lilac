@@ -83,7 +83,7 @@ name
   the bot's name. The error report mails will be sent from this name and have it in the subject.
 
 email
-  the address where lilac sends mails from.
+  the address where lilac sends mails from. This should be the same one lilac uses for git commits.
 
 master
   email address of the admin of this lilac instance. In case of any unhandled errors a report will be sent here. E.g. ``Admin <lilac-admin@example.net>``.
@@ -131,8 +131,6 @@ Create the database user and database if needed::
 
 You should be able to login into the database server now.
 
-.. TODO include scripts/dbsetup.sql in lilac-git
-
 Setup the database tables (run as lilac)::
 
   psql ANY_ARGS_YOU_MAY_NEED < dbsetup.sql
@@ -170,10 +168,6 @@ Create a minimal `lilac.yaml` file like this::
     manual: 1
 
 Create a git commit and push it somewhere.
-
-.. TODO Is python-setuptools necessary (for archpkg)?
-
-.. TODO Don't pick up current directory config file
 
 Now it's time to run ``lilac``::
 
