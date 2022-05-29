@@ -9,6 +9,7 @@ import contextlib
 import json
 import sys
 from pathlib import Path
+import platform
 
 import pyalpm
 
@@ -97,8 +98,9 @@ def lilac_build(
     pkgvers = pkgbuild.check_srcinfo()
     _G.built_version = str(pkgvers)
 
+    default_build_prefix = 'extra-%s' % (platform.machine() or 'x86_64')
     build_prefix = build_prefix or getattr(
-      mod, 'build_prefix', 'extra-x86_64')
+      mod, 'build_prefix', default_build_prefix)
     if not isinstance(build_prefix, str):
       raise TypeError('build_prefix', build_prefix)
 
