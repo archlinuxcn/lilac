@@ -12,13 +12,15 @@ An easy way to install lilac and its dependencies is to install the ``lilac-git`
 
 (For x86_64 arch only) As a workaround, instead of ``devtools``, ``devtools-archlinuxcn`` from ``[archlinuxcn]`` should be used until `FS#64265 <https://bugs.archlinux.org/task/64265>`_ and `FS#64698 <https://gitlab.archlinux.org/archlinux/devtools/-/merge_requests/90>`_ are resolved.
 
-::
+.. code-block:: sh
 
   pacman -Syu lilac-git devtools-archlinuxcn
 
 Lilac can store (and in the future use) a kind of build logs in a database. Let's use PostgreSQL this time. Support for other database may come in the future.
 
-To use PostgreSQL, the following dependencies need to be installed (besides the database itself)::
+To use PostgreSQL, the following dependencies need to be installed (besides the database itself):
+
+.. code-block:: sh
 
   pacman -S python-sqlalchemy python-psycopg2
 
@@ -27,7 +29,9 @@ Lilac can send error reports via email. A local mail transfer agent (MTA) is pre
 User and Data
 -------------
 
-Lilac needs a normal Linux user to run. You can create a dedicated user::
+Lilac needs a normal Linux user to run. You can create a dedicated user:
+
+.. code-block:: sh
 
   useradd -m -g pkg lilac
 
@@ -44,18 +48,24 @@ The ``PKGBUILD`` files needs to be in a git repo. A subdirectory inside it is re
 Configure lilac
 ---------------
 
-It's time to configure lilac now. Login as the user which lilac will run as first. Other than a fresh login, we can switch users with ``machinectl`` (don't use ``su`` or ``sudo``)::
+It's time to configure lilac now. Login as the user which lilac will run as first. Other than a fresh login, we can switch users with ``machinectl`` (don't use ``su`` or ``sudo``):
+
+.. code-block:: sh
 
   machinectl shell lilac@
 
-Create the git repository for ``PKGBUILD``\ s::
+Create the git repository for ``PKGBUILD``\ s:
+
+.. code-block:: sh
 
   mkdir -p myrepo-pkgbuilds/myrepo && cd myrepo-pkgbuilds
   git init
 
 To share these ``PKGBUILD``\ s we'll need to host the git repository somewhere (e.g. GitHub).
 
-Create a directory for built packages::
+Create a directory for built packages:
+
+.. code-block:: sh
 
   mkdir ~/packages
 
@@ -67,7 +77,7 @@ In the ``[repository]`` section:
 
 name
   the repository name: ``myrepo`` in this article.
- 
+
 email
   an email address for undirected error reports (e.g. a list address that all maintainers will receive messages from): ``repo@localhost`` in this article.
 
@@ -118,30 +128,48 @@ max_concurrency
 Configure other parts
 ---------------------
 
-Setup the database server if you don't already have one (run as root)::
+Setup the database server if you don't already have one (run as root):
+
+.. code-block:: sh
 
   pacman -S postgresql
   su - postgres -c "initdb --locale en_US.UTF-8 -D '/var/lib/postgres/data'"
   systemctl enable --now postgresql
 
-Create the database user and database if needed::
+Create the database user and database if needed:
+
+.. code-block:: sh
 
   su - postgres -c 'createuser lilac'
   su - postgres -c 'createdb -O lilac lilac'
 
 You should be able to login into the database server now.
 
-Setup the database tables (run as lilac)::
+Setup the database tables (run as lilac):
+
+.. code-block:: sh
 
   psql ANY_ARGS_YOU_MAY_NEED < dbsetup.sql
 
 Edit ``/etc/sudoers`` like::
 
   Defaults env_keep += "PACKAGER MAKEFLAGS GNUPGHOME"
-  
+
   %pkg ALL= NOPASSWD: /usr/bin/extra-x86_64-build, /usr/bin/multilib-build, ...
 
 The first line to allow setting some environment variables and the second line is to configure packagers to run build commands without a password. You should add devtools commands you'll need to run.
+
+Add this to ``/etc/profile.d/build.sh``:
+
+.. code-block:: sh
+
+  NPROC="$(nproc)"
+  export MAKEFLAGS="-j$NPROC"
+  unset NPROC
+
+  if groups | grep -q "\<pkg\>"; then
+    export PACKAGER="$USER <$USER@build.archlinuxcn.org>"
+  fi
 
 To avoid using too much CPU, you can use cgroups v2 and put the following in ``/etc/systemd/system/user@.service.d/resources.conf`` to fairly share CPU among users (and between system and users).
 
@@ -153,23 +181,29 @@ Run
 
 Let create our first lilac-managed package.
 
-In ``~/myrepo-pkgbuilds/myrepo`` create our package directory and ``PKGBUILD``::
+In ``~/myrepo-pkgbuilds/myrepo`` create our package directory and ``PKGBUILD``:
+
+.. code-block:: sh
 
   mkdir testpkg && cd testpkg
   vim PKGBUILD
 
-Create a minimal `lilac.yaml` file like this::
+Create a minimal `lilac.yaml` file like this:
+
+.. code-block:: yaml
 
   maintainers:
   - github: lilydjwg
-  
+
   update_on:
   - source: manual
     manual: 1
 
 Create a git commit and push it somewhere.
 
-Now it's time to run ``lilac``::
+Now it's time to run ``lilac``:
+
+.. code-block:: sh
 
   lilac
 
