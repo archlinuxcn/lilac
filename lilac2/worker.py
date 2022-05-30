@@ -3,7 +3,7 @@ from __future__ import annotations
 import os
 import logging
 import subprocess
-from typing import Optional, List, Generator
+from typing import Optional, List, Generator, Union
 from types import SimpleNamespace
 import contextlib
 import json
@@ -17,7 +17,7 @@ from nicelogger import enable_pretty_logging
 from myutils import file_lock
 
 from . import pkgbuild
-from .typing import LilacMod, Cmd
+from .typing import LilacMod, LilacInfo, Cmd
 from .cmd import run_cmd, UNTRUSTED_PREFIX
 from .api import (
   vcs_update, get_pkgver_and_pkgrel, update_pkgrel,
@@ -26,6 +26,7 @@ from .api import (
 from .nvchecker import NvResults
 from .tools import kill_child_processes
 from .lilacpy import load_lilac
+from .lilacyaml import load_lilacinfo
 from .const import _G, PACMAN_DB_DIR, mydir
 from .repo import Repo
 
@@ -227,7 +228,12 @@ def main() -> None:
       'msg': repr(e),
     }
     sys.stdout.flush()
-    handle_failure(e, repo, mod, Path(input['logfile']))
+    try:
+      handle_failure(e, repo, mod, Path(input['logfile']))
+    except UnboundLocalError:
+      # mod failed to load
+      info = load_lilacinfo(Path('.'))
+      handle_failure(e, repo, info, Path(input['logfile']))
   finally:
     # say goodbye to all our children
     kill_child_processes()
@@ -238,7 +244,7 @@ def main() -> None:
     json.dump(r, f)
 
 def handle_failure(
-  e: Exception, repo: Repo, mod: LilacMod, logfile: Path,
+  e: Exception, repo: Repo, mod: Union[LilacMod, LilacInfo], logfile: Path,
 ) -> None:
   logger.error('build failed', exc_info=e)
 
