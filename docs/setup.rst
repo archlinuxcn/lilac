@@ -159,7 +159,7 @@ Edit ``/etc/sudoers`` like::
 
 The first line to allow setting some environment variables and the second line is to configure packagers to run build commands without a password. You should add devtools commands you'll need to run.
 
-Add this to ``/etc/profile.d/build.sh``:
+Add something like this to ``/etc/profile.d/build.sh`` (at least update the domain name):
 
 .. code-block:: sh
 
@@ -168,10 +168,12 @@ Add this to ``/etc/profile.d/build.sh``:
   unset NPROC
 
   if groups | grep -q "\<pkg\>"; then
-    export PACKAGER="$USER <$USER@build.archlinuxcn.org>"
+    export PACKAGER="$USER <$USER@example.org>"
   fi
 
 To avoid using too much CPU, you can use cgroups v2 and put the following in ``/etc/systemd/system/user@.service.d/resources.conf`` to fairly share CPU among users (and between system and users).
+
+.. code-block:: ini
 
   [Service]
   CPUWeight=100
