@@ -1,17 +1,11 @@
 #!/usr/bin/python3
 
-# clean up our git repository used by lilac
-
 import os
-import pathlib
 import subprocess
 from collections import defaultdict
 import shutil
-import sys
+from pathlib import Path
 import time
-
-# repodir = pathlib.Path('/ldata/src/archgitrepo/archlinuxcn').expanduser()
-repodir = pathlib.Path('~/archgitrepo/archlinuxcn').expanduser()
 
 DRY_RUN = True
 
@@ -94,11 +88,10 @@ def process(dir, git_files):
     else:
       rmfile(file)
 
-def main():
+def main(repodir, force):
   global DRY_RUN
 
-  if '-f' in sys.argv:
-    DRY_RUN = False
+  DRY_RUN = not force
 
   os.chdir(repodir)
   pkgbase_to_files = get_git_managed()
@@ -118,4 +111,28 @@ def main():
     process(dir, pkgbase_to_files[dir.name])
 
 if __name__ == '__main__':
-  main()
+  import argparse
+
+  parser = argparse.ArgumentParser(description='clean up our git repository used by lilac')
+  parser.add_argument('-f', action='store_true',
+                            help='do not dry-run; really delete files')
+  parser.add_argument('DIR', nargs='?',
+                      help="path to the repository; read lilac's config by default")
+  args = parser.parse_args()
+
+  if args.DIR:
+    repodir = Path(args.DIR)
+  else:
+    from lilac2.tools import read_config
+    config = read_config()
+    repodir = Path(config['repository']['repodir']).expanduser()
+
+  try:
+    from lilac2.vendor.myutils import lock_file
+    from lilac2.const import mydir
+  except ImportError:
+    pass
+  else:
+    lock_file(mydir / '.lock')
+
+  main(repodir, args.f)
