@@ -12,7 +12,7 @@ setup(
   zip_safe = False,
   packages = find_packages(exclude=('tests',)) + ['nvchecker_source'],
   py_modules = ['lilaclib'],
-  scripts = ['lilac', 'recv_gpg_keys', 'scripts/build-cleaner'],
+  scripts = ['lilac', 'recv_gpg_keys', 'scripts/build-cleaner', 'scripts/lilac-cleaner'],
   setup_requires = ['setuptools_scm'],
   # See README.md
   install_requires = [

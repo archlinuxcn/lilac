@@ -179,7 +179,7 @@ Setup the database tables (run as lilac):
 
 .. code-block:: sh
 
-  psql ANY_ARGS_YOU_MAY_NEED < dbsetup.sql
+  psql ANY_ARGS_YOU_MAY_NEED < /usr/share/doc/lilac/dbsetup.sql
 
 Edit ``/etc/sudoers`` like::
 

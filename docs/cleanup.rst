@@ -40,11 +40,11 @@ build-cleaner
 
 lilac-cleaner
 
-  Clean up files downloaded and extracted during packaging. They are in the git repository, side-by-side with PKGBUILDs and built packages. Use `lilac-cleaner` in the `scripts/` directory to clean them up. (Note a `-f` argument is needed to actually delete files.)
-
-  You can also run this script locally.
-
-  This script is in the ``scripts/`` directory of `lilac's source repository <https://github.com/archlinuxcn/lilac>`_.
+  Clean up files downloaded and extracted during packaging. They are in the git repository, side-by-side with PKGBUILDs and built packages.
+  
+  This script can be run without installing lilac so you can also run this script locally.
+  
+  This script comes with lilac. Note a ``-f`` argument is needed to actually delete files.
 
 repocleaner
 
