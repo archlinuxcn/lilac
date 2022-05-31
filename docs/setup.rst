@@ -209,4 +209,4 @@ Now it's time to run ``lilac``:
 
   lilac
 
-Check ``~/.lilac/log`` for the logs. If everything goes well, you can change the ``config.toml`` to do git pushes, send email reports, setup a [HTTP service for build status and logs](https://github.com/imlonghao/archlinuxcn-packages), etc.
+Check ``~/.lilac/log`` for the logs. If everything goes well, you can change the ``config.toml`` to do git pushes, send email reports, setup a `HTTP service for build status and logs <https://github.com/imlonghao/archlinuxcn-packages>`_, etc.
