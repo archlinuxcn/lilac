@@ -25,27 +25,10 @@ import prctl
 import structlog
 
 topdir = Path(__file__).resolve().parent
-pythonpath_l = []
-if (topdir / 'lilac2').exists():
-  # In-tree
-  p = str(topdir)
-  sys.path.insert(0, p)
-  pythonpath_l.append(p)
-  p = str(topdir / 'lilac2' / 'vendor')
-  sys.path.insert(0, p)
-  pythonpath_l.append(p)
-else:
-  # Installed as a system package
-  import lilac2
-  p = str(Path(lilac2.__file__).parent / 'vendor')
-  sys.path.insert(0, p)
-  pythonpath_l.append(p)
-pythonpath = ':'.join(pythonpath_l)
-del p, pythonpath_l
 
-from myutils import lock_file
-from serializer import PickledData
-from nicelogger import enable_pretty_logging
+from lilac2.vendor.myutils import lock_file
+from lilac2.vendor.serializer import PickledData
+from lilac2.vendor.nicelogger import enable_pretty_logging
 
 from lilac2.packages import (
   DependencyManager, get_dependency_map, get_changed_packages,
@@ -349,7 +332,6 @@ def build_it(
     myname = MYNAME,
     destdir = DESTDIR,
     logfile = logfile,
-    pythonpath = pythonpath,
   )
 
   elapsed = r.elapsed

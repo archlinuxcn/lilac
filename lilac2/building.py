@@ -51,7 +51,6 @@ def build_package(
   myname: str,
   destdir: Path,
   logfile: Path,
-  pythonpath: str,
 ) -> tuple[BuildResult, Optional[str]]:
   '''return BuildResult and version string if successful'''
   start_time = time.time()
@@ -74,7 +73,6 @@ def build_package(
         bindmounts = bindmounts,
         logfile = logfile,
         deadline = start_time + time_limit_hours * 3600,
-        pythonpath = pythonpath,
         packager = packager,
       )
       if error:
@@ -174,7 +172,6 @@ def call_worker(
   update_info: NvResults,
   bindmounts: List[str],
   deadline: float,
-  pythonpath: str,
   packager: str,
 ) -> tuple[Optional[str], RUsage, Optional[Exception]]:
   '''
@@ -200,7 +197,7 @@ def call_worker(
     _call_cmd = _call_cmd_subprocess
   name = f'lilac-worker-{TLS.worker_no}'
   rusage, timedout = _call_cmd(
-    name, cmd, pythonpath, logfile, pkgdir, deadline,
+    name, cmd, logfile, pkgdir, deadline,
     input_bytes, packager,
   )
 
@@ -240,7 +237,6 @@ def call_worker(
 def _call_cmd_subprocess(
   name: str,
   cmd: Cmd,
-  pythonpath: str,
   logfile: Path,
   pkgdir: Path,
   deadline: float,
@@ -250,7 +246,6 @@ def _call_cmd_subprocess(
   '''call cmd as a subprocess'''
   timedout = False
   env = os.environ.copy()
-  env['PYTHONPATH'] = pythonpath
   env['PACKAGER'] = packager
   with logfile.open('wb') as logf:
     p = subprocess.Popen(
@@ -284,7 +279,6 @@ def _call_cmd_subprocess(
 def _call_cmd_systemd(
   name: str,
   cmd: Cmd,
-  pythonpath: str,
   logfile: Path,
   pkgdir: Path,
   deadline: float,
@@ -301,7 +295,6 @@ def _call_cmd_systemd(
       stderr = logf,
       cwd = pkgdir,
       setenv = {
-        'PYTHONPATH': pythonpath,
         'PATH': os.environ['PATH'], # we've updated our PATH
         'MAKEFLAGS': os.environ.get('MAKEFLAGS', ''),
         'PACKAGER': packager,

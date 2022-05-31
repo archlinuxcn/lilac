@@ -13,8 +13,8 @@ import platform
 
 import pyalpm
 
-from nicelogger import enable_pretty_logging
-from myutils import file_lock
+from .vendor.nicelogger import enable_pretty_logging
+from .vendor.myutils import file_lock
 
 from . import pkgbuild
 from .typing import LilacMod, LilacInfo, Cmd

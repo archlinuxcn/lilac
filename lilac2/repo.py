@@ -12,7 +12,8 @@ import string
 import time
 
 import structlog
-from github import GitHub
+
+from .vendor.github import GitHub
 
 from .mail import MailService
 from .typing import LilacMod, Maintainer

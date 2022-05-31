@@ -3,7 +3,7 @@ from __future__ import annotations
 import smtplib
 from typing import Union, Type, List, Dict, Any
 
-from mailutils import assemble_mail
+from .vendor.mailutils import assemble_mail
 
 SMTPClient = Union[smtplib.SMTP, smtplib.SMTP_SSL]
 

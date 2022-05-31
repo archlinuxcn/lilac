@@ -4,7 +4,7 @@ from lilaclib import (
   update_pkgrel,
 )
 
-from myutils import at_dir
+from lilac2.vendor.myutils import at_dir
 
 @pytest.mark.parametrize('pkgbuild, expected_pkgbuild, kwargs', [
   ('pkgrel=1', 'pkgrel=2', {}),

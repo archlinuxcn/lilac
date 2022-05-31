@@ -10,7 +10,7 @@ from pathlib import Path
 
 import pyalpm
 
-from myutils import safe_overwrite
+from .vendor.myutils import safe_overwrite
 
 from .const import _G, OFFICIAL_REPOS
 from .cmd import UNTRUSTED_PREFIX

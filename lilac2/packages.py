@@ -6,7 +6,7 @@ from typing import Dict, Union, Tuple, Set, Optional
 import re
 import graphlib
 
-import archpkg
+from .vendor import archpkg
 
 from .api import run_cmd
 from .typing import LilacInfos

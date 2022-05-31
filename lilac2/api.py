@@ -18,8 +18,8 @@ from urllib.parse import quote
 
 import requests
 
-from myutils import at_dir
-from htmlutils import parse_document_from_requests
+from .vendor.myutils import at_dir
+from .vendor.htmlutils import parse_document_from_requests
 
 from .cmd import git_pull, git_push, UNTRUSTED_PREFIX
 from .cmd import run_cmd as _run_cmd
@@ -423,7 +423,7 @@ def _prepend_self_path() -> None:
   os.environ['PATH'] = str(mydir / path)
 
 def single_main(build_prefix: str = 'makepkg') -> None:
-  from nicelogger import enable_pretty_logging
+  from .vendor.nicelogger import enable_pretty_logging
   from . import lilacpy
   from .worker import lilac_build
 

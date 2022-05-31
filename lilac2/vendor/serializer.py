@@ -5,7 +5,7 @@ import abc
 
 import pickle
 
-from myutils import safe_overwrite
+from .myutils import safe_overwrite
 
 class Serializer(metaclass=abc.ABCMeta):
   def __init__(self, fname, readonly=False, default=None):

@@ -8,7 +8,7 @@ import datetime
 
 import yaml
 
-from myutils import dehumantime
+from .vendor.myutils import dehumantime
 
 from . import api
 from .const import _G, PACMAN_DB_DIR

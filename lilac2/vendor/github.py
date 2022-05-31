@@ -4,7 +4,7 @@ import datetime
 import weakref
 from typing import Any, Iterator, Dict
 
-import requestsutils
+from . import requestsutils
 from requests import Response
 
 JsonDict = Dict[str, Any]
