@@ -35,7 +35,7 @@ Lilac needs a normal Linux user to run. You can create a dedicated user:
 
   useradd -m -g pkg lilac
 
-The ``pkg`` group is created by the ``pid_children-git`` package, which lilac uses to clean up subprocesses. Users in this group have the power to kill subprocesses with root privileges.
+The ``pkg`` group is created by the ``pid_children-git`` package, which lilac uses to clean up subprocesses. Users in this group have the power to kill subprocesses with root privileges. We'll configure this group to be able to build packages with devtools.
 
 Remember to fully terminate existing processes and re-login (or more easily, reboot) to get the group privileges applied.
 
@@ -44,6 +44,37 @@ Lilac will use ``~/.lilac`` to store various data including build logs.
 Make sure in ``/etc/makepkg.conf`` or similar files there aren't any changes to ``PKGDEST`` or the like, or lilac won't find them.
 
 The ``PKGBUILD`` files needs to be in a git repo. A subdirectory inside it is recommended.
+
+Setup a passphrase-less GPG key for the build user to sign packages:
+
+.. code-block:: sh
+
+  gpg --gen-key
+
+Create a git repository for ``PKGBUILD``\ s and push it somewhere (e.g. GitHub). The directory structure is as follows::
+
+  worktree root
+  ├── README.md
+  ├── .gitignore
+  └── myrepo
+      ├── pkgbase1
+      │   ├── lilac.yaml
+      │   └── PKGBUILD
+      ├── pkgbase2
+      │   ├── lilac.yaml
+      │   ├── PKGBUILD
+      └── pkgbase3
+          ├── lilac.yaml
+          ├── PKGBUILD
+          └── pkgbase3.install
+
+It contains a directory of pkgbase-named directories which contain PKGBUILDs, and a couple of other files you may want.
+
+Generate a pair of ssh keys, and configure ssh / git so that you can push via ssh to the git repository above.
+
+.. code-block:: sh
+
+  ssh-keygen -t ed25519
 
 Configure lilac
 ---------------
@@ -54,14 +85,11 @@ It's time to configure lilac now. Login as the user which lilac will run as firs
 
   machinectl shell lilac@
 
-Create the git repository for ``PKGBUILD``\ s:
+Clone the git repository for ``PKGBUILD``\ s:
 
 .. code-block:: sh
 
-  mkdir -p myrepo-pkgbuilds/myrepo && cd myrepo-pkgbuilds
-  git init
-
-To share these ``PKGBUILD``\ s we'll need to host the git repository somewhere (e.g. GitHub).
+  git clone git@github.com:myorg/myrepo-pkgbuilds
 
 Create a directory for built packages:
 
@@ -125,6 +153,8 @@ dburl
 max_concurrency
   limit the concurrent builds at the same time.
 
+If you track GitHub or GitLab, get your API tokens and put your keyfile at ``~/.lilac/nvchecker_keyfile.toml`` (see `nvchecker's documentation <https://nvchecker.readthedocs.io/en/latest/>`_ for details).
+
 Configure other parts
 ---------------------
 
@@ -155,9 +185,9 @@ Edit ``/etc/sudoers`` like::
 
   Defaults env_keep += "PACKAGER MAKEFLAGS GNUPGHOME"
 
-  %pkg ALL= NOPASSWD: /usr/bin/extra-x86_64-build, /usr/bin/multilib-build, ...
+  %pkg ALL= NOPASSWD: /usr/bin/build-cleaner, /usr/bin/extra-x86_64-build, /usr/bin/multilib-build
 
-The first line to allow setting some environment variables and the second line is to configure packagers to run build commands without a password. You should add devtools commands you'll need to run.
+The first line to allow setting some environment variables and the second line is to configure packagers to run build commands without a password. You should add all devtools commands you'll need to run. ``build-cleaner`` is a script to clean up build chroots which lilac may run.
 
 Add something like this to ``/etc/profile.d/build.sh`` (at least update the domain name):
 
@@ -177,6 +207,8 @@ To avoid using too much CPU, you can use cgroups v2 and put the following in ``/
 
   [Service]
   CPUWeight=100
+
+If you have a lot of memory (e.g. >100G), you may want to mount ``/var/lib/archbuild`` as a tmpfs to speed up building.
 
 Run
 ---
@@ -209,4 +241,21 @@ Now it's time to run ``lilac``:
 
   lilac
 
-Check ``~/.lilac/log`` for the logs. If everything goes well, you can change the ``config.toml`` to do git pushes, send email reports, setup a `HTTP service for build status and logs <https://github.com/imlonghao/archlinuxcn-packages>`_, etc.
+Check ``~/.lilac/log`` for the logs. If everything goes well, you can change the ``config.toml`` to do git pushes, send email reports, etc.
+
+Setup a cron job or systemd.timer to run ``lilac`` periodically. Don't forget to make the user instance of systemd always run:
+
+.. code-block:: sh
+
+  loginctl enable-linger
+
+lilac only produces packages and put them in a directory, but doesn't update the pacman repository database. You may use `archrepo2 <https://github.com/lilydjwg/archrepo2>`_ to do that.
+
+Or you can upload packages to another server via the ``postrun`` config in ``~/.lilac/config.toml`` and run ``archrepo2`` and an HTTP server there.
+
+You can also setup a `HTTP service for build status and logs <https://github.com/imlonghao/archlinuxcn-packages>`_.
+
+There are a lot of files that are no longer needed. You'll need to setup `routine cleanup scripts <cleanup.html>`_ after things are working.
+
+`archlinuxcn/misc_scripts <https://github.com/archlinuxcn/misc_scripts>`_ contains some auxiliary scripts for maintainance and GitHub issues.
+
