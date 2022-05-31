@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-import sys, pathlib
+import sys
 import select
 import os
 import datetime
@@ -8,11 +8,7 @@ import datetime
 import psycopg2
 import psycopg2.extras
 
-topdir = pathlib.Path(__file__).resolve().parent.parent
-sys.path.append(str(topdir))
-sys.path.append(str(topdir / 'vendor'))
-
-from myutils import humantime, filesize
+from lilac2.vendor.myutils import humantime, filesize
 
 def c(n):
   return f'\x1b[38;5;{n}m'
