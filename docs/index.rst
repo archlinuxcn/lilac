@@ -9,10 +9,10 @@ Welcome to lilac's documentation!
 .. toctree::
    :maxdepth: 2
 
-   api
    setup
    cleanup
    alarm
+   api
 
 
 Indices and tables
