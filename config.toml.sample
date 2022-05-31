@@ -64,5 +64,9 @@ max_concurrency = 1
 # prerun = [
 #   ["sudo", "rsync-packages-pool"],
 # ]
+# run some commands after each run
+# postrun = [
+#   ["upload-packages"],
+# ]
 
 # vim: se ft=toml:

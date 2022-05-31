@@ -613,6 +613,10 @@ def main_may_raise(
     if config['lilac']['git_push']:
       git_push()
 
+    if cmds := config.get('misc', {}).get('postrun'):
+      for cmd in cmds:
+        subprocess.check_call(cmd)
+
 def main(logdir: Path, pkgs_from_args: List[str]) -> None:
   store = mydir / 'store'
   with PickledData(store, default={}) as D:
