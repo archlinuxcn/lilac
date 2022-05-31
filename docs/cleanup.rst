@@ -50,5 +50,5 @@ repocleaner
 
   Clean up old packages inside the package repository.
   
-  This script is at `repocleaner <https://github.com/archlinuxcn/misc_scripts/blob/master/repocleaner>`_ and should be edited before running. It should be run where the package repository is managed.
+  This script is at `repocleaner <https://github.com/archlinuxcn/misc_scripts/blob/master/repocleaner>`_ and should be edited before running. It should be run with root privileges on the server where the package repository is managed.
 
