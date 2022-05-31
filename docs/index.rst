@@ -12,6 +12,7 @@ Welcome to lilac's documentation!
 
    api
    setup
+   alarm
 
 
 Indices and tables
