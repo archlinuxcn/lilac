@@ -314,7 +314,7 @@ def git_commit(*, check_status: bool = True) -> None:
       return
 
   pkgbase = os.path.basename(os.getcwd())
-  msg = f'{pkgbase}: auto updated to {_G.built_version}'
+  msg = f'{_G.commit_msg_prefix}{pkgbase}: auto updated to {_G.built_version}'
   _run_cmd(['git', 'commit', '-m', msg])
 
 class AurDownloadError(Exception):

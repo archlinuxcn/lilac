@@ -26,6 +26,8 @@ master = "Your Name <youremail@example.com>"
 # Set to yes to automatically rebuild packages which failed to build last time
 rebuild_failed_pkgs = true
 git_push = false
+# Set a prefix for commit messages
+# commit_msg_prefix = ''
 send_email = false
 # Optional: template for log file URL. Used in package error emails
 logurl = "https://example.com/${pkgbase}/${datetime}.html"
