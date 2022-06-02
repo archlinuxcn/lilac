@@ -103,6 +103,8 @@ def iter_pkglog():
     cursor = conn.cursor()
     cursor.execute('listen build_updated')
 
+  for log in logs:
+    log['ts'] = log['ts'].astimezone()
   yield from logs
 
   last_ts = datetime.datetime.now().astimezone()
