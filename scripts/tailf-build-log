@@ -127,6 +127,8 @@ def iter_pkglog():
       logs.sort(key=lambda x: x['ts'])
       last_ts = datetime.datetime.now().astimezone()
 
+      for log in logs:
+        log['ts'] = log['ts'].astimezone()
       yield from logs
 
 def main():
