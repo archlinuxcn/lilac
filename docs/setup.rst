@@ -257,5 +257,5 @@ You can also setup a `HTTP service for build status and logs <https://github.com
 
 There are a lot of files that are no longer needed. You'll need to setup `routine cleanup scripts <cleanup.html>`_ after things are working.
 
-`archlinuxcn/misc_scripts <https://github.com/archlinuxcn/misc_scripts>`_ contains some auxiliary scripts for maintainance and GitHub issues.
+`archlinuxcn/misc_scripts <https://github.com/archlinuxcn/misc_scripts>`_ contains some auxiliary scripts for maintenance and GitHub issues.
 
