@@ -39,11 +39,14 @@ _is_btrfs_cache = None
 def _is_btrfs_subvolume(path):
     global _is_btrfs_cache
     if _is_btrfs_cache is None:
-        p = subprocess.run(
-            ['btrfs', 'subvolume', 'show', path],
-            stdout = subprocess.DEVNULL,
-            stderr = subprocess.DEVNULL)
-        _is_btrfs_cache = p.returncode == 0
+        try:
+            p = subprocess.run(
+                ['btrfs', 'subvolume', 'show', path],
+                stdout = subprocess.DEVNULL,
+                stderr = subprocess.DEVNULL)
+            _is_btrfs_cache = p.returncode == 0
+        except FileNotFoundError:
+            _is_btrfs_cache = False
 
     return _is_btrfs_cache
 
