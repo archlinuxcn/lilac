@@ -183,7 +183,7 @@ Setup the database tables (run as lilac):
 
 Edit ``/etc/sudoers`` like::
 
-  Defaults env_keep += "PACKAGER MAKEFLAGS GNUPGHOME"
+  Defaults env_keep += "PACKAGER MAKEFLAGS GNUPGHOME BUILDTOOL"
 
   %pkg ALL= NOPASSWD: /usr/bin/build-cleaner, /usr/bin/extra-x86_64-build, /usr/bin/multilib-build
 
