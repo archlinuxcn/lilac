@@ -52,7 +52,10 @@ def _is_btrfs_subvolume(path):
 
 def drop_chroot(full_path):
     if _is_btrfs_subvolume(full_path):
-        subprocess.check_call(['btrfs', 'subvolume', 'delete', full_path])
+        try:
+            subprocess.check_call(['btrfs', 'subvolume', 'delete', full_path], stdout=subprocess.DEVNULL)
+        except subprocess.CalledProcessError: # nested subvolumes
+            subprocess.check_call(['rm', '-rf', '--one-file-system', full_path])
     else:
         subprocess.check_call(['rm', '-rf', '--one-file-system', full_path])
 
