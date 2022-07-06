@@ -486,7 +486,7 @@ def git_rm_files(files: List[str]) -> None:
     _run_cmd(['git', 'rm', '--cached', '--'] + files)
 
 def _get_aur_packager(name: str) -> Tuple[Optional[str], str]:
-  doc = parse_document_from_requests(f'https://aur.archlinux.org/packages/{name}', s)
+  doc = parse_document_from_requests(f'https://aur.archlinux.org/pkgbase/{name}', s)
   maintainer_cell = doc.xpath('//th[text()="Maintainer:"]/following::td[1]')[0]
   maintainer: Optional[str] = maintainer_cell.text_content().strip()
   last_packager_cell = doc.xpath('//th[text()="Last Packager:"]/following::td[1]')[0]
