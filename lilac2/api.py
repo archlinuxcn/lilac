@@ -315,7 +315,7 @@ def git_commit(*, check_status: bool = True) -> None:
 
   pkgbase = os.path.basename(os.getcwd())
   msg = f'{_G.commit_msg_prefix}{pkgbase}: auto updated to {_G.built_version}'
-  _run_cmd(['git', 'commit', '-m', msg])
+  _run_cmd(['git', 'commit', '--no-gpg-sign', '-m', msg])
 
 class AurDownloadError(Exception):
   def __init__(self, pkgname: str) -> None:
@@ -393,7 +393,7 @@ def _update_aur_repo_real(pkgbase: str) -> None:
     p = subprocess.run(['git', 'diff-index', '--quiet', 'HEAD'])
     if p.returncode != 0:
       msg = f'[lilac] updated to {_G.built_version}'
-      _run_cmd(['git', 'commit', '-m', msg])
+      _run_cmd(['git', 'commit', '--no-gpg-sign', '-m', msg])
       _run_cmd(['git', 'push'])
 
 def update_aur_repo() -> None:
