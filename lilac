@@ -520,8 +520,9 @@ def main_may_raise(
     for p, sources in nv_changed.items():
       build_reasons[p].append(BuildReason.NvChecker(sources))
 
-  for p in pkgs_from_args:
-    build_reasons[p].append(BuildReason.Cmdline())
+  if pkgs_from_args:
+    for p in pkgs_from_args:
+      build_reasons[p].append(BuildReason.Cmdline())
   else:
     for p in need_rebuild_pkgrel:
       build_reasons[p].append(BuildReason.UpdatedPkgrel())
