@@ -465,25 +465,21 @@ def main_may_raise(
   depman = DependencyManager(REPO.repodir)
   DEPMAP = get_dependency_map(depman, REPO.lilacinfos)
 
-  if pkgs_from_args:
-    all_infos = REPO.lilacinfos
-    REPO.lilacinfos = {}
-    for pkg_to_build in pkgs_from_args:
-      for dep in DEPMAP[pkg_to_build]:
-        REPO.lilacinfos[dep.pkgname] = all_infos[dep.pkgname]
-      REPO.lilacinfos[pkg_to_build] = all_infos[pkg_to_build]
+  # packages we care about
+  care_pkgs: set[str] = set()
+  for pkg_to_build in pkgs_from_args:
+    care_pkgs.update(dep.pkgname for dep in DEPMAP[pkg_to_build])
+    care_pkgs.add(pkg_to_build)
 
   proxy = config['nvchecker'].get('proxy')
   _nvdata, unknown, rebuild = packages_need_update(
-    REPO, proxy)
+    REPO, proxy, care_pkgs,
+  )
   nvdata.update(_nvdata) # update to the global object
 
   failed_info = D.get('failed', {})
 
-  if pkgs_from_args:
-    need_rebuild_failed: set[str] = set()
-    need_rebuild_pkgrel: set[str] = set()
-  else:
+  if not pkgs_from_args:
     U = set(REPO.lilacinfos)
     last_commit = D.get('last_commit', EMPTY_COMMIT)
     changed = get_changed_packages(last_commit, 'HEAD') & U
@@ -526,16 +522,16 @@ def main_may_raise(
 
   for p in pkgs_from_args:
     build_reasons[p].append(BuildReason.Cmdline())
+  else:
+    for p in need_rebuild_pkgrel:
+      build_reasons[p].append(BuildReason.UpdatedPkgrel())
 
-  for p in need_rebuild_pkgrel:
-    build_reasons[p].append(BuildReason.UpdatedPkgrel())
+    for p in need_rebuild_failed:
+      build_reasons[p].append(BuildReason.UpdatedFailed())
 
-  for p in need_rebuild_failed:
-    build_reasons[p].append(BuildReason.UpdatedFailed())
-
-  for p, i in failed_info.items():
-    if deps := i['missing']:
-      build_reasons[p].append(BuildReason.FailedByDeps(deps))
+    for p, i in failed_info.items():
+      if deps := i['missing']:
+        build_reasons[p].append(BuildReason.FailedByDeps(deps))
 
   update_succeeded: set[str] = set()
 

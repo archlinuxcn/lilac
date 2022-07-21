@@ -86,8 +86,13 @@ def _gen_config_from_lilacinfos(
 def packages_need_update(
   repo: Repo,
   proxy: Optional[str] = None,
+  care_pkgs: set[str] = set(),
 ) -> Tuple[Dict[str, NvResults], Set[str], Set[str]]:
-  newconfig, update_on_counts, update_on_errors = _gen_config_from_lilacinfos(repo.lilacinfos)
+  if care_pkgs:
+    lilacinfos = {k: v for k, v in repo.lilacinfos.items() if k in care_pkgs}
+  else:
+    lilacinfos = repo.lilacinfos
+  newconfig, update_on_counts, update_on_errors = _gen_config_from_lilacinfos(lilacinfos)
 
   if not OLDVER_FILE.exists():
     open(OLDVER_FILE, 'a').close()
@@ -158,12 +163,12 @@ def packages_need_update(
       continue
     pkg = pkg.split(':', 1)[0]
 
-    maintainers = repo.find_maintainers(repo.lilacinfos[pkg])
+    maintainers = repo.find_maintainers(lilacinfos[pkg])
     for maintainer in maintainers:
       error_owners[maintainer].extend(pkgerrs)
 
   for pkg, error in update_on_errors.items():
-    maintainers = repo.find_maintainers(repo.lilacinfos[pkg])
+    maintainers = repo.find_maintainers(lilacinfos[pkg])
     for maintainer in maintainers:
       error_owners[maintainer].append({
         'name': pkg,
@@ -198,7 +203,7 @@ def packages_need_update(
         # item at this index has failed; insert a dummy one
         nrs.append(NvResult(None, None))
 
-  for pkgbase in repo.lilacinfos:
+  for pkgbase in lilacinfos:
     if pkgbase not in nvdata:
       # we know nothing about these versions
       # maybe nvchecker has failed
