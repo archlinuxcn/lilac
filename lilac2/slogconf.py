@@ -1,14 +1,13 @@
 from __future__ import annotations
 
-import structlog
 import time
-from typing import MutableMapping, Any, Union
 
-LogEvent = MutableMapping[str, Any]
+import structlog
+from structlog.types import WrappedLogger, EventDict
 
 def exc_info(
-  logger, level: str, event: LogEvent,
-) -> LogEvent:
+  logger: WrappedLogger, level: str, event: EventDict,
+) -> EventDict:
   if level == 'exception' and 'exc_info' not in event:
     event['exc_info'] = True
   return event
@@ -16,13 +15,13 @@ def exc_info(
 _renderer = structlog.processors.JSONRenderer(
   ensure_ascii=False)
 
-def json_renderer(logger, level: str, event: LogEvent) -> Union[str, bytes]:
+def json_renderer(logger: WrappedLogger, level: str, event: EventDict) -> str | bytes:
   event['level'] = level
   return _renderer(logger, level, event)
 
 def add_timestamp(
-  logger, level: str, event: LogEvent,
-) -> LogEvent:
+  logger: WrappedLogger, level: str, event: EventDict,
+) -> EventDict:
   event['ts'] = time.time()
   return event
 
