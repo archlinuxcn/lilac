@@ -8,7 +8,7 @@ import traceback
 import logging
 import time
 from collections import defaultdict
-from typing import Dict, List, Any, Optional
+from typing import Dict, List, Any, Optional, Callable, Union
 from collections.abc import Set
 from pathlib import Path
 import graphlib
@@ -92,7 +92,12 @@ def setup_build_logger() -> None:
 
   logfile = (mydir / 'build-log.json').open('a')
 
-  processors = [
+  processors: List[
+    Callable[
+      [Any, str, slogconf.LogEvent],
+      Union[slogconf.LogEvent, str, bytes]
+    ]
+  ] = [
     slogconf.exc_info,
     slogconf.add_timestamp,
     structlog.processors.format_exc_info,
