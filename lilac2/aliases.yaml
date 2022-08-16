@@ -13,6 +13,16 @@ perl:
   alpm: perl
   from_pattern: ^(\d+\.\d+)\..*
   to_pattern: \1
+r:
+  source: alpm
+  alpm: r
+  from_pattern: '^(\d+\.\d+\.\d+).*'
+  to_pattern: '\1'
+lua:
+  source: alpm
+  alpm: lua
+  from_pattern: '^(\d+\.\d+)\..*'
+  to_pattern: '\1'
 boost:
   source: alpm
   alpm: boost-libs
