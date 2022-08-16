@@ -16,7 +16,7 @@ perl:
 r:
   source: alpm
   alpm: r
-  from_pattern: '^(\d+\.\d+)\..*'
+  from_pattern: '^(\d+\.\d+\.\d+)\..*'
   to_pattern: '\1'
 lua:
   source: alpm
