@@ -3,6 +3,11 @@ python:
   alpm: python
   from_pattern: '^(\d+\.\d+)\..*'
   to_pattern: '\1'
+python2:
+  source: alpm
+  alpm: python2
+  from_pattern: '^(\d+\.\d+)\..*'
+  to_pattern: '\1'
 ruby:
   source: alpm
   alpm: ruby
