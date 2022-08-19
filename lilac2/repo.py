@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import subprocess
 from pathlib import Path
 from typing import (
@@ -16,10 +17,10 @@ import structlog
 from .vendor.github import GitHub
 
 from .mail import MailService
-from .typing import LilacMod, Maintainer
 from .tools import ansi_escape_re
 from . import api, lilacyaml
-from .typing import LilacInfos, LilacInfo
+from .typing import LilacMod, Maintainer, LilacInfos, LilacInfo
+from .nomypy import BuildResult # type: ignore
 if TYPE_CHECKING:
   from .packages import Dependency
   del Dependency
@@ -48,6 +49,8 @@ class Repo:
       self.gh = GitHub(github_token)
     else:
       self.gh = None
+
+    self.on_built_cmds = config.get('misc', {}).get('postbuild', [])
 
     self.lilacinfos: LilacInfos = {}  # to be filled by self.load_all_lilac_and_report()
     self.yamls: dict[str, Any] = {}
@@ -341,3 +344,17 @@ class Repo:
       build_logger.exception('lilac.py error', pkgbase = name, exc_info=exc_info)
 
     return failed
+
+  def on_built(self, pkg: str, result: BuildResult, version: Optional[str]) -> None:
+    if not self.on_built_cmds:
+      return
+
+    env = os.environ.copy()
+    env['PKGBASE'] = pkg
+    env['RESULT'] = result.__class__.__name__
+    env['VERSION'] = version or ''
+    for cmd in self.on_built_cmds:
+      try:
+        subprocess.check_call(cmd, env=env)
+      except Exception:
+        logger.exception('postbuild cmd error for %r', cmd)

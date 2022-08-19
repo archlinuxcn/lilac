@@ -70,5 +70,10 @@ max_concurrency = 1
 # postrun = [
 #   ["upload-packages"],
 # ]
+# run some commands after each package built
+# env: PKGBASE, RESULT=successful, failed, skipped, staged, VERSION
+# postbuild = [
+#   [...]
+# ]
 
 # vim: se ft=toml:

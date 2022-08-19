@@ -339,6 +339,7 @@ def build_it(
     'package %s (version %s) finished in %ds with result: %r',
     pkg, version, elapsed, r,
   )
+  repo.on_built(pkg, r, version)
 
   newver = nvdata[pkg].newver
   msg = None
