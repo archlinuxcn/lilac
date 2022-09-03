@@ -98,15 +98,20 @@ def _poll_cmd(pid: int) -> Generator[None, None, None]:
 def poll_rusage(name: str, deadline: float) -> tuple[RUsage, bool]:
   timedout = False
   done_state = ['exited', 'failed']
-  while True:
-    pid, cgroup, state = _get_service_info(name)
-    if (not pid or not cgroup) and state not in done_state:
-      logger.debug('%s.service state: %s, waiting', name, state)
-      time.sleep(0.1)
-    else:
-      break
 
   try:
+    time_start = time.monotonic()
+    while True:
+      pid, cgroup, state = _get_service_info(name)
+      if (not pid or not cgroup) and state not in done_state:
+        if time.monotonic() - time_start > 60:
+          logger.error('%s.service not started in 60s, giving up.')
+          raise Exception('systemd error: service not started in 60s')
+        logger.debug('%s.service state: %s, waiting', name, state)
+        time.sleep(0.1)
+      else:
+        break
+
     if state in done_state:
       logger.warning('%s.service already finished: %s', name, state)
       return RUsage(0, 0), False
