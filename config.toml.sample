@@ -58,6 +58,8 @@ max_concurrency = 1
 # source directories will be created if not yet
 "~/.cache/archbuild-bind-cache" = "/build/.cache"
 "~/.cache/archbuild-bind-cache/stack" = "/build/.stack"
+# bazel's cache causes failures frequently
+"/tmp/shitty-bazel" = "/build/.cache/bazel"
 "~/.cache/pip" = "/build/.cache/pip"
 "~/.cargo" = "/build/.cargo"
 
@@ -67,9 +69,11 @@ max_concurrency = 1
 #   ["sudo", "rsync-packages-pool"],
 # ]
 # run some commands after each run
-# postrun = [
+postrun = [
+  ['find', '/tmp/shitty-bazel', '-type', 'd', '-exec', 'chmod', 'u+w', '{}', '+'],
+  ['rm', '-rf', '/tmp/shitty-bazel'],
 #   ["upload-packages"],
-# ]
+]
 # run some commands after each package built
 # env: PKGBASE, RESULT=successful, failed, skipped, staged, VERSION
 # postbuild = [

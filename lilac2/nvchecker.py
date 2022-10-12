@@ -235,6 +235,6 @@ def nvtake(L: Iterable[str], infos: LilacInfos) -> None:
       names.append(name)
 
   run_cmd(['nvtake', '--ignore-nonexistent', '-c', NVCHECKER_FILE] # type: ignore
-          + names) # type: ignore
+          + names)
   # mypy can't infer List[Union[str, Path]]
   # and can't understand List[str] is a subtype of it
