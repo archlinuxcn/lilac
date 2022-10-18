@@ -208,6 +208,8 @@ To avoid using too much CPU, you can use cgroups v2 and put the following in ``/
   [Service]
   CPUWeight=100
 
+To avoid the OOM Killer killing maintainer's processes unfairly, add ``OOMScoreAdjust=0`` to the above file, and set ``DefaultOOMScoreAdjust=0`` in ``/etc/systemd/user.conf``.
+
 If you have a lot of memory (e.g. >100G), you may want to mount ``/var/lib/archbuild`` as a tmpfs to speed up building.
 
 Run
