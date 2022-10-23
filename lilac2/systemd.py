@@ -105,7 +105,7 @@ def poll_rusage(name: str, deadline: float) -> tuple[RUsage, bool]:
       pid, cgroup, state = _get_service_info(name)
       if (not pid or not cgroup) and state not in done_state:
         if time.monotonic() - time_start > 60:
-          logger.error('%s.service not started in 60s, giving up.')
+          logger.error('%s.service not started in 60s, giving up.', name)
           raise Exception('systemd error: service not started in 60s')
         logger.debug('%s.service state: %s, waiting', name, state)
         time.sleep(0.1)
@@ -145,8 +145,18 @@ def poll_rusage(name: str, deadline: float) -> tuple[RUsage, bool]:
       subprocess.run(['systemctl', '--user', 'kill', '--signal=SIGKILL', name])
     logger.debug('stopping worker service')
     subprocess.run(['systemctl', '--user', 'stop', '--quiet', name])
+    wait_cgroup_disappear(cgroup)
 
     p = subprocess.run(['systemctl', '--user', 'is-failed', '--quiet', name])
     if p.returncode == 0:
       subprocess.run(['systemctl', '--user', 'reset-failed', '--quiet', name])
   return RUsage(nsec / 1_000_000_000, mem_max), timedout
+
+def wait_cgroup_disappear(cgroup: str) -> None:
+  d = f'/sys/fs/cgroup/{cgroup}'
+  if not os.path.exists(d):
+    return
+
+  while os.path.exists(d):
+    logger.warning('waiting %s to disappear...', cgroup)
+    time.sleep(1)
