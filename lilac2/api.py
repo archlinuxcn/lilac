@@ -559,7 +559,7 @@ def aur_post_build() -> None:
   del _g.aur_pre_files, _g.aur_building_files
 
 def download_official_pkgbuild(name: str) -> List[str]:
-  url = 'https://www.archlinux.org/packages/search/json/?name=' + name
+  url = 'https://archlinux.org/packages/search/json/?name=' + name
   logger.info('download PKGBUILD for %s.', name)
   info = s.get(url).json()
   r = [r for r in info['results'] if r['repo'] != 'testing'][0]
