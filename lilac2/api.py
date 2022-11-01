@@ -160,6 +160,11 @@ def vcs_update() -> None:
   shutil.rmtree('src', ignore_errors=True)
   run_protected(['makepkg', '-od', '--noprepare', '-A'], use_pty=True)
 
+def _is_tmpfs(d: str) -> bool:
+  cmd = ['findmnt', '-n', '-o', 'FSTYPE', '--', d]
+  p = subprocess.run(cmd, stdout=subprocess.PIPE)
+  return p.returncode == 0 and p.stdout == b'tmpfs\n'
+
 def run_protected(cmd: Cmd, **kwargs) -> str:
   '''run a command that sources PKGBUILD and thus is protected by bwrap'''
   # clean up the old source tree
@@ -169,6 +174,8 @@ def run_protected(cmd: Cmd, **kwargs) -> str:
     '--share-net', '--bind', pwd, f'/tmp/{basename}', '--chdir', f'/tmp/{basename}',
     '--ro-bind', const.mydir / 'gnupg', os.path.expanduser('~/.gnupg'),
   ]
+  if _is_tmpfs('/var/lib/archbuild'):
+    extra_args.extend(['--tmpfs', f'/tmp/{basename}/src'])
   return _run_cmd(UNTRUSTED_PREFIX + extra_args + # type: ignore
                   cmd, **kwargs)
 
