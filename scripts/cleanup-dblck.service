@@ -1,0 +1,11 @@
+[Unit]
+Description=cleanup stale devtools db.lck files
+
+[Service]
+Type=exec
+ExecStart=/usr/local/sbin/cleanup-dblck
+Restart=on-failure
+RestartSec=5s
+
+[Install]
+WantedBy=multi-user.target
