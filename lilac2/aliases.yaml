@@ -63,3 +63,13 @@ grpc:
   alpm: grpc
   provided: libgrpc++.so
   strip_release: true
+libssl:
+  source: alpm
+  alpm: openssl
+  provided: libssl.so
+  strip_release: true
+libcrypto:
+  source: alpm
+  alpm: openssl
+  provided: libcrypto.so
+  strip_release: true
