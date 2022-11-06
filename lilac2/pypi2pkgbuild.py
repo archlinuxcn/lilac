@@ -36,11 +36,6 @@ package() {{
 {check}
 '''
 
-pkg_tmpl = '''\
-  cd "$srcdir/$_name-$pkgver"
-  python3 setup.py install --root=$pkgdir --optimize=1 --skip-build
-'''
-
 pkg_license_tmpl = '''\
   install -Dm644 {license_file} "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
 '''
@@ -77,6 +72,7 @@ def gen_pkgbuild(
   license: Optional[str] = None,
   license_file: Optional[str] = None,
   prepare: Optional[str] = None,
+  pep517: bool = False,
 ) -> Tuple[str, str]:
   j = get_pypi_info(pypi_name)
   version = j['info']['version']
@@ -105,6 +101,8 @@ def gen_pkgbuild(
     depends2.append('python-setuptools')
   else:
     makedepends2.append('python-setuptools')
+  if pep517:
+    makedepends2.extend(['python-build', 'python-installer', 'python-wheel'])
 
   depends_str = []
   if depends2:
@@ -125,14 +123,26 @@ def gen_pkgbuild(
     # tarball name may be different from pypi name, e.g. django-post-office
     # Use "predictable" URL instead of `r['url']` to make AUR users happy...
     source_line = 'source=("https://files.pythonhosted.org/packages/source/${_name::1}/${_name}/%s")' % tarball
-    build_code = f'''\
+
+    if pep517:
+      build_code = f'''\
+  cd "$srcdir/{src_dir}"
+  python -m build --wheel --no-isolation
+'''
+      package_code = f'''\
+  cd "$srcdir/{src_dir}"
+  python -m installer --destdir="$pkgdir" dist/*.whl
+'''
+    else:
+      build_code = f'''\
   cd "$srcdir/{src_dir}"
   python3 setup.py build
 '''
-    package_code = f'''\
+      package_code = f'''\
   cd "$srcdir/{src_dir}"
   python3 setup.py install --root=$pkgdir --optimize=1 --skip-build
 '''
+
     if license_file:
       package_code += pkg_license_tmpl.format(
         license_file = license_file)

@@ -267,6 +267,7 @@ def pypi_pre_build(
   optdepends: Optional[List[str]] = None,
   license: Optional[str] = None,
   license_file: Optional[str] = None,
+  pep517: bool = False,
 ) -> None:
   if python2:
     raise ValueError('pypi_pre_build no longer supports python2')
@@ -289,6 +290,7 @@ def pypi_pre_build(
     optdepends = optdepends,
     license = license,
     license_file = license_file,
+    pep517 = pep517,
   )
 
   with open('PKGBUILD', 'w') as f:
