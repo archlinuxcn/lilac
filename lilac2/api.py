@@ -150,7 +150,8 @@ def obtain_optdepends(
     return obtained_array
   if parse_dict:
     return {pkg.strip(): desc.strip() for (pkg, desc) in
-            (item.split(':', 1) for item in obtained_array)}
+            (item.split(':', 1) if ':' in item else (item, '')
+             for item in obtained_array)}
   else:
     return obtained_array
 
