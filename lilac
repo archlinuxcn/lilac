@@ -385,7 +385,8 @@ def build_it(
 
       if isinstance(e, MissingDependencies):
         faileddeps = e.deps.intersection(failed)
-        failed[pkg] = tuple(faileddeps)
+        # e.deps - faileddeps = failed previously
+        failed[pkg] = tuple(e.deps)
         if e.deps == faileddeps:
           msg = f'{pkg} 的依赖 {faileddeps} 打包失败了。'
         else:
