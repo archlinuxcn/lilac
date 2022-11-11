@@ -14,6 +14,13 @@ lilac is an automatic packaging tool for Arch Linux. It basically does the follo
 * handle built packages over to [archrepo2](https://github.com/lilydjwg/archrepo2) to update the repository database
 * report any errors to maintainers via mail
 
+Docs
+----
+
+* [lilac.yaml](https://archlinuxcn.github.io/lilac/)
+* [lilac.py API](https://lilac.readthedocs.io/en/latest/api.html)
+* [Setup and run your own](https://lilac.readthedocs.io/en/latest/)
+
 License
 -------
 
