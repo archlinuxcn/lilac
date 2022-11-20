@@ -184,7 +184,7 @@ prepare() {{
     'pkgver': version,
     'summary': j['info']['summary'],
     'arch': to_sharray(arch) if arch else 'any',
-    'home_page': j['info']['home_page'],
+    'home_page': j['info']['home_page'] or j['info']['project_urls'].get('Homepage', ''),
     'license': license or "'%s'" % j['info']['license'],
     'depends': '\n'.join(depends_str),
     'provides': f'provides=({to_sharray(provides)})\n' if provides else '',
