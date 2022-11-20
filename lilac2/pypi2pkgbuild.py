@@ -99,7 +99,7 @@ def gen_pkgbuild(
   depends2 = depends or ['python']
   if depends_setuptools:
     depends2.append('python-setuptools')
-  else:
+  elif not pep517:
     makedepends2.append('python-setuptools')
   if pep517:
     makedepends2.extend(['python-build', 'python-installer', 'python-wheel'])
