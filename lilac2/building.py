@@ -23,7 +23,7 @@ from . import systemd
 
 if TYPE_CHECKING:
   from .repo import Repo
-  assert Repo # make pyflakes happy
+  assert Repo # type: ignore # make pyflakes happy
   del Repo
 
 logger = logging.getLogger(__name__)

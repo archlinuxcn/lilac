@@ -1,6 +1,6 @@
 import os
 import subprocess
-from typing import ParamSpec, Generator
+from typing import Generator, Any
 import select
 import time
 import logging
@@ -31,12 +31,10 @@ def _check_availability() -> bool:
   p = subprocess.run(['systemd-run', '--quiet', '--user', '-u', 'lilac-check', 'true'])
   return p.returncode == 0
 
-P = ParamSpec('P')
-
 def start_cmd(
   name: str, cmd: Cmd,
   setenv: dict[str, str] = {},
-  **kwargs: P.kwargs, # type: ignore
+  **kwargs: Any, # can't use P.kwargs here because there is no place for P.args
 ) -> subprocess.Popen:
   # don't use --collect here because it will be immediately collected when
   # failed

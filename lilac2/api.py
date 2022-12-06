@@ -27,6 +27,7 @@ from . import const
 from .const import _G, SPECIAL_FILES
 from .typing import PkgRel, Cmd
 from .pypi2pkgbuild import gen_pkgbuild
+from . import mediawiki2pkgbuild
 from .pkgbuild import get_srcinfo
 
 git_push
@@ -610,3 +611,19 @@ def check_library_provides() -> None:
     for line in pkginfo.splitlines():
       if provides_pattern.match(line):
         raise Exception(f'{pkg} has an unversioned library "provides" entry: {line[11:]}')
+
+def mediawiki_pre_build(
+  name: str,
+  mwver: str,
+  desc: str,
+  license: str,
+) -> None:
+  pkgbuild = mediawiki2pkgbuild.gen_pkgbuild(name, mwver, desc, license, s)
+  with open('PKGBUILD', 'w') as f:
+    f.write(pkgbuild)
+  run_protected(["updpkgsums"])
+
+def mediawiki_post_build() -> None:
+  git_add_files('PKGBUILD')
+  git_commit()
+
