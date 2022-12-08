@@ -142,8 +142,11 @@ def poll_rusage(name: str, deadline: float) -> tuple[RUsage, bool]:
       logger.debug('killing worker service')
       subprocess.run(['systemctl', '--user', 'kill', '--signal=SIGKILL', name])
     logger.debug('stopping worker service')
+    # stop whatever may be running (even from a previous batch)
     subprocess.run(['systemctl', '--user', 'stop', '--quiet', name])
-    wait_cgroup_disappear(cgroup)
+    if cgroup:
+      # if we actually got the cgroup (i.e. service was started when we looked)
+      wait_cgroup_disappear(cgroup)
 
     p = subprocess.run(['systemctl', '--user', 'is-failed', '--quiet', name])
     if p.returncode == 0:
