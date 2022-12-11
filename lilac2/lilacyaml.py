@@ -89,6 +89,7 @@ def load_lilacinfo(dir: Path) -> LilacInfo:
     pkgbase = dir.absolute().name,
     maintainers = yamlconf.get('maintainers', []),
     update_on = update_ons,
+    update_on_build = yamlconf.get('update_on_build', []),
     throttle_info = throttle_info,
     repo_depends = yamlconf.get('repo_depends', []),
     time_limit_hours = yamlconf.get('time_limit_hours', 1),

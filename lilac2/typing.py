@@ -22,10 +22,17 @@ NvEntry = dict[str, str]
 NvEntries = list[NvEntry]
 
 @dataclasses.dataclass
+class OnBuildEntry:
+  pkgbase: str
+  from_pattern: Optional[str] = None
+  to_pattern: Optional[str] = None
+
+@dataclasses.dataclass
 class LilacInfo:
   pkgbase: str
   maintainers: list[dict[str, str]]
   update_on: NvEntries
+  update_on_build: list[OnBuildEntry]
   throttle_info: dict[int, datetime.timedelta]
   repo_depends: list[tuple[str, str]]
   time_limit_hours: float

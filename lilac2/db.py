@@ -1,14 +1,17 @@
 from contextlib import contextmanager
 import datetime
+import re
+import logging
 
 from sqlalchemy import update, select, func
 from sqlalchemy.sql import functions
 from sqlalchemy.orm import sessionmaker, declarative_base
 from sqlalchemy.ext.declarative import DeclarativeMeta, DeferredReflection
 
-from .typing import RUsage
+from .typing import RUsage, OnBuildEntry
 
 Base: DeclarativeMeta = declarative_base(cls=DeferredReflection)
+logger = logging.getLogger(__name__)
 
 class PkgLog(Base):
   __tablename__ = 'pkglog'
@@ -105,3 +108,41 @@ def get_pkgs_last_rusage(pkgs: list[str]) -> dict[str, RUsage]:
     ret = {r[0]: RUsage(r[1], r[2]) for r in rs}
 
   return ret
+
+def _get_last_two_versions(s, pkg: str) -> tuple[str, str]:
+  r = s.query(
+    PkgLog.pkg_version,
+  ).filter(
+    PkgLog.pkgbase == pkg,
+    PkgLog.result.in_(['successful', 'staged']),
+  ).order_by(PkgLog.ts.desc()).limit(2).all()
+
+  if len(r) == 1:
+    return '', r[0][0]
+  elif len(r) == 2:
+    return r[1][0], r[0][0]
+  elif len(r) == 0:
+    return '', ''
+  else:
+    raise RuntimeError('limit 2 returns more?!')
+
+def check_update_on_build(
+  update_on_build: list[OnBuildEntry],
+) -> bool:
+  with get_session() as s:
+    for on_build in update_on_build:
+      if (regex := on_build.from_pattern) and (repl := on_build.to_pattern):
+        old, new = _get_last_two_versions(s, on_build.pkgbase)
+        if not old and not new:
+          logger.warning('no built info for %s but try to build on build it?',
+                         on_build.pkgbase)
+          continue
+        old = re.sub(regex, repl, old)
+        new = re.sub(regex, repl, new)
+        if old != new:
+          return True
+      else:
+        return True
+
+    # all not triggered
+    return False

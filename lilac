@@ -242,6 +242,7 @@ def start_build(
     ) as executor:
       while True:
         pkgs = try_pick_some(
+          repo,
           buildsorter, failed,
           running = frozenset(futures.values()),
           limit = max_concurrency - len(futures),
@@ -266,6 +267,7 @@ def start_build(
     logger.info('keyboard interrupted, bye~')
 
 def try_pick_some(
+  repo: Repo,
   buildsorter: BuildSorter,
   failed: dict[str, tuple[str, ...]],
   running: Set[str],
@@ -303,6 +305,31 @@ def try_pick_some(
               db.mark_pkg_as(s, pkg, 'done')
               db.build_updated(s)
           # deps are still missing, skip
+          continue
+      if len(rs) == 1 and isinstance(rs[0], BuildReason.OnBuild):
+        update_on_build = rs[0].update_on_build
+        if any(x.pkgbase in failed for x in update_on_build):
+          buildsorter.done(pkg)
+          if db.USE:
+            with db.get_session() as s:
+              db.mark_pkg_as(s, pkg, 'done')
+              db.build_updated(s)
+          # deps have failures, skip
+          continue
+        try:
+          if db.USE and not db.check_update_on_build(update_on_build):
+            buildsorter.done(pkg)
+            with db.get_session() as s:
+              db.mark_pkg_as(s, pkg, 'done')
+              db.build_updated(s)
+            # no need to rebuild
+            continue
+        except Exception as e:
+          logger.exception('check_update_on_build')
+          mod = repo.lilacinfos[pkg]
+          repo.send_error_report(
+            mod, subject='%s update_on_build 检查出错', exc=e,
+          )
           continue
 
     ret.append(pkg)
@@ -535,6 +562,24 @@ def main_may_raise(
     for p, i in failed_info.items():
       if deps := i['missing']:
         build_reasons[p].append(BuildReason.FailedByDeps(deps))
+
+  if_this_then_those = defaultdict(set)
+  for p, info in REPO.lilacinfos.items():
+    for i in info.update_on_build:
+      if_this_then_those[i.pkgbase].add(p)
+  more_pkgs = set()
+  count = 0
+  for p in build_reasons:
+    if pkgs := if_this_then_those.get(p):
+      more_pkgs.update(pkgs)
+  while len(more_pkgs) != count: # has new
+    count = len(more_pkgs)
+    for p in more_pkgs:
+      if pkgs := if_this_then_those.get(p):
+        more_pkgs.update(pkgs)
+  for p in more_pkgs:
+    update_on_build = REPO.lilacinfos[p].update_on_build
+    build_reasons[p].append(BuildReason.OnBuild(update_on_build))
 
   update_succeeded: set[str] = set()
 

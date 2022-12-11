@@ -2,6 +2,8 @@
 
 from typing import Union
 
+from .typing import OnBuildEntry
+
 class SumType:
   _intermediate = True
 
@@ -96,4 +98,11 @@ class FailedByDeps(BuildReason):
 
 class Cmdline(BuildReason): pass
 
-del NvChecker, UpdatedFailed, UpdatedPkgrel, Depended, FailedByDeps, Cmdline
+class OnBuild(BuildReason):
+  def __init__(self, update_on_build: list[OnBuildEntry]) -> None:
+    self.update_on_build = update_on_build
+
+  def _extra_info(self) -> str:
+    return repr(self.update_on_build)
+
+del NvChecker, UpdatedFailed, UpdatedPkgrel, Depended, FailedByDeps, Cmdline, OnBuild
