@@ -295,6 +295,79 @@
                                                                 </div>
                                                             </section>                </div>
                                     </dd>
+                                    <dt data-property-name="update_on_build">
+                                        <span class="json-property-name">update_on_build:</span>
+                                        
+                                        <span class="json-property-type">object[]</span>
+                                        <span class="json-property-range" title="Value limits"></span>
+                                        
+                                    </dt>
+                                    <dd>
+                                        <p>Build this package if the configured packages are built in the same batch. Note that the packages should also be added to &quot;repo_depends&quot;.</p>
+                        
+                                        <div class="json-inner-schema">
+                                            
+                                                            <section class="json-schema-array-items">
+                                                                
+                                                                <span class="json-property-type">object</span>
+                                                                <span class="json-property-range" title="Value limits"></span>
+                                                                
+                                                                <div class="json-inner-schema">
+                                                                        <section class="json-schema-description">
+                                                                            <p>on_build configuration</p>
+                                                                    
+                                                                        </section>
+                                                                    
+                                                                            <section class="json-schema-properties">
+                                                                                <dl>
+                                                                                        <dt data-property-name="pkgbase">
+                                                                                            <span class="json-property-name">pkgbase:</span>
+                                                                                            
+                                                                                            <span class="json-property-type">string</span>
+                                                                                            <span class="json-property-range" title="Value limits"></span>
+                                                                                            
+                                                                                                <span class="json-property-required"></span>
+                                                                                        </dt>
+                                                                                        <dd>
+                                                                                            <p>pkgbase to build on</p>
+                                                                            
+                                                                                            <div class="json-inner-schema">
+                                                                                                
+                                                                                            </div>
+                                                                                        </dd>
+                                                                                        <dt data-property-name="from_pattern">
+                                                                                            <span class="json-property-name">from_pattern:</span>
+                                                                                            
+                                                                                            <span class="json-property-type">string</span>
+                                                                                            <span class="json-property-range" title="Value limits"></span>
+                                                                                            
+                                                                                        </dt>
+                                                                                        <dd>
+                                                                                            <p>a regex to transform pkgbase&#39;s version</p>
+                                                                            
+                                                                                            <div class="json-inner-schema">
+                                                                                                
+                                                                                            </div>
+                                                                                        </dd>
+                                                                                        <dt data-property-name="to_pattern">
+                                                                                            <span class="json-property-name">to_pattern:</span>
+                                                                                            
+                                                                                            <span class="json-property-type">string</span>
+                                                                                            <span class="json-property-range" title="Value limits"></span>
+                                                                                            
+                                                                                        </dt>
+                                                                                        <dd>
+                                                                                            <p>a replacement string to transform pkgbase&#39;s version to</p>
+                                                                            
+                                                                                            <div class="json-inner-schema">
+                                                                                                
+                                                                                            </div>
+                                                                                        </dd>
+                                                                                </dl>
+                                                                            </section>
+                                                                </div>
+                                                            </section>                </div>
+                                    </dd>
                                     <dt data-property-name="maintainers">
                                         <span class="json-property-name">maintainers:</span>
                                         
