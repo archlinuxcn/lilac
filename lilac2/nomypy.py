@@ -105,4 +105,14 @@ class OnBuild(BuildReason):
   def _extra_info(self) -> str:
     return repr(self.update_on_build)
 
+  def to_dict(self) -> str:
+    d = {
+      'update_on_build': [{
+        k: v for k, v in x.__dict__.items() if v is not None
+      } for x in self.update_on_build]
+    }
+
+    d['name'] = self.__class__.__name__
+    return d
+
 del NvChecker, UpdatedFailed, UpdatedPkgrel, Depended, FailedByDeps, Cmdline, OnBuild
