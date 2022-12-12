@@ -12,7 +12,7 @@ from .vendor.myutils import dehumantime
 
 from . import api
 from .const import _G, PACMAN_DB_DIR
-from .typing import LilacInfo, LilacInfos, ExcInfo, NvEntries
+from .typing import LilacInfo, LilacInfos, ExcInfo, NvEntries, OnBuildEntry
 
 ALIASES: dict[str, Any]
 FUNCTIONS: list[str] = [
@@ -89,7 +89,7 @@ def load_lilacinfo(dir: Path) -> LilacInfo:
     pkgbase = dir.absolute().name,
     maintainers = yamlconf.get('maintainers', []),
     update_on = update_ons,
-    update_on_build = yamlconf.get('update_on_build', []),
+    update_on_build = [OnBuildEntry(**x) for x in yamlconf.get('update_on_build', [])],
     throttle_info = throttle_info,
     repo_depends = yamlconf.get('repo_depends', []),
     time_limit_hours = yamlconf.get('time_limit_hours', 1),
