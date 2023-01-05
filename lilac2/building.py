@@ -44,8 +44,7 @@ class BuildFailed(Exception):
 def build_package(
   pkgbase: str,
   lilacinfo: LilacInfo,
-  bindmounts: list[str],
-  tmpfs: list[str],
+  bindmounts: List[str],
   update_info: NvResults,
   depends: Iterable[Dependency],
   repo: Repo,
@@ -72,7 +71,6 @@ def build_package(
         depend_packages = [str(x) for x in depend_packages],
         update_info = update_info,
         bindmounts = bindmounts,
-        tmpfs = tmpfs,
         logfile = logfile,
         deadline = start_time + time_limit_hours * 3600,
         packager = packager,
@@ -172,8 +170,7 @@ def call_worker(
   logfile: Path,
   depend_packages: List[str],
   update_info: NvResults,
-  bindmounts: list[str],
-  tmpfs: list[str],
+  bindmounts: List[str],
   deadline: float,
   packager: str,
 ) -> tuple[Optional[str], RUsage, Optional[Exception]]:
@@ -184,7 +181,6 @@ def call_worker(
     'depend_packages': depend_packages,
     'update_info': update_info.to_list(),
     'bindmounts': bindmounts,
-    'tmpfs': tmpfs,
     'logfile': str(logfile), # for sending error reports
     'worker_no': TLS.worker_no,
   }

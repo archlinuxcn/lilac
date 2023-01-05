@@ -59,11 +59,10 @@ def may_update_pkgrel() -> Generator[None, None, None]:
 def lilac_build(
   worker_no: int,
   mod: LilacMod,
-  depend_packages: list[str] = [],
+  depend_packages: List[str] = [],
   build_prefix: Optional[str] = None,
   update_info: NvResults = NvResults(),
-  bindmounts: list[str] = [],
-  tmpfs: list[str] = [],
+  bindmounts: List[str] = [],
 ) -> None:
   success = False
   _G.built_version = None
@@ -119,7 +118,7 @@ def lilac_build(
       makepkg_args.extend(mod.makepkg_args)
 
     call_build_cmd(
-      build_prefix, depend_packages, bindmounts, tmpfs,
+      build_prefix, depend_packages, bindmounts,
       build_args, makechrootpkg_args, makepkg_args,
     )
 
@@ -139,9 +138,8 @@ def lilac_build(
 
 def call_build_cmd(
   build_prefix: str, depends: List[str],
-  bindmounts: list[str] = [],
-  tmpfs: list[str] = [],
-  build_args: list[str] = [],
+  bindmounts: List[str] = [],
+  build_args: List[str] = [],
   makechrootpkg_args: List[str] = [],
   makepkg_args: List[str] = [],
 ) -> None:
@@ -168,9 +166,6 @@ def call_build_cmd(
       if not os.path.exists(source_dir):
         os.makedirs(source_dir)
       cmd += ['-d', b]
-
-    for t in tmpfs:
-      cmd.append(f'--tmpfs={t}')
 
     cmd.extend(makechrootpkg_args)
     cmd.extend(['--'])
@@ -221,7 +216,6 @@ def main() -> None:
         depend_packages = input['depend_packages'],
         update_info = NvResults.from_list(input['update_info']),
         bindmounts = input['bindmounts'],
-        tmpfs = input['tmpfs'],
       )
     r = {'status': 'done'}
   except SkipBuild as e:

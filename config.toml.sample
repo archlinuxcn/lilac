@@ -58,6 +58,8 @@ max_concurrency = 1
 # source directories will be created if not yet
 "~/.cache/archbuild-bind-cache" = "/build/.cache"
 "~/.cache/archbuild-bind-cache/ghcup" = "/build/.ghcup"
+# bazel's cache causes failures frequently
+"/tmp/shitty-bazel" = "/build/.cache/bazel"
 "~/.cache/pip" = "/build/.cache/pip"
 "~/.cargo" = "/build/.cargo"
 
@@ -66,22 +68,16 @@ max_concurrency = 1
 # prerun = [
 #   ["sudo", "rsync-packages-pool"],
 # ]
-
 # run some commands after each run
 postrun = [
+  ['find', '/tmp/shitty-bazel', '-type', 'd', '-exec', 'chmod', 'u+w', '{}', '+'],
+  ['rm', '-rf', '/tmp/shitty-bazel'],
 #   ["upload-packages"],
 ]
-
 # run some commands after each package built
 # env: PKGBASE, RESULT=successful, failed, skipped, staged, VERSION
 # postbuild = [
 #   [...]
 # ]
-
-# mount these paths as tmpfs in the chroot
-tmpfs = [
-  # bazel's cache causes failures frequently
-  "/build/.cache/bazel"
-]
 
 # vim: se ft=toml:

@@ -43,7 +43,6 @@ class Repo:
 
     self.repodir = Path(config['repository']['repodir']).expanduser()
     self.bindmounts = self._get_bindmounts(config.get('bindmounts'))
-    self.tmpfs = config.get('misc', {}).get('tmpfs', [])
 
     self.ms = MailService(config)
     github_token = config['lilac'].get('github_token')
