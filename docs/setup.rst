@@ -79,7 +79,7 @@ Generate a pair of ssh keys, and configure ssh / git so that you can push via ss
 Configure lilac
 ---------------
 
-It's time to configure lilac now. Login as the user which lilac will run as first. Other than a fresh login, we can switch users with ``machinectl`` (don't use ``su`` or ``sudo``):
+It's time to configure lilac now. Login as the user which lilac will run as first. Other than a fresh login, we can switch users with ``machinectl`` (don't use ``su`` or ``sudo`` to switch user, but if you can use ``sudo machinectl`` if needed):
 
 .. code-block:: sh
 
