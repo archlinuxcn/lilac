@@ -57,7 +57,7 @@ max_concurrency = 1
 # bind mounts in the devtools environment, e.g. for caching
 # source directories will be created if not yet
 "~/.cache/archbuild-bind-cache" = "/build/.cache"
-"~/.cache/archbuild-bind-cache/stack" = "/build/.stack"
+"~/.cache/archbuild-bind-cache/ghcup" = "/build/.ghcup"
 "~/.cache/pip" = "/build/.cache/pip"
 "~/.cargo" = "/build/.cargo"
 
