@@ -8,7 +8,7 @@ import traceback
 import logging
 import time
 from collections import defaultdict
-from typing import Dict, List, Any, Optional
+from typing import Dict, List, Any
 from collections.abc import Set
 from pathlib import Path
 import graphlib
@@ -61,19 +61,6 @@ os.environ['PATH'] = str(topdir) + ':' + os.environ['PATH']
 
 DESTDIR = Path(config['repository'].get('destdir', '')).expanduser()
 MYNAME = config['lilac']['name']
-
-def get_bindmounts(
-  bindmounts: Optional[Dict[str, str]],
-) -> List[str]:
-  if bindmounts is None:
-    return []
-
-  items = [(os.path.expanduser(src), dst)
-           for src, dst in bindmounts.items()]
-  items.sort(reverse=True)
-  return [f'{src}:{dst}' for src, dst in items]
-
-BIND_MOUNTS = get_bindmounts(config.get('bindmounts'))
 
 nvdata: Dict[str, NvResults] = {}
 DEPMAP: Dict[str, set[Dependency]] = {}
@@ -353,7 +340,7 @@ def build_it(
   r, version = build_package(
     pkg, repo.lilacinfos[pkg],
     update_info = nvdata[pkg],
-    bindmounts = BIND_MOUNTS,
+    bindmounts = repo.bindmounts,
     depends = DEPMAP.get(pkg, ()),
     repo = REPO,
     myname = MYNAME,

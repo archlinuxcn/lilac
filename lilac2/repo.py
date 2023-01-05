@@ -42,6 +42,7 @@ class Repo:
     self.commit_msg_prefix = config['lilac'].get('commit_msg_prefix', '')
 
     self.repodir = Path(config['repository']['repodir']).expanduser()
+    self.bindmounts = self._get_bindmounts(config.get('bindmounts'))
 
     self.ms = MailService(config)
     github_token = config['lilac'].get('github_token')
@@ -358,3 +359,14 @@ class Repo:
         subprocess.check_call(cmd, env=env)
       except Exception:
         logger.exception('postbuild cmd error for %r', cmd)
+
+  def _get_bindmounts(
+    self, bindmounts: Optional[dict[str, str]],
+  ) -> list[str]:
+    if bindmounts is None:
+      return []
+
+    items = [(os.path.expanduser(src), dst)
+            for src, dst in bindmounts.items()]
+    items.sort(reverse=True)
+    return [f'{src}:{dst}' for src, dst in items]
