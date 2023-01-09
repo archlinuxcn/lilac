@@ -97,7 +97,7 @@ def get_changed_packages(from_: str, to: str) -> Set[str]:
   ret = {x.split('/', 1)[0] for x in r}
   return ret
 
-_re_package = re.compile(r'package(?:_(.+))?\s*\(')
+_re_package = re.compile(r'package(?:_(.+))?\(')
 
 def get_split_packages(pkg: Path) -> Set[Tuple[str, str]]:
   packages: Set[Tuple[str, str]] = set()
@@ -114,12 +114,11 @@ def get_split_packages(pkg: Path) -> Set[Tuple[str, str]]:
   try:
     with open(pkg / 'PKGBUILD') as f:
       for l in f:
-        l = l.strip()
         m = _re_package.match(l)
         if m:
           found = True
           if m.group(1):
-            packages.add((pkgbase, m.group(1)))
+            packages.add((pkgbase, m.group(1).strip()))
           else:
             packages.add((pkgbase, pkgbase))
   except FileNotFoundError:
