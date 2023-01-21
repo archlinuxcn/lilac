@@ -341,6 +341,7 @@ def build_it(
     pkg, repo.lilacinfos[pkg],
     update_info = nvdata[pkg],
     bindmounts = repo.bindmounts,
+    tmpfs = repo.tmpfs,
     depends = DEPMAP.get(pkg, ()),
     repo = REPO,
     myname = MYNAME,
