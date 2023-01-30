@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from collections import defaultdict, namedtuple
 from pathlib import Path
-from typing import Dict, Union, Tuple, Set, Optional
+from typing import Dict, Union, Tuple, Set, Optional, DefaultDict
 import re
 import graphlib
 
@@ -20,9 +20,9 @@ def get_dependency_map(
   This function does not make use of pkgname because they maybe the same for
   different pkgdir. Those are carried by Dependency and used elsewhere.
   '''
-  map: Dict[str, Set[Dependency]] = defaultdict(set)
-  pkgdir_map: Dict[str, Set[str]] = defaultdict(set)
-  rmap: Dict[str, Set[str]] = defaultdict(set)
+  map: DefaultDict[str, Set[Dependency]] = defaultdict(set)
+  pkgdir_map: DefaultDict[str, Set[str]] = defaultdict(set)
+  rmap: DefaultDict[str, Set[str]] = defaultdict(set)
 
   for pkgbase, info in lilacinfos.items():
     depends = info.repo_depends

@@ -8,7 +8,7 @@ import traceback
 import logging
 import time
 from collections import defaultdict
-from typing import Dict, List, Any
+from typing import Dict, List, Any, DefaultDict
 from collections.abc import Set
 from pathlib import Path
 import graphlib
@@ -64,7 +64,7 @@ MYNAME = config['lilac']['name']
 
 nvdata: Dict[str, NvResults] = {}
 DEPMAP: Dict[str, set[Dependency]] = {}
-build_reasons: dict[str, list[BuildReason]] = defaultdict(list)
+build_reasons: DefaultDict[str, list[BuildReason]] = defaultdict(list)
 
 logger = logging.getLogger(__name__)
 build_logger_old = logging.getLogger('build')
@@ -102,7 +102,7 @@ def packages_with_depends(
   repo: Repo,
 ) -> graphlib.TopologicalSorter:
   dep_building_map: Dict[str, set[str]] = {}
-  nonexistent: Dict[str, List[Dependency]] = defaultdict(list)
+  nonexistent: DefaultDict[str, List[Dependency]] = defaultdict(list)
   for name in tuple(build_reasons):
     ds = DEPMAP[name]
     for d in ds:
