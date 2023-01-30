@@ -114,8 +114,7 @@ def get_split_packages(pkg: Path) -> Set[Tuple[str, str]]:
   found = False
   with suppress(FileNotFoundError), open(pkg / 'PKGBUILD') as f:
     for l in f:
-      m = _re_package.match(l)
-      if m:
+      if m := _re_package.match(l):
         found = True
         if m.group(1):
           packages.add((pkgbase, m.group(1).strip()))
