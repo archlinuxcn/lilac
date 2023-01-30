@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import (
   List, NamedTuple, Tuple, Set, Dict,
   Optional, Any, Union, Iterable, TYPE_CHECKING,
+  DefaultDict
 )
 
 import tomli_w
@@ -126,7 +127,7 @@ def packages_need_update(
   output = os.fdopen(rfd)
   # pkgbase => index => NvResult
   nvdata_nested: Dict[str, Dict[int, NvResult]] = {}
-  errors: Dict[Optional[str], List[Dict[str, Any]]] = defaultdict(list)
+  errors: DefaultDict[Optional[str], List[Dict[str, Any]]] = defaultdict(list)
   rebuild = set()
   for l in output:
     j = json.loads(l)
@@ -157,7 +158,7 @@ def packages_need_update(
   if ret != 0:
     raise subprocess.CalledProcessError(ret, cmd)
 
-  error_owners: Dict[Maintainer, List[Dict[str, Any]]] = defaultdict(list)
+  error_owners: DefaultDict[Maintainer, List[Dict[str, Any]]] = defaultdict(list)
   for pkg, pkgerrs in errors.items():
     if pkg is None:
       continue

@@ -2,9 +2,10 @@ from __future__ import annotations
 
 from collections import defaultdict, namedtuple
 from pathlib import Path
-from typing import Dict, Union, Tuple, Set, Optional
+from typing import Dict, Union, Tuple, Set, Optional, DefaultDict
 import re
 import graphlib
+from contextlib import suppress
 
 from .vendor import archpkg
 
@@ -20,9 +21,9 @@ def get_dependency_map(
   This function does not make use of pkgname because they maybe the same for
   different pkgdir. Those are carried by Dependency and used elsewhere.
   '''
-  map: Dict[str, Set[Dependency]] = defaultdict(set)
-  pkgdir_map: Dict[str, Set[str]] = defaultdict(set)
-  rmap: Dict[str, Set[str]] = defaultdict(set)
+  map: DefaultDict[str, Set[Dependency]] = defaultdict(set)
+  pkgdir_map: DefaultDict[str, Set[str]] = defaultdict(set)
+  rmap: DefaultDict[str, Set[str]] = defaultdict(set)
 
   for pkgbase, info in lilacinfos.items():
     depends = info.repo_depends
@@ -111,18 +112,15 @@ def get_split_packages(pkg: Path) -> Set[Tuple[str, str]]:
       return packages
 
   found = False
-  try:
-    with open(pkg / 'PKGBUILD') as f:
-      for l in f:
-        m = _re_package.match(l)
-        if m:
-          found = True
-          if m.group(1):
-            packages.add((pkgbase, m.group(1).strip()))
-          else:
-            packages.add((pkgbase, pkgbase))
-  except FileNotFoundError:
-    pass
+  with suppress(FileNotFoundError), open(pkg / 'PKGBUILD') as f:
+    for l in f:
+      m = _re_package.match(l)
+      if m:
+        found = True
+        if m.group(1):
+          packages.add((pkgbase, m.group(1).strip()))
+        else:
+          packages.add((pkgbase, pkgbase))
   if not found:
     packages.add((pkgbase, pkgbase))
   return packages

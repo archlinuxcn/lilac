@@ -42,10 +42,8 @@ def load_lilac(dir: Path) -> Generator[LilacMod, None, None]:
         setattr(mod, k, v)
 
     assert spec.loader
-    try:
+    with contextlib.suppress(FileNotFoundError):
       spec.loader.exec_module(mod)
-    except FileNotFoundError:
-      pass
 
     mod = cast(LilacMod, mod)
     mod.pkgbase = dir.absolute().name
@@ -56,7 +54,5 @@ def load_lilac(dir: Path) -> Generator[LilacMod, None, None]:
     yield mod
 
   finally:
-    try:
+    with contextlib.suppress(KeyError):
       del sys.modules['lilac.py']
-    except KeyError:
-      pass

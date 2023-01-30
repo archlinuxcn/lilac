@@ -5,6 +5,7 @@ import subprocess
 from typing import Dict, Any
 import os
 import logging
+from contextlib import suppress
 
 import tomli
 
@@ -25,9 +26,6 @@ def read_config() -> Dict[str, Any]:
 
 def reap_zombies() -> None:
   # reap any possible dead children since we are a subreaper
-  try:
+  with suppress(ChildProcessError):
     while os.waitid(os.P_ALL, 0, os.WEXITED | os.WNOHANG) is not None:
       pass
-  except ChildProcessError:
-    pass
-

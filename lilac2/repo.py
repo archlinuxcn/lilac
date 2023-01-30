@@ -11,6 +11,7 @@ from functools import lru_cache
 import traceback
 import string
 import time
+from contextlib import suppress
 
 import structlog
 
@@ -288,14 +289,14 @@ class Repo:
       subject_real = subject_real % pkgbase
 
     if logfile:
-      try:
+      with suppress(FileNotFoundError):
         # we need to replace error characters because the mail will be
         # strictly encoded, disallowing surrogate pairs
         with logfile.open(errors='replace') as f:
           build_output = f.read()
         if build_output:
           log_header = '打包日志：'
-          try:
+          with suppress(ValueError, KeyError): # invalid template or wrong key
             if self.logurl_template and len(logfile.parts) >= 2:
               # assume the directory name is the time stamp for now.
               logurl = string.Template(self.logurl_template).substitute(
@@ -304,12 +305,8 @@ class Repo:
                 pkgbase = pkgbase,
               )
               log_header += ' ' + logurl
-          except (ValueError, KeyError): # invalid template or wrong key
-            pass
           msgs.append(log_header)
           msgs.append('\n' + build_output)
-      except FileNotFoundError:
-        pass
 
     msg = '\n'.join(msgs)
     if self.trim_ansi_codes:

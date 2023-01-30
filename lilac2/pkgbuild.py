@@ -7,6 +7,7 @@ import time
 import subprocess
 from typing import Dict, List
 from pathlib import Path
+from contextlib import suppress
 
 import pyalpm
 
@@ -35,15 +36,12 @@ def _load_timed_dict(
   path: os.PathLike, deadline: int,
 ) -> Dict[str, int]:
   data = {}
-  try:
-    with open(path) as f:
-      for line in f:
-        name, t_str = line.split(None, 1)
-        t = int(t_str)
-        if t >= deadline:
-          data[name] = t
-  except FileNotFoundError:
-    pass
+  with suppress(FileNotFoundError), open(path) as f:
+    for line in f:
+      name, t_str = line.split(None, 1)
+      t = int(t_str)
+      if t >= deadline:
+        data[name] = t
 
   return data
 

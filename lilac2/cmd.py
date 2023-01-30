@@ -10,6 +10,7 @@ from subprocess import CalledProcessError
 from typing import Optional, Dict
 import types
 from pathlib import Path
+from contextlib import suppress
 
 from .typing import Cmd
 
@@ -33,10 +34,8 @@ def git_pull_override() -> bool:
   try:
     env = os.environ.copy()
     env['LANG'] = 'en_US.UTF-8'
-    try:
+    with suppress(KeyError):
       del env['LANGUAGE']
-    except KeyError:
-      pass
     output = run_cmd(
       ['git', 'pull', '--no-edit'],
       env = env,

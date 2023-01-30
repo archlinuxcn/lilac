@@ -13,6 +13,7 @@ from pathlib import Path
 from types import SimpleNamespace
 import tarfile
 import io
+from contextlib import suppress
 from collections.abc import Container
 from urllib.parse import quote
 
@@ -193,20 +194,15 @@ def get_pkgver_and_pkgrel(
 ) -> Tuple[Optional[str], Optional[PkgRel]]:
   pkgrel = None
   pkgver = None
-  try:
-    with open('PKGBUILD') as f:
-      for l in f:
-        if l.startswith('pkgrel='):
-          pkgrel = l.rstrip().split(
-            '=', 1)[-1].strip('\'"')
-          try:
-            pkgrel = int(pkgrel) # type: ignore
-          except (ValueError, TypeError):
-            pass
-        elif l.startswith('pkgver='):
-          pkgver = l.rstrip().split('=', 1)[-1].strip('\'"')
-  except FileNotFoundError:
-    pass
+  with suppress(FileNotFoundError), open('PKGBUILD') as f:
+    for l in f:
+      if l.startswith('pkgrel='):
+        pkgrel = l.rstrip().split(
+          '=', 1)[-1].strip('\'"')
+        with suppress(ValueError, TypeError):
+          pkgrel = int(pkgrel) # type: ignore
+      elif l.startswith('pkgver='):
+        pkgver = l.rstrip().split('=', 1)[-1].strip('\'"')
 
   return pkgver, pkgrel
 
@@ -457,10 +453,8 @@ def clean_directory() -> List[str]:
       continue
     logger.debug('unlink file %s', f)
     ret.append(f)
-    try:
+    with suppress(FileNotFoundError):
       os.unlink(f)
-    except FileNotFoundError:
-      pass
   return ret
 
 def _try_aur_url(name: str) -> bytes:
