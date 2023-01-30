@@ -4,8 +4,9 @@ import os
 import fcntl
 from sys import argv
 import re
-from contextlib import contextmanager
+from contextlib import contextmanager, suppress
 import subprocess
+
 
 # ARCHBUILD='/tmp/workspace/archbuild'
 ARCHBUILD='/var/lib/archbuild'
@@ -61,11 +62,9 @@ def drop_chroot(full_path):
 
 def main():
     prefixes = arches = None
-    try:
+    with suppress(IndexError):
         prefixes = [argv[1]]
         arches = [argv[2]]
-    except IndexError:
-        pass
 
     if not prefixes:
         prefixes = get_prefixes()

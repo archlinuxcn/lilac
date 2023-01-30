@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Dict, Union, Tuple, Set, Optional, DefaultDict
 import re
 import graphlib
+from contextlib import suppress
 
 from .vendor import archpkg
 
@@ -111,18 +112,15 @@ def get_split_packages(pkg: Path) -> Set[Tuple[str, str]]:
       return packages
 
   found = False
-  try:
-    with open(pkg / 'PKGBUILD') as f:
-      for l in f:
-        m = _re_package.match(l)
-        if m:
-          found = True
-          if m.group(1):
-            packages.add((pkgbase, m.group(1).strip()))
-          else:
-            packages.add((pkgbase, pkgbase))
-  except FileNotFoundError:
-    pass
+  with suppress(FileNotFoundError), open(pkg / 'PKGBUILD') as f:
+    for l in f:
+      m = _re_package.match(l)
+      if m:
+        found = True
+        if m.group(1):
+          packages.add((pkgbase, m.group(1).strip()))
+        else:
+          packages.add((pkgbase, pkgbase))
   if not found:
     packages.add((pkgbase, pkgbase))
   return packages

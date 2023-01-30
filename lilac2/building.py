@@ -13,6 +13,7 @@ import time
 import json
 import threading
 import signal
+from contextlib import suppress
 
 from .typing import LilacInfo, Cmd, RUsage
 from .nvchecker import NvResults
@@ -153,10 +154,8 @@ def sign_and_copy(pkgdir: Path, dest: Path) -> None:
   for f in pkgdir.iterdir():
     if not f.name.endswith(('.pkg.tar.xz', '.pkg.tar.xz.sig', '.pkg.tar.zst', '.pkg.tar.zst.sig')):
       continue
-    try:
+    with suppress(FileExistsError):
       (dest / f.name).hardlink_to(f)
-    except FileExistsError:
-      pass
 
 def notify_maintainers(
   repo: Repo, lilacinfo: LilacInfo,
@@ -216,10 +215,8 @@ def call_worker(
       'version': None,
     }
   finally:
-    try:
+    with suppress(FileNotFoundError):
       os.unlink(resultpath)
-    except FileNotFoundError:
-      pass
 
   st = r['status']
 
