@@ -114,7 +114,7 @@ def poll_rusage(name: str, deadline: float) -> tuple[RUsage, bool]:
       logger.warning('%s.service already finished: %s', name, state)
       return RUsage(0, 0), False
 
-    mem_file = f'/sys/fs/cgroup{cgroup}/memory.current'
+    mem_file = f'/sys/fs/cgroup{cgroup}/memory.peak'
 
     mem_max = 0
     for _ in _poll_cmd(pid):
