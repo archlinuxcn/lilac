@@ -8,7 +8,7 @@ import traceback
 import logging
 import time
 from collections import defaultdict
-from typing import Dict, List, Any, DefaultDict
+from typing import List, Any, DefaultDict, Tuple
 from collections.abc import Set
 from pathlib import Path
 import graphlib
@@ -20,6 +20,7 @@ from concurrent.futures import (
   wait as futures_wait, FIRST_COMPLETED,
 )
 import subprocess
+from functools import partial
 
 import prctl
 import structlog
@@ -62,8 +63,8 @@ os.environ['PATH'] = str(topdir) + ':' + os.environ['PATH']
 DESTDIR = Path(config['repository'].get('destdir', '')).expanduser()
 MYNAME = config['lilac']['name']
 
-nvdata: Dict[str, NvResults] = {}
-DEPMAP: Dict[str, set[Dependency]] = {}
+nvdata: dict[str, NvResults] = {}
+DEPMAP: dict[str, set[Dependency]] = {}
 build_reasons: DefaultDict[str, list[BuildReason]] = defaultdict(list)
 
 logger = logging.getLogger(__name__)
@@ -100,8 +101,8 @@ def git_last_commit() -> str:
 
 def packages_with_depends(
   repo: Repo,
-) -> graphlib.TopologicalSorter:
-  dep_building_map: Dict[str, set[str]] = {}
+) -> Tuple[graphlib.TopologicalSorter, dict[str, set[str]]]:
+  dep_building_map: dict[str, set[str]] = {}
   nonexistent: DefaultDict[str, List[Dependency]] = defaultdict(list)
   for name in tuple(build_reasons):
     ds = DEPMAP[name]
@@ -162,13 +163,24 @@ def packages_with_depends(
         s.add(p)
       db.build_updated(s)
 
-  return sorter
+  return sorter, dep_building_map
 
-def building_priority(pkg: str) -> int:
+def building_priority(revdepmap: dict[str, set[str]], pkg: str) -> int:
+  new = {pkg}
+  while new:
+    depees: set[str] = set()
+    new_new = set()
+    for p in new:
+      if d := revdepmap.get(p):
+        new_new.update(d - depees)
+        depees.update(d)
+    new = new_new
   rs = build_reasons[pkg]
-  return min(buildreason_priority(r) for r in rs)
+  for p in depees:
+    rs.extend(build_reasons[p])
+  return min(buildreason_priority(r, revdepmap) for r in rs)
 
-def buildreason_priority(r: BuildReason) -> int:
+def buildreason_priority(r: BuildReason, revdepmap: dict[str, set[str]]) -> int:
   if isinstance(r, BuildReason.UpdatedPkgrel):
     return 0
 
@@ -180,7 +192,7 @@ def buildreason_priority(r: BuildReason) -> int:
       return 1
 
   if isinstance(r, BuildReason.Depended):
-    return building_priority(r.depender)
+    return building_priority(revdepmap, r.depender)
 
   if isinstance(r, BuildReason.UpdatedFailed):
     return 2
@@ -188,10 +200,21 @@ def buildreason_priority(r: BuildReason) -> int:
   return 3
 
 class BuildSorter:
-  def __init__(self, sorter: graphlib.TopologicalSorter) -> None:
+  def __init__(
+    self,
+    sorter: graphlib.TopologicalSorter,
+    depmap: dict[str, set[str]],
+  ) -> None:
     sorter.prepare()
     self.sorter = sorter
     self.ready: list[str] = []
+
+    revdepmap = defaultdict(set)
+    for p, deps in depmap.items():
+      for a in deps:
+        revdepmap[a].add(p)
+
+    self.priority_func = partial(building_priority, revdepmap)
 
   def is_active(self) -> bool:
     return self.sorter.is_active()
@@ -204,7 +227,7 @@ class BuildSorter:
     new = self.sorter.get_ready()
     while new:
       self.ready += [x for x in new if x in build_reasons]
-      self.ready.sort(key=building_priority)
+      self.ready.sort(key = self.priority_func)
       self.sorter.done(*[x for x in new if x not in build_reasons])
       new = self.sorter.get_ready()
     logger.debug('ready-to-build packages: %s', self.ready)
@@ -218,10 +241,10 @@ def start_build(
   max_concurrency: int,
 ) -> None:
   # built is used to collect built package names
-  sorter = packages_with_depends(repo)
+  sorter, depmap = packages_with_depends(repo)
 
   try:
-    buildsorter = BuildSorter(sorter)
+    buildsorter = BuildSorter(sorter, depmap)
     futures: dict[Future, str] = {}
     with ThreadPoolExecutor(
       max_workers = max_concurrency,
@@ -459,7 +482,7 @@ def setup_thread():
     WORKER_NO += 1
 
 def main_may_raise(
-  D: Dict[str, Any], pkgs_from_args: List[str], logdir: Path,
+  D: dict[str, Any], pkgs_from_args: List[str], logdir: Path,
 ) -> None:
   global DEPMAP
 
