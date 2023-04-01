@@ -56,7 +56,9 @@ def drop_chroot(full_path):
         try:
             subprocess.check_call(['btrfs', 'subvolume', 'delete', full_path], stdout=subprocess.DEVNULL)
         except subprocess.CalledProcessError: # nested subvolumes
-            subprocess.check_call(['rm', '-rf', '--one-file-system', full_path])
+            # rm in coreutils >= 9.2 treat nested subvolumn as on another file system
+            # and specifying "--one-file-system" flag would cause rm to return non-zero
+            subprocess.check_call(['rm', '-rf', full_path])
     else:
         subprocess.check_call(['rm', '-rf', '--one-file-system', full_path])
 
