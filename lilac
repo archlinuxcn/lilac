@@ -571,7 +571,8 @@ def main_may_raise(
       build_reasons[p].append(BuildReason.UpdatedFailed())
 
     for p, i in failed_info.items():
-      if deps := i['missing']:
+      # p might have been removed
+      if p in REPO.lilacinfos and (deps := i['missing']):
         build_reasons[p].append(BuildReason.FailedByDeps(deps))
 
   if_this_then_those = defaultdict(set)
