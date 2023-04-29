@@ -180,12 +180,12 @@ def packages_need_update(
   for who, their_errors in error_owners.items():
     logger.warning('send nvchecker report for %r packages to %s',
                    {x['name'] for x in their_errors}, who)
-    repo.sendmail(who, 'nvchecker 错误报告',
+    repo.sendmail(who, 'nvchecker error report',
                   '\n'.join(_format_error(e) for e in their_errors))
 
   if None in errors: # errors belong to unknown packages
-    subject = 'nvchecker 问题'
-    msg = '在更新检查时出现了一些错误：\n\n' + '\n'.join(
+    subject = 'nvchecker problem'
+    msg = 'Face some errors while checking updates：\n\n' + '\n'.join(
       _format_error(e) for e in errors[None]) + '\n'
     repo.send_repo_mail(subject, msg)
 

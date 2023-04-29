@@ -148,7 +148,7 @@ def run_cmd(
     outs = outs.replace('\r\n', '\n')
     outs = re.sub(r'.*\r', '', outs)
     if outlen > 1024 ** 3: # larger than 1G
-      outs += '\n\n输出过多，已击杀。\n'
+      outs += '\n\nOutput is quite long, already kiled\n'
     if code != 0:
       # set output by keyword to avoid being included in repr()
       raise subprocess.CalledProcessError(code, cmd, output=outs)

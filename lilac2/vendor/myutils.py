@@ -118,7 +118,7 @@ def getchar(
   end: str = '\n',
   timeout: Optional[float] = None,
 ):
-  '''读取一个字符'''
+  '''Read a character'''
   import termios
   sys.stdout.write(prompt)
   sys.stdout.flush()
@@ -155,7 +155,7 @@ def getchar(
   return ch
 
 def loadso(fname):
-  '''ctypes.CDLL 的 wrapper，从 sys.path 中搜索文件'''
+  '''wrapper of ctypes.CDLL, searching file(s) from sys.path'''
   from ctypes import CDLL
 
   for d in sys.path:
