@@ -21,7 +21,7 @@ FUNCTIONS: list[str] = [
 
 def _load_aliases() -> None:
   global ALIASES
-  data = importlib.resources.read_text('lilac2', 'aliases.yaml')
+  data = importlib.resources.files('lilac2').joinpath('aliases.yaml').read_text()
   ALIASES = yaml.safe_load(data)
 
 _load_aliases()
