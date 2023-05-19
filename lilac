@@ -489,6 +489,8 @@ def main_may_raise(
   if get_git_branch() not in ['master', 'main']:
     raise Exception('repo not on master or main, aborting.')
 
+  pkgbuild.update_data(PACMAN_DB_DIR)
+
   if dburl := config['lilac'].get('dburl'):
     import sqlalchemy
     engine = sqlalchemy.create_engine(dburl)
@@ -688,8 +690,6 @@ def setup() -> Path:
 
   setup_build_logger()
   os.chdir(REPO.repodir)
-
-  pkgbuild.update_data(PACMAN_DB_DIR)
 
   return logdir
 
