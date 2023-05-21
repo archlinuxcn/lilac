@@ -563,27 +563,20 @@ def aur_post_build() -> None:
     git_commit()
   del _g.aur_pre_files, _g.aur_building_files
 
-def download_official_pkgbuild(name: str) -> List[str]:
+def download_official_pkgbuild(name: str) -> list[str]:
   url = 'https://archlinux.org/packages/search/json/?name=' + name
   logger.info('download PKGBUILD for %s.', name)
   info = s.get(url).json()
-  r = [r for r in info['results'] if r['repo'] != 'testing'][0]
-  repo = r['repo']
-  arch = r['arch']
-  if repo in ('core', 'extra'):
-    gitrepo = 'packages'
-  else:
-    gitrepo = 'community'
   pkgbase = [r['pkgbase'] for r in info['results'] if r['repo'] != 'testing'][0]
 
-  tarball_url = 'https://github.com/archlinux/svntogit-%s/archive/refs/heads/packages/%s.tar.gz' % (gitrepo, pkgbase)
+  tarball_url = 'https://gitlab.archlinux.org/archlinux/packaging/packages/{0}/-/archive/main/{0}-main.tar.bz2'.format(pkgbase)
   logger.debug('downloading Arch package tarball from: %s', tarball_url)
   tarball = s.get(tarball_url).content
-  path = f'svntogit-{gitrepo}-packages-{pkgbase}/repos/{repo}-{arch}'
+  path = f'{pkgbase}-main'
   files = []
 
   with tarfile.open(
-    name=f"{pkgbase}.tar.gz", mode="r:gz", fileobj=io.BytesIO(tarball)
+    name=f"{pkgbase}-main.tar.bz2", mode="r:gz", fileobj=io.BytesIO(tarball)
   ) as tarf:
     for tarinfo in tarf:
       dirname, filename = os.path.split(tarinfo.name)
