@@ -576,7 +576,7 @@ def download_official_pkgbuild(name: str) -> list[str]:
   files = []
 
   with tarfile.open(
-    name=f"{pkgbase}-main.tar.bz2", mode="r:gz", fileobj=io.BytesIO(tarball)
+    name=f"{pkgbase}-main.tar.bz2", fileobj=io.BytesIO(tarball)
   ) as tarf:
     for tarinfo in tarf:
       dirname, filename = os.path.split(tarinfo.name)
