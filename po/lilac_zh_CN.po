@@ -1,0 +1,272 @@
+# Chinese translations for PACKAGE package.
+# Copyright (C) 2023 THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+#  <kuoi@bioarchlinux.org>, 2023.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2023-05-24 01:02+0800\n"
+"PO-Revision-Date: 2023-05-24 01:02+0800\n"
+"Last-Translator:  <kuoi@bioarchlinux.org>\n"
+"Language-Team: Chinese (simplified) <i18n-zh@googlegroups.com>\n"
+"Language: zh_CN\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: lilac:137
+#, python-format
+msgid "The dependency of package %s listed in lilac.yaml is missing"
+msgstr "软件包 %s 的 lilac.yaml 指定了不存在的依赖"
+
+#: lilac:138
+msgid ""
+"The package {name}'s lilac.yaml mentions a dependency on {deps!r}, but this "
+"repository does not contain the direct or indirect dependency {deps!r} ."
+msgstr "软件包 {name} 的 lilac.yaml 指定了 repo_depends，然而其直接或者间接的依赖项 {deps!r} 并不在本仓库中。"
+
+#: lilac:341
+#, python-format
+msgid "%s update_on_build check faces error"
+msgstr "%s update_on_build 检查出错"
+
+#: lilac:429
+#, python-brace-format
+msgid "The packaging of {pkg} failed due to a failed dependency, {faileddeps}."
+msgstr "{pkg} 的依赖 {faileddeps} 打包失败了。"
+
+#: lilac:431
+#, python-brace-format
+msgid ""
+"{pkg} miss dependency {e.deps}, where {faileddeps} failed to package this "
+"time."
+msgstr "{pkg} 缺少依赖 {e.deps}，其中 {faileddeps} 本次打包失败了。"
+
+#: lilac:432
+#, python-format
+msgid "%s face dependency problems"
+msgstr "%s 出现依赖问题"
+
+#: lilac:668
+msgid "Error while running"
+msgstr "运行时错误"
+
+#: lilac:669
+msgid ""
+"Call stack(s) are following:：\n"
+"\n"
+msgstr "调用栈如下：\n\n"
+
+#: lilac2/api.py:420
+#, python-format
+msgid "Pushing package %s to AUR faces error"
+msgstr "提交软件包 %s 到 AUR 时出错"
+
+#: lilac2/building.py:96
+#, python-brace-format
+msgid "{pkgbase} {pkg_version} is just packaged"
+msgstr "{pkgbase} {pkg_version} 刚刚打包了"
+
+#: lilac2/building.py:97
+msgid ""
+"The package has been placed in the staging directory, please manually check "
+"it before publishing it."
+msgstr "i软件包已被置于 staging 目录，请查验后手动发布。"
+
+#: lilac2/cmd.py:151
+msgid ""
+"\n"
+"\n"
+"Output is quite long, already kiled\n"
+msgstr "\n\n输出过多，已击杀。\n"
+
+#: lilac2/mail.py:47
+msgid ""
+"\n"
+"\n"
+"Log is quite long and omitted.\n"
+"\n"
+msgstr "\n\n日志过长，省略ing……\n\n"
+
+#: lilac2/nvchecker.py:183
+msgid "nvchecker error report"
+msgstr "nvchecker 错误报告"
+
+#: lilac2/nvchecker.py:187
+msgid "nvchecker problem"
+msgstr "nvchecker 问题"
+
+#: lilac2/nvchecker.py:188
+msgid ""
+"Face some errors while checking updates：\n"
+"\n"
+msgstr "在更新检查时出现了一些错误：\n\n"
+
+#: lilac2/repo.py:65
+msgid ""
+"github token is not configured, can't get user's Email address from GitHub"
+msgstr "未设置 github token，无法从 GitHub 取得用户 Email 地址"
+
+#: lilac2/repo.py:89
+msgid "Face error while getting user's Email address from GitHub：{e!r}"
+msgstr "从 GitHub 获取用户 Email 地址时出错：{e!r}"
+
+#: lilac2/repo.py:92
+msgid ""
+"There is no public Email address belonging to GitHub user {m[\"github\"]}"
+msgstr "GitHub 用户 {m[\"github\"]} 未公开 Email 地址"
+
+#: lilac2/repo.py:97
+msgid "unsupported format：{m!r}"
+msgstr "不支持的格式：{m!r}"
+
+#: lilac2/repo.py:195
+#, python-brace-format
+msgid "{pkgbase}'s maintainers info error"
+msgstr "{pkgbase} 的 maintainers 信息有误"
+
+#: lilac2/repo.py:196
+#, python-brace-format
+msgid ""
+"The folloing info of maintainers is error, please check and correct them.\n"
+"\n"
+"{error_str}\n"
+msgstr "以下 maintainers 信息有误，请修正。\n\n{error_str}\n"
+
+#: lilac2/repo.py:268
+#, python-format
+msgid "Face error while packaging %s"
+msgstr "在打包软件包 %s 时发生错误"
+
+#: lilac2/repo.py:269
+#, python-format
+msgid ""
+"CMD face error！\n"
+"\n"
+"command %r return singal %d。"
+msgstr "命令执行失败！\n\n命令 %r 返回了错误号 %d。"
+
+#: lilac2/repo.py:272
+#, python-format
+msgid ""
+"Outpur of command：\n"
+"\n"
+"%s"
+msgstr "命令的输出如下：\n\n%s"
+
+#: lilac2/repo.py:273
+msgid ""
+"Call stack(s) are following：\n"
+"\n"
+msgstr "调用栈如下：\n\n"
+
+#: lilac2/repo.py:275
+#, python-format
+msgid "Error while pulling package %s from AUR"
+msgstr "在获取AUR包 %s 时发生错误"
+
+#: lilac2/repo.py:276
+msgid ""
+"Pulling AUR package failed\n"
+"\n"
+msgstr "获取AUR包失败！\n\n"
+
+#: lilac2/repo.py:277
+msgid ""
+"Call stack(s) are following:\n"
+"\n"
+msgstr "调用栈如下：\n\n"
+
+#: lilac2/repo.py:279
+#, python-format
+msgid "Packaging pkg %s timeout"
+msgstr "打包软件包 %s 超时"
+
+#: lilac2/repo.py:281
+#, python-format
+msgid "Face unknown error while packaging %s"
+msgstr "在打包软件包 %s 时发生未知错误"
+
+#: lilac2/repo.py:282
+msgid ""
+"Unknown error occurs, call stack(s) are following：\n"
+"\n"
+msgstr "发生未知错误！调用栈如下：\n\n"
+
+#: lilac2/repo.py:298
+msgid "Packaging Log："
+msgstr "打包日志："
+
+#: lilac2/repo.py:341
+#, python-format
+msgid "Loading lilac.py for package %s face error"
+msgstr "为软件包 %s 载入 lilac.py 时失败"
+
+#: lilac2/worker.py:198
+msgid ""
+"\n"
+"\n"
+"Output is quite long and killed."
+msgstr "\n\n输出过多，已击杀。"
+
+#: lilac2/worker.py:261
+#, python-brace-format
+msgid "Package is added to officail repository: {e.groups}\n"
+msgstr "软件包被加入了官方组：{e.groups}\n"
+
+#: lilac2/worker.py:263
+#, python-brace-format
+msgid "Package will replace package in offical repository: {e.packages}\n"
+msgstr "软件包将取代官方包：{e.packages}\n"
+
+#: lilac2/worker.py:265
+#, python-format
+msgid "%s is conflicted with offical repository"
+msgstr "%s 与官方软件库冲突"
+
+#: lilac2/worker.py:270
+#, python-format
+msgid "%s is older than packaged version in this repository"
+msgstr "%s 新打的包比仓库里的包旧"
+
+#: lilac2/worker.py:271
+#, python-brace-format
+msgid ""
+"Current packaging version of package {e.pkgname} is {e.built_version}, "
+"however, already newer version {e.repo_version} in repository\n"
+msgstr "包 {e.pkgname} 打的版本为 {e.built_version}，但在仓库里已有较新版本 {e.repo_version}。\n"
+
+#: lilac2/vendor/myutils.py:121
+msgid "Read a character"
+msgstr "读取一个字符"
+
+#: lilac2/vendor/myutils.py:158
+msgid "wrapper of ctypes.CDLL, searching file(s) from sys.path"
+msgstr "ctypes.CDLL 的 wrapper，从 sys.path 中搜索文件"
+
+#: lilac2/vendor/serializer.py:12
+msgid ""
+"\n"
+"    Reading file fname.\n"
+"    readonly specifies that the data will not be stored back when it is "
+"destructed\n"
+"    If the data is locked, a SerializerError exception will be occur\n"
+"    default indicates the data if the file does not exist or is empty\n"
+"\n"
+"    Notice:\n"
+"      To write back data correctly, you need to ensure that the object still "
+"exists when it needs to be written back or use the `with` statement\n"
+"      Storing itself into its data attribute is not feasible considering "
+"unknown reasons\n"
+"    "
+msgstr "\n读取文件fname。readonly指定析构时不回存数据\n如果数据已加锁，将会抛出SerializerError异常\ndefault 指出如果文件不存在或为空时的数据\n注意：\n要正确地写回数据，需要保证此对象在需要写回时依旧存在，或者使用with语句\n将自身存入其data属性中不可行，原因未知\n "
+
+#: lilac2/vendor/serializer.py:42
+msgid "Data is locked"
+msgstr "数据已加锁"
+
+#: lilac2/vendor/serializer.py:57
+msgid "If it's needed, delete lock，save file(s)"
+msgstr "如果需要，删除 lock，保存文件"
