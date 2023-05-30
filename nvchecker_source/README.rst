@@ -16,3 +16,29 @@ use_max_tag
 This source supports `list options`_ when ``use_max_tag`` is set.
 
 .. _list options: https://github.com/lilydjwg/nvchecker#list-options
+
+ALPM files database
+-------------------
+::
+
+  source = "archfiles"
+
+Search package files in a local ALPM files database. The package does not need to be installed.
+
+archfiles
+  Name of the package.
+
+filename
+  Regular expression for the file name. If it contains a matching group, the first group is returned. Otherwise return the whole file name.
+
+repo
+  Name of the package repository in which the package resides. If not provided, search all repositories.
+
+strip_dir
+  Strip directory from the path before matching. Defaults to ``true``.
+
+dbpath
+  Path to the ALPM database directory. Lilac sets this automatically.
+
+pkgpart
+  Deprecated, use ``archfiles`` and ``repo`` instead. Has the form ``<repo>/<arch>/<packagename>``.
