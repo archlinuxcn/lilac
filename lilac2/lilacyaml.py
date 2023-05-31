@@ -137,7 +137,7 @@ def parse_update_on(
 
     # fill our dbpath if not provided
     source = entry.get('source')
-    if source == 'alpm' or source == 'archfiles':
+    if source == 'alpm' or source == 'alpmfiles':
       entry.setdefault('dbpath', str(PACMAN_DB_DIR))
 
     ret_update.append(entry)
