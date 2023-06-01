@@ -52,20 +52,18 @@ def _save_timed_dict(
   safe_overwrite(str(path), data_str, mode='w')
 
 def update_pacmandb(dbpath: Path, *, quiet: bool = False) -> None:
-  if quiet:
-    kwargs = {'stdout': subprocess.DEVNULL}
-  else:
-    kwargs = {}
+  stdout = subprocess.DEVNULL if quiet else None
 
-  for _ in range(3):
-    p = subprocess.run( # type: ignore # what a mess...
-      ['fakeroot', 'pacman', '-Sy', '--dbpath', dbpath],
-      **kwargs,
-    )
-    if p.returncode == 0:
-      break
-  else:
-    p.check_returncode()
+  for update_arg in ['-Sy', '-Fy']:
+    for _ in range(3):
+      p = subprocess.run(
+        ['fakeroot', 'pacman', update_arg, '--dbpath', dbpath],
+        stdout = stdout,
+      )
+      if p.returncode == 0:
+        break
+    else:
+      p.check_returncode()
 
 def update_data(dbpath: Path, *, quiet: bool = False) -> None:
   update_pacmandb(dbpath, quiet=quiet)
