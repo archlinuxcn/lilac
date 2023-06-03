@@ -1,4 +1,4 @@
-from typing import Dict
+from typing import Dict, Tuple
 from zlib import decompress
 
 from nvchecker.api import GetVersionError, session
@@ -21,7 +21,7 @@ PKG_FLEN = len(PKG_FIELD)
 VER_FLEN = len(VER_FIELD)
 MD5_FLEN = len(MD5_FIELD)
 
-async def get_versions(repo: str) -> Dict[str, str]:
+async def get_versions(repo: str) -> Dict[str, Tuple[str, str]]:
   url = URL_MAP.get(repo)
   if url is None:
     raise GetVersionError(f'Unknown repo {repo}')
