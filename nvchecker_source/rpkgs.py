@@ -24,7 +24,7 @@ MD5_FLEN = len(MD5_FIELD)
 async def get_versions(repo: str) -> Dict[str, Tuple[str, str]]:
   url = URL_MAP.get(repo)
   if url is None:
-    raise GetVersionError(f'Unknown repo {repo}')
+    raise GetVersionError('Unknown repo', repo = repo)
   res = await session.get(url)
   data = decompress(res.body, wbits = 31)
 
