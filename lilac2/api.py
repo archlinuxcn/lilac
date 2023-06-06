@@ -194,15 +194,18 @@ def get_pkgver_and_pkgrel(
 ) -> Tuple[Optional[str], Optional[PkgRel]]:
   pkgrel = None
   pkgver = None
-  with suppress(FileNotFoundError), open('PKGBUILD') as f:
-    for l in f:
-      if l.startswith('pkgrel='):
-        pkgrel = l.rstrip().split(
-          '=', 1)[-1].strip('\'"')
+  cmd = 'source PKGBUILD && declare -p pkgver pkgrel || :'
+  output = run_protected(['/bin/bash', '-c', cmd], silent = True)
+  pattern = re.compile('declare -- pkg(ver|rel)="([^"]+)"')
+  for line in output.splitlines():
+    m = pattern.fullmatch(line)
+    if m:
+      value = m.group(2)
+      if m.group(1) == "rel":
         with suppress(ValueError, TypeError):
-          pkgrel = int(pkgrel) # type: ignore
-      elif l.startswith('pkgver='):
-        pkgver = l.rstrip().split('=', 1)[-1].strip('\'"')
+          pkgrel = int(value) # type: ignore
+      else:
+        pkgver = value
 
   return pkgver, pkgrel
 
