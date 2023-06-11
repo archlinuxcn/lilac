@@ -151,7 +151,68 @@
                                         
                                     </dt>
                                     <dd>
-                                        <p>Packages in the repo to be built and installed before building the current package.</p>
+                                        <p>Packages in the repo that are direct dependencies of the current package.</p>
+                        
+                                        <div class="json-inner-schema">
+                                            
+                                                            <section class="json-schema-array-items">
+                                                                
+                                                                <span class="json-property-type"></span>
+                                                                <span class="json-property-range" title="Value limits"></span>
+                                                                
+                                                                <div class="json-inner-schema">
+                                                                    
+                                                                        <section class="json-schema-anyOf">
+                                                                            <dl>
+                                                                                    <dt>
+                                                                                        
+                                                                                        <span class="json-property-type">string</span>
+                                                                                        <span class="json-property-range" title="Value limits"></span>
+                                                                                        
+                                                                                    </dt>
+                                                                                    <dd>
+                                                                                            <section class="json-schema-description">
+                                                                                                <p>Package (directory) name</p>
+                                                                                        
+                                                                                            </section>
+                                                                                        
+                                                                                    </dd>
+                                                                                    <dt>
+                                                                                        
+                                                                                        <span class="json-property-type">object</span>
+                                                                                        <span class="json-property-range" title="Value limits"></span>
+                                                                                        
+                                                                                    </dt>
+                                                                                    <dd>
+                                                                                            <section class="json-schema-description">
+                                                                                                <p>Package base (directory) as key and package name as value</p>
+                                                                                        
+                                                                                            </section>
+                                                                                        
+                                                                                                    <section class="json-schema-additionalProperties">
+                                                                                                        <span class="json-property-type">
+                                                                                                    <span class="json-property-type">string</span>
+                                                                                                    <span class="json-property-range" title="Value limits"></span>
+                                                                                                    
+                                                                                                    </span>
+                                                                                                        
+                                                                                                    </section>
+                                                                                    </dd>
+                                                                            </dl>
+                                                                        
+                                                                        </section>
+                                                                </div>
+                                                            </section>                </div>
+                                    </dd>
+                                    <dt data-property-name="repo_makedepends">
+                                        <span class="json-property-name">repo_makedepends:</span>
+                                        
+                                        <span class="json-property-type">[]</span>
+                                        <span class="json-property-range" title="Value limits"></span>
+                                        
+                                    </dt>
+                                    <dd>
+                                        <p>Packages in the repo that are in makedepends or checkdepends of the current package.</p>
                         
                                         <div class="json-inner-schema">
                                             
