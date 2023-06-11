@@ -203,7 +203,7 @@ def get_pkgver_and_pkgrel(
       value = m.group(2)
       if m.group(1) == "rel":
         with suppress(ValueError, TypeError):
-          pkgrel = int(value) # type: ignore
+          pkgrel = int(value)
       else:
         pkgver = value
 
