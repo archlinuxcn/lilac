@@ -72,8 +72,9 @@ def get_dependency_map(
     build_deps = build_dep_map[pkgbase]
     build_deps.update(norm_map[pkgbase])
     for d in info.repo_makedepends:
-      build_deps.add(depman.get(d))
-      build_deps.update(norm_map[d])
+      d = depman.get(d)
+      build_deps.add(d)
+      build_deps.update(norm_map[d.pkgdir.name])
 
   return map, build_dep_map
 

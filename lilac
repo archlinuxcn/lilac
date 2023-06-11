@@ -308,7 +308,7 @@ def try_pick_some(
 
     if rs := build_reasons.get(pkg):
       if len(rs) == 1 and isinstance(rs[0], BuildReason.FailedByDeps):
-        ds = DEPMAP[pkg]
+        ds = BUILD_DEPMAP[pkg]
         if not all(d.resolve() for d in ds):
           buildsorter.done(pkg)
           if db.USE:
@@ -485,7 +485,7 @@ def setup_thread():
 def main_may_raise(
   D: dict[str, Any], pkgs_from_args: List[str], logdir: Path,
 ) -> None:
-  global DEPMAP
+  global DEPMAP, BUILD_DEPMAP
 
   if get_git_branch() not in ['master', 'main']:
     raise Exception('repo not on master or main, aborting.')
