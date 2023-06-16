@@ -190,9 +190,8 @@ def run_cmd(cmd: Cmd, **kwargs) -> str:
   else:
     return _run_cmd(cmd, **kwargs)
 
-def get_pkgver_and_pkgrel(
-) -> Tuple[Optional[str], Optional[PkgRel]]:
-  pkgrel = None
+def get_pkgver_and_pkgrel() -> Tuple[Optional[str], Optional[PkgRel]]:
+  pkgrel: Optional[PkgRel] = None
   pkgver = None
   cmd = 'source PKGBUILD && declare -p pkgver pkgrel || :'
   output = run_protected(['/bin/bash', '-c', cmd], silent = True)
@@ -202,8 +201,10 @@ def get_pkgver_and_pkgrel(
     if m:
       value = m.group(2)
       if m.group(1) == "rel":
-        with suppress(ValueError, TypeError):
+        try:
           pkgrel = int(value)
+        except (ValueError, TypeError):
+          pkgrel = value
       else:
         pkgver = value
 
