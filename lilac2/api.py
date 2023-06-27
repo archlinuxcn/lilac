@@ -518,13 +518,13 @@ def aur_pre_build(
   if name is None:
     name = os.path.basename(os.getcwd())
 
-  if maintainers:
-    maintainer, last_packager = _get_aur_packager(name)
-    if last_packager == 'lilac':
-      who = maintainer
-    else:
-      who = last_packager
+  maintainer, last_packager = _get_aur_packager(name)
+  if last_packager == 'lilac':
+    who = maintainer
+  else:
+    who = last_packager
 
+  if maintainers:
     error = False
     if isinstance(maintainers, str):
       error = who != maintainers
@@ -532,8 +532,9 @@ def aur_pre_build(
       error = who not in maintainers
     if error:
       raise Exception('unexpected AUR package maintainer / packager', who)
-    if msg := AUR_BLACKLIST.get(who): # type: ignore
-      raise Exception('blacklisted AUR package maintainer / packager', who, msg)
+
+  if msg := AUR_BLACKLIST.get(who): # type: ignore
+    raise Exception('blacklisted AUR package maintainer / packager', who, msg)
 
   pkgver, pkgrel = get_pkgver_and_pkgrel()
   _g.aur_pre_files = clean_directory()
