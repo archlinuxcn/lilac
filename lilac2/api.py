@@ -533,7 +533,7 @@ def aur_pre_build(
     if error:
       raise Exception('unexpected AUR package maintainer / packager', who)
 
-  if msg := AUR_BLACKLIST.get(who): # type: ignore
+  if who and (msg := AUR_BLACKLIST.get(who)):
     raise Exception('blacklisted AUR package maintainer / packager', who, msg)
 
   pkgver, pkgrel = get_pkgver_and_pkgrel()
