@@ -42,6 +42,9 @@ s = requests.Session()
 s.headers['User-Agent'] = UserAgent
 
 VCS_SUFFIXES = ('-git', '-hg', '-svn', '-bzr')
+AUR_BLACKLIST = {
+  'dnrops': "creates packages that install packages into the packager's system",
+}
 
 def _unquote_item(s: str) -> Optional[str]:
   m = re.search(r'''[ \t'"]*([^ '"]+)[ \t'"]*''', s)
@@ -529,6 +532,8 @@ def aur_pre_build(
       error = who not in maintainers
     if error:
       raise Exception('unexpected AUR package maintainer / packager', who)
+    if msg := AUR_BLACKLIST.get(who): # type: ignore
+      raise Exception('blacklisted AUR package maintainer / packager', who, msg)
 
   pkgver, pkgrel = get_pkgver_and_pkgrel()
   _g.aur_pre_files = clean_directory()
