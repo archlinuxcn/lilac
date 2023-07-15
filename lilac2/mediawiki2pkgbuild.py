@@ -40,12 +40,15 @@ def gen_pkgbuild(
   name: str,
   mwver: str,
   desc: str,
-  license: str,
+  license: str | list[str],
   s: requests.Session,
 ) -> str:
   major, minor = mwver.split('.')
   mwver_next = f'{major}.{int(minor)+1}'
   link = get_link(name, mwver, s)
+  if isinstance(license, str):
+    license = [license]
+  license_str = ' '.join(f"'{x}'" for x in license)
   vars = {
     'name': name,
     'name_lower': name.lower(),
@@ -54,6 +57,6 @@ def gen_pkgbuild(
     'link': link,
     'mwver_cur': mwver,
     'mwver_next': mwver_next,
-    'license': license,
+    'license': license_str,
   }
   return template.format_map(vars)
