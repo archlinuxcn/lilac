@@ -583,15 +583,17 @@ def main_may_raise(
     for i in info.update_on_build:
       if_this_then_those[i.pkgbase].add(p)
   more_pkgs = set()
-  count = 0
   for p in build_reasons:
     if pkgs := if_this_then_those.get(p):
       more_pkgs.update(pkgs)
-  while len(more_pkgs) != count: # has new
-    count = len(more_pkgs)
+  while True:
+    add_to_more_pkgs = set()
     for p in more_pkgs:
       if pkgs := if_this_then_those.get(p):
-        more_pkgs.update(pkgs)
+        add_to_more_pkgs.update(pkgs)
+    if add_to_more_pkgs.issubset(more_pkgs):
+      break
+    more_pkgs.update(add_to_more_pkgs)
   for p in more_pkgs:
     update_on_build = REPO.lilacinfos[p].update_on_build
     build_reasons[p].append(BuildReason.OnBuild(update_on_build))
