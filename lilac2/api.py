@@ -592,6 +592,8 @@ def download_official_pkgbuild(name: str) -> list[str]:
       dirname, filename = os.path.split(tarinfo.name)
       if dirname != path:
         continue
+      if filename in ('.SRCINFO', '.gitignore'):
+        continue
       tarinfo.name = filename
       logger.debug('extract file %s.', filename)
       tarf.extract(tarinfo)
