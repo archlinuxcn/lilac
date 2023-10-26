@@ -85,7 +85,7 @@ def pretty_print(log):
   fmt = FMT[result]
   out = c(7) + fmt % args + FMT['_rusage'] % args
   if result == 'failed':
-    out += f'{c(8)}{log["msg"]}\n'
+    out += f'{c(8)}{log["msg"][:1000]}\n'
   sys.stdout.write(out)
 
 def iter_pkglog():
