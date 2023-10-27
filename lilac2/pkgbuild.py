@@ -5,7 +5,7 @@ from __future__ import annotations
 import os
 import time
 import subprocess
-from typing import Dict, List
+from typing import Dict, List, Optional, Union
 from pathlib import Path
 from contextlib import suppress
 
@@ -51,22 +51,28 @@ def _save_timed_dict(
   data_str = ''.join(f'{k} {v}\n' for k, v in data.items())
   safe_overwrite(str(path), data_str, mode='w')
 
-def update_pacmandb(dbpath: Path, *, quiet: bool = False) -> None:
+def update_pacmandb(dbpath: Path, pacman_conf: Optional[str],
+                    *, quiet: bool = False) -> None:
   stdout = subprocess.DEVNULL if quiet else None
 
   for update_arg in ['-Sy', '-Fy']:
+
+    cmd: List[Union[str, Path]] = [
+      'fakeroot', 'pacman', update_arg, '--dbpath', dbpath,
+    ]
+    if pacman_conf is not None:
+      cmd += ['--config', pacman_conf]
+
     for _ in range(3):
-      p = subprocess.run(
-        ['fakeroot', 'pacman', update_arg, '--dbpath', dbpath],
-        stdout = stdout,
-      )
+      p = subprocess.run(cmd, stdout = stdout)
       if p.returncode == 0:
         break
     else:
       p.check_returncode()
 
-def update_data(dbpath: Path, *, quiet: bool = False) -> None:
-  update_pacmandb(dbpath, quiet=quiet)
+def update_data(dbpath: Path, pacman_conf: Optional[str],
+                *, quiet: bool = False) -> None:
+  update_pacmandb(dbpath, pacman_conf, quiet=quiet)
 
   now = int(time.time())
   deadline = now - 90 * 86400
