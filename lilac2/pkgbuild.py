@@ -51,7 +51,7 @@ def _save_timed_dict(
   data_str = ''.join(f'{k} {v}\n' for k, v in data.items())
   safe_overwrite(str(path), data_str, mode='w')
 
-def update_pacmandb(dbpath: Path, pacman_conf: Optional[str],
+def update_pacmandb(dbpath: Path, pacman_conf: Optional[str] = None,
                     *, quiet: bool = False) -> None:
   stdout = subprocess.DEVNULL if quiet else None
 
