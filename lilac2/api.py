@@ -243,7 +243,7 @@ def update_pkgver_and_pkgrel(
 def update_pkgrel(
   rel: Optional[PkgRel] = None,
 ) -> None:
-  with open('PKGBUILD') as f:
+  with open('PKGBUILD', errors='replace') as f:
     pkgbuild = f.read()
 
   def replacer(m):
