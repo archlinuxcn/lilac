@@ -49,14 +49,14 @@ async def test_cran(get_version):
     'pkgname': 'xml2',
     'repo': 'cran',
     'md5': True,
-  }) == '1.3.5#20780f576451bb22e74ba6bb3aa09435'
+  }) == '1.3.6#fc6679028dca1f3047c8c745fb724524'
 
 async def test_bioc(get_version):
   assert await get_version('BiocVersion', {
     'source': 'rpkgs',
     'pkgname': 'BiocVersion',
     'repo': 'bioc',
-  }) == '3.18.0'
+  }) == '3.18.1'
 
 async def test_bioc_data_annotation(get_version):
   assert await get_version('GO.db', {
