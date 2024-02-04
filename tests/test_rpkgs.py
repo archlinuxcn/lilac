@@ -3,7 +3,7 @@ import asyncio
 import pytest
 import pytest_asyncio
 
-pytestmark = pytest.mark.asyncio
+pytestmark = pytest.mark.asyncio(scope='session')
 
 from nvchecker import core, __main__ as main
 from nvchecker.util import Entries, VersData, RawResult
@@ -27,7 +27,7 @@ async def run(entries: Entries) -> VersData:
   vers, _has_failures = await main.run(result_coro, runner_coro)
   return vers
 
-@pytest_asyncio.fixture(scope='module')
+@pytest_asyncio.fixture(scope='session')
 async def get_version():
   async def __call__(name, config):
     entries = {name: config}
@@ -36,12 +36,6 @@ async def get_version():
 
   return __call__
 
-loop = asyncio.new_event_loop()
-@pytest.fixture(scope='module')
-def event_loop(request):
-  yield loop
-  loop.close()
-
 
 async def test_cran(get_version):
   assert await get_version('xml2', {
@@ -49,14 +43,14 @@ async def test_cran(get_version):
     'pkgname': 'xml2',
     'repo': 'cran',
     'md5': True,
-  }) == '1.3.5#20780f576451bb22e74ba6bb3aa09435'
+  }) == '1.3.6#fc6679028dca1f3047c8c745fb724524'
 
 async def test_bioc(get_version):
   assert await get_version('BiocVersion', {
     'source': 'rpkgs',
     'pkgname': 'BiocVersion',
     'repo': 'bioc',
-  }) == '3.18.0'
+  }) == '3.18.1'
 
 async def test_bioc_data_annotation(get_version):
   assert await get_version('GO.db', {
