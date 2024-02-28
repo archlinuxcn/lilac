@@ -93,8 +93,8 @@ def build_package(
     if staging:
       notify_maintainers(
         repo, lilacinfo,
-        f'{pkgbase} {pkg_version} 刚刚打包了',
-        '软件包已被置于 staging 目录，请查验后手动发布。',
+        f'{pkgbase} {pkg_version} is just packaged',
+        'The package has been placed in the staging directory, please manually check it before publishing it.',
       )
       result = BuildResult.staged()
     else:

@@ -424,7 +424,7 @@ def update_aur_repo() -> None:
     _G.repo.send_error_report(
       _G.mod,
       exc = e,
-      subject = '提交软件包 %s 到 AUR 时出错',
+      subject = 'Pushing package %s to AUR faces error',
     )
 
 def git_pkgbuild_commit() -> None:
