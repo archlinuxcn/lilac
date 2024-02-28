@@ -1,0 +1,273 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2023-05-24 01:02+0800\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: lilac:137
+#, python-format
+msgid "The dependency of package %s listed in lilac.yaml is missing"
+msgstr ""
+
+#: lilac:138
+msgid ""
+"The package {name}'s lilac.yaml mentions a dependency on {deps!r}, but this "
+"repository does not contain the direct or indirect dependency {deps!r} ."
+msgstr ""
+
+#: lilac:341
+#, python-format
+msgid "%s update_on_build check faces error"
+msgstr ""
+
+#: lilac:429
+#, python-brace-format
+msgid "The packaging of {pkg} failed due to a failed dependency, {faileddeps}."
+msgstr ""
+
+#: lilac:431
+#, python-brace-format
+msgid ""
+"{pkg} miss dependency {e.deps}, where {faileddeps} failed to package this "
+"time."
+msgstr ""
+
+#: lilac:432
+#, python-format
+msgid "%s face dependency problems"
+msgstr ""
+
+#: lilac:668
+msgid "Error while running"
+msgstr ""
+
+#: lilac:669
+msgid ""
+"Call stack(s) are following:：\n"
+"\n"
+msgstr ""
+
+#: lilac2/api.py:420
+#, python-format
+msgid "Pushing package %s to AUR faces error"
+msgstr ""
+
+#: lilac2/building.py:96
+#, python-brace-format
+msgid "{pkgbase} {pkg_version} is just packaged"
+msgstr ""
+
+#: lilac2/building.py:97
+msgid ""
+"The package has been placed in the staging directory, please manually check "
+"it before publishing it."
+msgstr ""
+
+#: lilac2/cmd.py:151
+msgid ""
+"\n"
+"\n"
+"Output is quite long, already kiled\n"
+msgstr ""
+
+#: lilac2/mail.py:47
+msgid ""
+"\n"
+"\n"
+"Log is quite long and omitted.\n"
+"\n"
+msgstr ""
+
+#: lilac2/nvchecker.py:183
+msgid "nvchecker error report"
+msgstr ""
+
+#: lilac2/nvchecker.py:187
+msgid "nvchecker problem"
+msgstr ""
+
+#: lilac2/nvchecker.py:188
+msgid ""
+"Face some errors while checking updates：\n"
+"\n"
+msgstr ""
+
+#: lilac2/repo.py:65
+msgid ""
+"github token is not configured, can't get user's Email address from GitHub"
+msgstr ""
+
+#: lilac2/repo.py:89
+msgid "Face error while getting user's Email address from GitHub：{e!r}"
+msgstr ""
+
+#: lilac2/repo.py:92
+msgid ""
+"There is no public Email address belonging to GitHub user {m[\"github\"]}"
+msgstr ""
+
+#: lilac2/repo.py:97
+msgid "unsupported format：{m!r}"
+msgstr ""
+
+#: lilac2/repo.py:195
+#, python-brace-format
+msgid "{pkgbase}'s maintainers info error"
+msgstr ""
+
+#: lilac2/repo.py:196
+#, python-brace-format
+msgid ""
+"The folloing info of maintainers is error, please check and correct them.\n"
+"\n"
+"{error_str}\n"
+msgstr ""
+
+#: lilac2/repo.py:268
+#, python-format
+msgid "Face error while packaging %s"
+msgstr ""
+
+#: lilac2/repo.py:269
+#, python-format
+msgid ""
+"CMD face error！\n"
+"\n"
+"command %r return singal %d。"
+msgstr ""
+
+#: lilac2/repo.py:272
+#, python-format
+msgid ""
+"Outpur of command：\n"
+"\n"
+"%s"
+msgstr ""
+
+#: lilac2/repo.py:273
+msgid ""
+"Call stack(s) are following：\n"
+"\n"
+msgstr ""
+
+#: lilac2/repo.py:275
+#, python-format
+msgid "Error while pulling package %s from AUR"
+msgstr ""
+
+#: lilac2/repo.py:276
+msgid ""
+"Pulling AUR package failed\n"
+"\n"
+msgstr ""
+
+#: lilac2/repo.py:277
+msgid ""
+"Call stack(s) are following:\n"
+"\n"
+msgstr ""
+
+#: lilac2/repo.py:279
+#, python-format
+msgid "Packaging pkg %s timeout"
+msgstr ""
+
+#: lilac2/repo.py:281
+#, python-format
+msgid "Face unknown error while packaging %s"
+msgstr ""
+
+#: lilac2/repo.py:282
+msgid ""
+"Unknown error occurs, call stack(s) are following：\n"
+"\n"
+msgstr ""
+
+#: lilac2/repo.py:298
+msgid "Packaging Log："
+msgstr ""
+
+#: lilac2/repo.py:341
+#, python-format
+msgid "Loading lilac.py for package %s face error"
+msgstr ""
+
+#: lilac2/worker.py:198
+msgid ""
+"\n"
+"\n"
+"Output is quite long and killed."
+msgstr ""
+
+#: lilac2/worker.py:261
+#, python-brace-format
+msgid "Package is added to officail repository: {e.groups}\n"
+msgstr ""
+
+#: lilac2/worker.py:263
+#, python-brace-format
+msgid "Package will replace package in offical repository: {e.packages}\n"
+msgstr ""
+
+#: lilac2/worker.py:265
+#, python-format
+msgid "%s is conflicted with offical repository"
+msgstr ""
+
+#: lilac2/worker.py:270
+#, python-format
+msgid "%s is older than packaged version in this repository"
+msgstr ""
+
+#: lilac2/worker.py:271
+#, python-brace-format
+msgid ""
+"Current packaging version of package {e.pkgname} is {e.built_version}, "
+"however, already newer version {e.repo_version} in repository\n"
+msgstr ""
+
+#: lilac2/vendor/myutils.py:121
+msgid "Read a character"
+msgstr ""
+
+#: lilac2/vendor/myutils.py:158
+msgid "wrapper of ctypes.CDLL, searching file(s) from sys.path"
+msgstr ""
+
+#: lilac2/vendor/serializer.py:12
+msgid ""
+"\n"
+"    Reading file fname.\n"
+"    readonly specifies that the data will not be stored back when it is "
+"destructed\n"
+"    If the data is locked, a SerializerError exception will be occur\n"
+"    default indicates the data if the file does not exist or is empty\n"
+"\n"
+"    Notice:\n"
+"      To write back data correctly, you need to ensure that the object still "
+"exists when it needs to be written back or use the `with` statement\n"
+"      Storing itself into its data attribute is not feasible considering "
+"unknown reasons\n"
+"    "
+msgstr ""
+
+#: lilac2/vendor/serializer.py:42
+msgid "Data is locked"
+msgstr ""
+
+#: lilac2/vendor/serializer.py:57
+msgid "If it's needed, delete lock，save file(s)"
+msgstr ""
