@@ -30,5 +30,10 @@ jobs:
     - name: Install Python deps
       run: python -m pip install -U pytest pytest-asyncio nvchecker requests lxml PyYAML pyalpm structlog python_prctl
 
+    - name: workaround pycurl wheel
+      run: |
+        sudo mkdir -p /etc/pki/tls/certs
+        sudo ln -s /etc/ssl/certs/ca-certificates.crt /etc/pki/tls/certs/ca-bundle.crt
+
     - name: Run pytest
       run: pytest
