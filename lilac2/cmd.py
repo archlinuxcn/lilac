@@ -167,9 +167,3 @@ UNTRUSTED_PREFIX: Cmd = [
   '--tmpfs', '/run', '--die-with-parent',
   '--tmpfs', '/tmp', '--proc', '/proc', '--dev', '/dev',
 ]
-if os.path.islink('/etc/resolv.conf'):
-  UNTRUSTED_PREFIX += [ # type: ignore
-    '--ro-bind',
-    os.path.realpath('/etc/resolv.conf'),
-    '/etc/resolv.conf',
-  ]
