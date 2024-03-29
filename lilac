@@ -259,6 +259,11 @@ def start_build(
           limit = max_concurrency - len(futures),
         )
         for pkg in pkgs:
+          if pkg not in nvdata:
+            # this can happen when cmdline packages are specified and
+            # a package is pulled in by OnBuild
+            logger.warning('%s not in nvdata, skipping', pkg)
+            continue
           fu = executor.submit(
             build_it, pkg, repo, buildsorter, built, failed)
           futures[fu] = pkg
