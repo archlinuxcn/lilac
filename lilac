@@ -579,10 +579,11 @@ def main_may_raise(
   for p in need_rebuild_failed:
     build_reasons[p].append(BuildReason.UpdatedFailed())
 
-  for p, i in failed_info.items():
-    # p might have been removed
-    if p in REPO.lilacinfos and (deps := i['missing']):
-      build_reasons[p].append(BuildReason.FailedByDeps(deps))
+  if not pkgs_from_args:
+    for p, i in failed_info.items():
+      # p might have been removed
+      if p in REPO.lilacinfos and (deps := i['missing']):
+        build_reasons[p].append(BuildReason.FailedByDeps(deps))
 
   if_this_then_those = defaultdict(set)
   for p, info in REPO.lilacinfos.items():
