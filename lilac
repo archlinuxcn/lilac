@@ -528,18 +528,17 @@ def main_may_raise(
 
   failed_info = D.get('failed', {})
 
-  if not pkgs_from_args:
-    U = set(REPO.lilacinfos)
-    last_commit = D.get('last_commit', EMPTY_COMMIT)
-    changed = get_changed_packages(last_commit, 'HEAD') & U
+  U = set(REPO.lilacinfos)
+  last_commit = D.get('last_commit', EMPTY_COMMIT)
+  changed = get_changed_packages(last_commit, 'HEAD') & U
 
-    failed_prev = set(failed_info.keys())
-    # no update from upstream, but build instructions have changed; rebuild
-    # failed ones
-    need_rebuild_failed = failed_prev & changed
-    # if pkgrel is updated, build a new release
-    need_rebuild_pkgrel = {x for x in changed
-                          if pkgrel_changed(last_commit, 'HEAD', x)} - unknown
+  failed_prev = set(failed_info.keys())
+  # no update from upstream, but build instructions have changed; rebuild
+  # failed ones
+  need_rebuild_failed = failed_prev & changed
+  # if pkgrel is updated, build a new release
+  need_rebuild_pkgrel = {x for x in changed
+                        if pkgrel_changed(last_commit, 'HEAD', x)} - unknown
 
   nv_changed = {}
   for p, vers in nvdata.items():
@@ -572,17 +571,17 @@ def main_may_raise(
   if pkgs_from_args:
     for p in pkgs_from_args:
       build_reasons[p].append(BuildReason.Cmdline())
-  else:
-    for p in need_rebuild_pkgrel:
-      build_reasons[p].append(BuildReason.UpdatedPkgrel())
 
-    for p in need_rebuild_failed:
-      build_reasons[p].append(BuildReason.UpdatedFailed())
+  for p in need_rebuild_pkgrel:
+    build_reasons[p].append(BuildReason.UpdatedPkgrel())
 
-    for p, i in failed_info.items():
-      # p might have been removed
-      if p in REPO.lilacinfos and (deps := i['missing']):
-        build_reasons[p].append(BuildReason.FailedByDeps(deps))
+  for p in need_rebuild_failed:
+    build_reasons[p].append(BuildReason.UpdatedFailed())
+
+  for p, i in failed_info.items():
+    # p might have been removed
+    if p in REPO.lilacinfos and (deps := i['missing']):
+      build_reasons[p].append(BuildReason.FailedByDeps(deps))
 
   if_this_then_those = defaultdict(set)
   for p, info in REPO.lilacinfos.items():
@@ -630,10 +629,9 @@ def main_may_raise(
       if x in failed_info:
         del failed_info[x]
     # cleanup removed package failed_info
-    if not pkgs_from_args:
-      for x in tuple(failed_info.keys()):
-        if x not in REPO.lilacinfos:
-          del failed_info[x]
+    for x in tuple(failed_info.keys()):
+      if x not in REPO.lilacinfos:
+        del failed_info[x]
     D['failed'] = failed_info
 
     if config['lilac']['rebuild_failed_pkgs']:
