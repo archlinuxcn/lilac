@@ -79,6 +79,7 @@ def _poll_cmd(pid: int) -> Generator[None, None, None]:
   except OSError as e:
     if e.errno == 22:
       return
+    raise
 
   poll = select.poll()
   poll.register(pidfd, select.POLLIN)
@@ -98,6 +99,7 @@ def poll_rusage(name: str, deadline: float) -> tuple[RUsage, bool]:
   done_state = ['exited', 'failed']
 
   try:
+    cgroup = ''
     time_start = time.monotonic()
     while True:
       pid, cgroup, state = _get_service_info(name)
