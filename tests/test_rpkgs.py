@@ -6,9 +6,9 @@ import pytest_asyncio
 pytestmark = pytest.mark.asyncio(scope='session')
 
 from nvchecker import core, __main__ as main
-from nvchecker.util import Entries, VersData, RawResult
+from nvchecker.util import Entries, RichResult, RawResult
 
-async def run(entries: Entries) -> VersData:
+async def run(entries: Entries) -> RichResult:
   task_sem = asyncio.Semaphore(20)
   result_q: asyncio.Queue[RawResult] = asyncio.Queue()
   keymanager = core.KeyManager(None)
@@ -20,7 +20,7 @@ async def run(entries: Entries) -> VersData:
     keymanager, entry_waiter, 1, {},
   )
 
-  oldvers: VersData = {}
+  oldvers: RichResult = {}
   result_coro = core.process_result(oldvers, result_q, entry_waiter)
   runner_coro = core.run_tasks(futures)
 
@@ -32,7 +32,8 @@ async def get_version():
   async def __call__(name, config):
     entries = {name: config}
     newvers = await run(entries)
-    return newvers.get(name)
+    if r := newvers.get(name):
+      return r.version
 
   return __call__
 
