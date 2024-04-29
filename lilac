@@ -515,18 +515,6 @@ def main_may_raise(
   depman = DependencyManager(REPO.repodir)
   DEPMAP, BUILD_DEPMAP = get_dependency_map(depman, REPO.lilacinfos)
 
-  # packages we care about
-  care_pkgs: set[str] = set()
-  for pkg_to_build in pkgs_from_args:
-    care_pkgs.update(dep.pkgname for dep in DEPMAP[pkg_to_build])
-    care_pkgs.add(pkg_to_build)
-
-  proxy = config['nvchecker'].get('proxy')
-  _nvdata, unknown, rebuild = packages_need_update(
-    REPO, proxy, care_pkgs,
-  )
-  nvdata.update(_nvdata) # update to the global object
-
   failed_info = D.get('failed', {})
 
   U = set(REPO.lilacinfos)
@@ -539,7 +527,24 @@ def main_may_raise(
   need_rebuild_failed = failed_prev & changed
   # if pkgrel is updated, build a new release
   need_rebuild_pkgrel = {x for x in changed
-                        if pkgrel_changed(last_commit, 'HEAD', x)} - unknown
+                        if pkgrel_changed(last_commit, 'HEAD', x)}
+
+  # packages we care about
+  care_pkgs: set[str] = set()
+  for pkg_to_build in pkgs_from_args:
+    care_pkgs.update(dep.pkgname for dep in DEPMAP[pkg_to_build])
+    care_pkgs.add(pkg_to_build)
+    # make sure they have nvdata
+    care_pkgs.update(need_rebuild_failed)
+    care_pkgs.update(need_rebuild_pkgrel)
+
+  proxy = config['nvchecker'].get('proxy')
+  _nvdata, unknown, rebuild = packages_need_update(
+    REPO, proxy, care_pkgs,
+  )
+  nvdata.update(_nvdata) # update to the global object
+
+  need_rebuild_pkgrel -= unknown
 
   nv_changed = {}
   for p, vers in nvdata.items():
