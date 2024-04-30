@@ -52,7 +52,7 @@ def gen_pkgbuild(
   vars = {
     'name': name,
     'name_lower': name.lower(),
-    'version': datetime.datetime.utcnow().strftime('%Y%m%d'),
+    'version': datetime.datetime.now(tz=datetime.UTC).strftime('%Y%m%d'),
     'desc': desc[0].lower() + desc[1:],
     'link': link,
     'mwver_cur': mwver,
