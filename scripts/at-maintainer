@@ -6,7 +6,7 @@ import re
 
 from lilac2.lilacyaml import iter_pkgdir, load_lilac_yaml
 
-REPOPATH = pathlib.Path('/ldata/src/archgitrepo/archlinuxcn')
+REPOPATH = pathlib.Path('/ssddata/src/archgitrepo/archlinuxcn')
 
 PkgPattern = re.compile(r'[\w.+-]+')
 
