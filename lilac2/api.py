@@ -577,16 +577,24 @@ def download_official_pkgbuild(name: str) -> list[str]:
   url = 'https://archlinux.org/packages/search/json/?name=' + name
   logger.info('download PKGBUILD for %s.', name)
   info = s.get(url).json()
-  pkgbase = [r['pkgbase'] for r in info['results'] if r['repo'] != 'testing'][0]
+  pkg = [r for r in info['results'] if not r['repo'].endswith('testing')][0]
+  pkgbase = pkg['pkgbase']
+  epoch = pkg['epoch']
+  pkgver = pkg['pkgver']
+  pkgrel = pkg['pkgrel']
+  if epoch:
+    tag = f'{epoch}:{pkgver}-{pkgrel}'
+  else:
+    tag = f'{pkgver}-{pkgrel}'
 
-  tarball_url = 'https://gitlab.archlinux.org/archlinux/packaging/packages/{0}/-/archive/main/{0}-main.tar.bz2'.format(pkgbase)
+  tarball_url = 'https://gitlab.archlinux.org/archlinux/packaging/packages/{0}/-/archive/main/{0}-{1}.tar.bz2'.format(pkgbase, tag)
   logger.debug('downloading Arch package tarball from: %s', tarball_url)
   tarball = s.get(tarball_url).content
   path = f'{pkgbase}-main'
   files = []
 
   with tarfile.open(
-    name=f"{pkgbase}-main.tar.bz2", fileobj=io.BytesIO(tarball)
+    name=f"{pkgbase}-{tag}.tar.bz2", fileobj=io.BytesIO(tarball)
   ) as tarf:
     for tarinfo in tarf:
       dirname, filename = os.path.split(tarinfo.name)
