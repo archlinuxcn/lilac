@@ -583,14 +583,14 @@ def download_official_pkgbuild(name: str) -> list[str]:
   pkgver = pkg['pkgver']
   pkgrel = pkg['pkgrel']
   if epoch:
-    tag = f'{epoch}:{pkgver}-{pkgrel}'
+    tag = f'{epoch}-{pkgver}-{pkgrel}'
   else:
     tag = f'{pkgver}-{pkgrel}'
 
   tarball_url = 'https://gitlab.archlinux.org/archlinux/packaging/packages/{0}/-/archive/{1}/{0}-{1}.tar.bz2'.format(pkgbase, tag)
   logger.debug('downloading Arch package tarball from: %s', tarball_url)
   tarball = s.get(tarball_url).content
-  path = f'{pkgbase}-main'
+  path = f'{pkgbase}-{tag}'
   files = []
 
   with tarfile.open(
@@ -600,7 +600,7 @@ def download_official_pkgbuild(name: str) -> list[str]:
       dirname, filename = os.path.split(tarinfo.name)
       if dirname != path:
         continue
-      if filename in ('.SRCINFO', '.gitignore'):
+      if filename in ('.SRCINFO', '.gitignore', '.nvchecker.toml'):
         continue
       tarinfo.name = filename
       logger.debug('extract file %s.', filename)
