@@ -41,7 +41,7 @@ def start_cmd(
   cmd_s: Cmd = [
     'systemd-run', '--pipe', '--quiet', '--user',
     '--wait', '--remain-after-exit', '-u', name,
-    '-p', 'CPUWeight=100',
+    '-p', 'CPUWeight=100', '-p', 'KillMode=process',
   ]
 
   if cwd := kwargs.pop('cwd', None):
