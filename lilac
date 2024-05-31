@@ -269,8 +269,8 @@ def start_build(
             build_it, pkg, repo, buildsorter, built, failed)
           futures[fu] = pkg
 
-        if not futures:
-          # no task is running: we're done
+        if not pkgs and not futures:
+          # no more packages and no task is running: we're done
           break
 
         done, pending = futures_wait(futures, return_when=FIRST_COMPLETED)
