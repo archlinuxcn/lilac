@@ -140,7 +140,7 @@ def get_split_packages(pkg: Path) -> Set[Tuple[str, str]]:
   pkgfile = pkg / 'package.list'
   if pkgfile.exists():
     with open(pkgfile) as f:
-      packages.update((pkgbase, x) for x in f.read().split())
+      packages.update((pkgbase, l.rstrip()) for l in f if not l.startswith('#'))
       return packages
 
   found = False
