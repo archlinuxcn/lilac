@@ -142,7 +142,7 @@ def poll_rusage(name: str, deadline: float) -> tuple[RUsage, bool]:
   finally:
     if timedout:
       logger.debug('killing worker service')
-      subprocess.run(['systemctl', '--user', 'kill', '--signal=SIGINT', name])
+      subprocess.run(['systemctl', '--user', 'kill', '--kill-whom=main', '--signal=SIGINT', name])
     logger.debug('stopping worker service')
     # stop whatever may be running (even from a previous batch)
     subprocess.run(['systemctl', '--user', 'stop', '--quiet', name])
