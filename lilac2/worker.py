@@ -241,6 +241,12 @@ def main() -> None:
       # mod failed to load
       info = load_lilacinfo(Path('.'))
       handle_failure(e, repo, info, Path(input['logfile']))
+  except KeyboardInterrupt:
+    logger.info('KeyboardInterrupt received')
+    r = {
+      'status': 'failed',
+      'msg': 'KeyboardInterrupt',
+    }
   finally:
     # say goodbye to all our children
     kill_child_processes()

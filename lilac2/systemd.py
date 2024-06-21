@@ -42,6 +42,7 @@ def start_cmd(
     'systemd-run', '--pipe', '--quiet', '--user',
     '--wait', '--remain-after-exit', '-u', name,
     '-p', 'CPUWeight=100', '-p', 'KillMode=process',
+    '-p', 'KillSignal=INT',
   ]
 
   if cwd := kwargs.pop('cwd', None):
@@ -140,9 +141,6 @@ def poll_rusage(name: str, deadline: float) -> tuple[RUsage, bool]:
         nsec = int(v)
 
   finally:
-    if timedout:
-      logger.debug('killing worker service')
-      subprocess.run(['systemctl', '--user', 'kill', '--kill-whom=main', '--signal=SIGINT', name])
     logger.debug('stopping worker service')
     # stop whatever may be running (even from a previous batch)
     subprocess.run(['systemctl', '--user', 'stop', '--quiet', name])
