@@ -138,7 +138,11 @@ def poll_rusage(name: str, deadline: float) -> tuple[RUsage, bool]:
     for l in out.splitlines():
       k, v = l.split('=', 1)
       if k == 'CPUUsageNSec':
-        nsec = int(v)
+        try:
+          nsec = int(v)
+        except ValueError:
+          # [not set]
+          pass
 
   finally:
     logger.debug('stopping worker service')
