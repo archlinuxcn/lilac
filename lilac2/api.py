@@ -489,7 +489,7 @@ def _download_aur_pkgbuild(name: str) -> List[str]:
       if remain in SPECIAL_FILES + ('.AURINFO', '.SRCINFO', '.gitignore'):
         continue
       tarinfo.name = remain
-      tarf.extract(tarinfo)
+      tarf.extract(tarinfo, filter='tar')
       files.append(remain)
   return files
 
@@ -604,7 +604,7 @@ def download_official_pkgbuild(name: str) -> list[str]:
         continue
       tarinfo.name = filename
       logger.debug('extract file %s.', filename)
-      tarf.extract(tarinfo)
+      tarf.extract(tarinfo, filter='tar')
       files.append(filename)
 
   return files
