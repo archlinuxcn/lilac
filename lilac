@@ -12,7 +12,6 @@ from typing import List, Any, DefaultDict, Tuple
 from collections.abc import Set
 from pathlib import Path
 import graphlib
-import json
 import datetime
 import threading
 from concurrent.futures import (
@@ -159,7 +158,7 @@ def packages_with_depends(
           pkgbase = pkg,
           index = idx,
           status = 'pending',
-          build_reasons = json.dumps(rs),
+          build_reasons = rs,
         )
         s.add(p)
       db.build_updated(s)
@@ -465,7 +464,7 @@ def build_it(
         cputime = cputime,
         memory = memory,
         msg = msg,
-        build_reasons = json.dumps(rs),
+        build_reasons = rs,
       )
       s.add(p)
       db.mark_pkg_as(s, pkg, 'done')
