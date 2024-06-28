@@ -21,6 +21,19 @@ Docs
 * [lilac.py API](https://lilac.readthedocs.io/en/latest/api.html)
 * [Setup and run your own](https://lilac.readthedocs.io/en/latest/)
 
+Update
+----
+
+### 2024-06-28
+
+if database is in use, run the following SQL to update:
+
+```sql
+
+alter table lilac.pkglog add column maintainers jsonb;
+```
+
+
 License
 -------
 

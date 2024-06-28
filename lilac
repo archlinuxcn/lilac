@@ -455,6 +455,7 @@ def build_it(
       cputime = memory = None
     rs = [r.to_dict() for r in build_reasons[pkg]]
     with db.get_session() as s:
+      maintainers = repo.lilacinfos[pkg].maintainers
       p = db.PkgLog(
         pkgbase = pkg,
         nv_version = newver,
@@ -465,6 +466,7 @@ def build_it(
         memory = memory,
         msg = msg,
         build_reasons = rs,
+        maintainers = maintainers,
       )
       s.add(p)
       db.mark_pkg_as(s, pkg, 'done')
