@@ -577,7 +577,11 @@ def main_may_raise(
 
   if pkgs_from_args:
     for p in pkgs_from_args:
-      build_reasons[p].append(BuildReason.Cmdline())
+      if ':' in p:
+        p, runner = p.split(':', 1)
+      else:
+        runner = None
+      build_reasons[p].append(BuildReason.Cmdline(runner))
 
   for p in need_rebuild_pkgrel:
     build_reasons[p].append(BuildReason.UpdatedPkgrel())

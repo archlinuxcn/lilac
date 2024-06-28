@@ -1,6 +1,6 @@
 # type: ignore
 
-from typing import Union
+from typing import Union, Optional
 
 from .typing import OnBuildEntry
 
@@ -96,7 +96,15 @@ class FailedByDeps(BuildReason):
   def __init__(self, deps: tuple[str]) -> None:
     self.deps = deps
 
-class Cmdline(BuildReason): pass
+class Cmdline(BuildReason):
+  def __init__(self, runner: Optional[str]) -> None:
+    self.runner = runner
+
+  def _extra_info(self) -> str:
+    if self.runner:
+      return repr(self.runner)
+    else:
+      return ''
 
 class OnBuild(BuildReason):
   def __init__(self, update_on_build: list[OnBuildEntry]) -> None:
