@@ -532,9 +532,13 @@ def main_may_raise(
 
   # packages we care about
   care_pkgs: set[str] = set()
-  for pkg_to_build in pkgs_from_args:
-    care_pkgs.update(dep.pkgname for dep in DEPMAP[pkg_to_build])
-    care_pkgs.add(pkg_to_build)
+  for p in pkgs_from_args:
+    if ':' in p:
+      pkg = p.split(':', 1)[0]
+    else:
+      pkg = p
+    care_pkgs.update(dep.pkgname for dep in DEPMAP[pkg])
+    care_pkgs.add(pkg)
     # make sure they have nvdata
     care_pkgs.update(need_rebuild_failed)
     care_pkgs.update(need_rebuild_pkgrel)
