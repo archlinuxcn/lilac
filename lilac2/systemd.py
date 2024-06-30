@@ -49,17 +49,22 @@ def _check_availability() -> bool | dict[str, bool]:
     return False
 
   try:
-    ps: dict[str, Optional[int]] = {
-      'CPUUsageNSec': None,
-      'MemoryPeak': None,
-    }
-    _read_service_int_properties('lilac-check', ps)
+    while True:
+      ps: dict[str, Optional[int]] = {
+        'CPUUsageNSec': None,
+        'MemoryPeak': None,
+        'MainPID': None,
+      }
+      _read_service_int_properties('lilac-check', ps)
+      if ps['MainPID'] != 0:
+        time.sleep(0.01)
+        continue
 
-    ret = {}
-    for k, v in ps.items():
-      ret[k] = v is not None
+      ret = {}
+      for k, v in ps.items():
+        ret[k] = v is not None
 
-    return ret
+      return ret
   finally:
     subprocess.run(['systemctl', '--user', 'stop', '--quiet', 'lilac-check'])
 
