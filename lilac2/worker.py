@@ -195,7 +195,7 @@ def run_build_cmd(cmd: Cmd) -> None:
       st = os.stat(1)
       if st.st_size > 1024 ** 3: # larger than 1G
         kill_child_processes()
-        logger.error('\n\n输出过多，已击杀。')
+        logger.error('\n\nOutput is quite long and killed.')
     else:
       if code != 0:
         raise subprocess.CalledProcessError(code, cmd)
@@ -264,17 +264,17 @@ def handle_failure(
   if isinstance(e, pkgbuild.ConflictWithOfficialError):
     reason = ''
     if e.groups:
-      reason += f'软件包被加入了官方组：{e.groups}\n'
+      reason += f'Package is added to officail repository: {e.groups}\n'
     if e.packages:
-      reason += f'软件包将取代官方包：{e.packages}\n'
+      reason += f'Package will replace package in offical repository: {e.packages}\n'
     repo.send_error_report(
-      mod, subject='%s 与官方软件库冲突', msg = reason,
+      mod, subject='%s is conflicted with offical repository', msg = reason,
     )
 
   elif isinstance(e, pkgbuild.DowngradingError):
     repo.send_error_report(
-      mod, subject='%s 新打的包比仓库里的包旧',
-      msg=f'包 {e.pkgname} 打的版本为 {e.built_version}，但在仓库里已有较新版本 {e.repo_version}。\n',
+      mod, subject='%s is older than packaged version in this repository',
+      msg=f'Current packaging version of package {e.pkgname} is {e.built_version}, however, already newer version {e.repo_version} in repository\n',
     )
 
   else:

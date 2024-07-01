@@ -134,8 +134,8 @@ def packages_with_depends(
   for name, deps in nonexistent.items():
     repo.send_error_report(
       repo.lilacinfos[name],
-      subject='软件包 %s 的 lilac.yaml 指定了不存在的依赖',
-      msg = f'软件包 {name} 的 lilac.yaml 指定了 repo_depends，然而其直接或者间接的依赖项 {deps!r} 并不在本仓库中。'
+      subject='The dependency of package %s listed in lilac.yaml is missing',
+      msg = f'The package {name}\'s lilac.yaml mentions a dependency on {deps!r}, but this repository does not contain the direct or indirect dependency {deps!r} .'
     )
 
   sorter = graphlib.TopologicalSorter(dep_building_map)
@@ -344,7 +344,7 @@ def try_pick_some(
           logger.exception('check_update_on_build')
           mod = repo.lilacinfos[pkg]
           repo.send_error_report(
-            mod, subject='%s update_on_build 检查出错', exc=e,
+            mod, subject='%s update_on_build check faces error', exc=e,
           )
           continue
 
@@ -432,10 +432,10 @@ def build_it(
         # e.deps - faileddeps = failed previously
         failed[pkg] = tuple(e.deps)
         if e.deps == faileddeps:
-          msg = f'{pkg} 的依赖 {faileddeps} 打包失败了。'
+          msg = f'The packaging of {pkg} failed due to a failed dependency, {faileddeps}.'
         else:
-          msg = f'{pkg} 缺少依赖 {e.deps}，其中 {faileddeps} 本次打包失败了。'
-        repo.send_error_report(mod, subject='%s 出现依赖问题', msg = msg)
+          msg = f'{pkg} miss dependency {e.deps}, where {faileddeps} failed to package this time.'
+        repo.send_error_report(mod, subject='%s face dependency problems', msg = msg)
       else:
         repo.send_error_report(mod, exc=e, logfile=logfile)
 
@@ -688,8 +688,8 @@ def main(logdir: Path, pkgs_from_args: List[str]) -> None:
     except Exception:
       tb = traceback.format_exc()
       logger.exception('unexpected error')
-      subject = '运行时错误'
-      msg = '调用栈如下：\n\n' + tb
+      subject = 'Error while running'
+      msg = 'Call stack(s) are following:：\n\n' + tb
       REPO.report_error(subject, msg)
 
 def setup() -> Path:

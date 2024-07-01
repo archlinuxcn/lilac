@@ -44,7 +44,7 @@ class MailService:
 
     s = self.smtp_connect()
     if len(msg) > 5 * 1024 ** 2:
-      msg = msg[:1024 ** 2] + '\n\n日志过长，省略ing……\n\n' + \
+      msg = msg[:1024 ** 2] + '\n\nLog is quite long and omitted.\n\n' + \
           msg[-1024 ** 2:]
     mail = assemble_mail('[%s] %s' % (
       self.mailtag, subject), to, self.from_, text=msg)

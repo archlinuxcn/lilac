@@ -62,7 +62,7 @@ class Repo:
   @lru_cache()
   def maintainer_from_github(self, username: str) -> Optional[Maintainer]:
     if self.gh is None:
-      raise ValueError('未设置 github token，无法从 GitHub 取得用户 Email 地址')
+      raise ValueError('github token is not configured, can\'t get user\'s Email address from GitHub')
 
     userinfo = self.gh.get_user_info(username)
     if userinfo['email']:
@@ -86,15 +86,15 @@ class Repo:
         try:
           u = self.maintainer_from_github(m['github'])
         except Exception as e:
-          errors.append(f'从 GitHub 获取用户 Email 地址时出错：{e!r}')
+          errors.append(f'Face error while getting user\'s Email address from GitHub：{e!r}')
         else:
           if u is None:
-            errors.append(f'GitHub 用户 {m["github"]} 未公开 Email 地址')
+            errors.append(f'There is no public Email address belonging to GitHub user {m["github"]}')
           else:
             ret.append(u)
       else:
         logger.error('unsupported maintainer info: %r', m)
-        errors.append(f'不支持的格式：{m!r}')
+        errors.append(f'unsupported format：{m!r}')
         continue
 
     return ret, errors
@@ -192,8 +192,8 @@ class Repo:
       error_str = '\n'.join(errors)
       self.sendmail(
         git_maintainer,
-        subject = f'{pkgbase} 的 maintainers 信息有误',
-        msg = f"以下 maintainers 信息有误，请修正。\n\n{error_str}\n",
+        subject = f'{pkgbase}\'s maintainers info error',
+        msg = f"The folloing info of maintainers is error, please check and correct them.\n\n{error_str}\n",
       )
 
     if not ret and fallback_git:
@@ -265,21 +265,21 @@ class Repo:
     if exc is not None:
       tb = ''.join(traceback.format_exception(type(exc), exc, exc.__traceback__))
       if isinstance(exc, subprocess.CalledProcessError):
-        subject_real = subject or '在打包软件包 %s 时发生错误'
-        msgs.append('命令执行失败！\n\n命令 %r 返回了错误号 %d。' % (
+        subject_real = subject or 'Face error while packaging %s'
+        msgs.append('CMD face error！\n\ncommand %r return singal %d。' % (
           exc.cmd, exc.returncode))
         if exc.output:
-          msgs.append('命令的输出如下：\n\n%s' % exc.output)
-        msgs.append('调用栈如下：\n\n' + tb)
+          msgs.append('Outpur of command：\n\n%s' % exc.output)
+        msgs.append('Call stack(s) are following：\n\n' + tb)
       elif isinstance(exc, api.AurDownloadError):
-        subject_real = subject or '在获取AUR包 %s 时发生错误'
-        msgs.append('获取AUR包失败！\n\n')
-        msgs.append('调用栈如下：\n\n' + tb)
+        subject_real = subject or 'Error while pulling package %s from AUR'
+        msgs.append('Pulling AUR package failed\n\n')
+        msgs.append('Call stack(s) are following:\n\n' + tb)
       elif isinstance(exc, TimeoutError):
-        subject_real = subject or '打包软件包 %s 超时'
+        subject_real = subject or 'Packaging pkg %s timeout'
       else:
-        subject_real = subject or '在打包软件包 %s 时发生未知错误'
-        msgs.append('发生未知错误！调用栈如下：\n\n' + tb)
+        subject_real = subject or 'Face unknown error while packaging %s'
+        msgs.append('Unknown error occurs, call stack(s) are following：\n\n' + tb)
     else:
       if subject is None:
         raise ValueError('subject should be given but not')
@@ -295,7 +295,7 @@ class Repo:
         with logfile.open(errors='replace') as f:
           build_output = f.read()
         if build_output:
-          log_header = '打包日志：'
+          log_header = 'Packaging Log：'
           with suppress(ValueError, KeyError): # invalid template or wrong key
             if self.logurl_template and len(logfile.parts) >= 2:
               # assume the directory name is the time stamp for now.
@@ -338,7 +338,7 @@ class Repo:
       if not isinstance(exc, Exception):
         raise
       self.send_error_report(name, exc=exc,
-                             subject='为软件包 %s 载入 lilac.yaml 时失败')
+                             subject='Loading lilac.py for package %s face error')
       build_logger_old.error('%s failed', name)
       build_logger.exception('lilac.yaml error', pkgbase = name, exc_info=exc_info)
 

@@ -10,13 +10,14 @@ from .myutils import safe_overwrite
 class Serializer(metaclass=abc.ABCMeta):
   def __init__(self, fname, readonly=False, default=None):
     '''
-    读取文件fname。readonly指定析构时不回存数据
-    如果数据已加锁，将会抛出SerializerError异常
-    default 指出如果文件不存在或为空时的数据
+    Reading file fname.
+    readonly specifies that the data will not be stored back when it is destructed
+    If the data is locked, a SerializerError exception will be occur
+    default indicates the data if the file does not exist or is empty
 
-    注意：
-      要正确地写回数据，需要保证此对象在需要写回时依旧存在，或者使用with语句
-      将自身存入其data属性中不可行，原因未知
+    Notice:
+      To write back data correctly, you need to ensure that the object still exists when it needs to be written back or use the `with` statement
+      Storing itself into its data attribute is not feasible considering unknown reasons
     '''
     self.fname = os.path.abspath(fname)
     if readonly:
@@ -38,7 +39,7 @@ class Serializer(metaclass=abc.ABCMeta):
             break
           else:
             self.lock = None
-            raise SerializerError('数据已加锁')
+            raise SerializerError('Data is locked')
         with open(self.lock, 'w') as f:
           f.write(str(os.getpid()))
 
@@ -53,7 +54,7 @@ class Serializer(metaclass=abc.ABCMeta):
         raise
 
   def __del__(self):
-    '''如果需要，删除 lock，保存文件'''
+    '''If it\'s needed, delete lock，save file(s)'''
     if self.lock:
       self.save()
       os.unlink(self.lock)
