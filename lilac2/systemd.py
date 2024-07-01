@@ -1,6 +1,6 @@
 import os
 import subprocess
-from typing import Generator, Any
+from typing import Generator, Any, Optional
 import select
 import time
 import logging
@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 _available = None
 _check_lock = threading.Lock()
 
-def available() -> bool:
+def available() -> bool | dict[str, bool]:
   global _available
 
   with _check_lock:
@@ -22,14 +22,66 @@ def available() -> bool:
       logger.debug('systemd availability: %s', _available)
   return _available
 
-def _check_availability() -> bool:
+def _cgroup_memory_usage(cgroup: str) -> int:
+  mem_file = f'/sys/fs/cgroup{cgroup}/memory.peak'
+  with open(mem_file) as f:
+    return int(f.read().rstrip())
+
+def _cgroup_cpu_usage(cgroup: str) -> int:
+  cpu_file = f'/sys/fs/cgroup{cgroup}/cpu.stat'
+  with open(cpu_file) as f:
+    for l in f:
+      if l.startswith('usage_usec '):
+        return int(l.split()[1]) * 1000
+  return 0
+
+def _check_availability() -> bool | dict[str, bool]:
   if 'DBUS_SESSION_BUS_ADDRESS' not in os.environ:
     dbus = f'/run/user/{os.getuid()}/bus'
     if not os.path.exists(dbus):
       return False
     os.environ['DBUS_SESSION_BUS_ADDRESS'] = f'unix:path={dbus}'
-  p = subprocess.run(['systemd-run', '--quiet', '--user', '-u', 'lilac-check', 'true'])
-  return p.returncode == 0
+  p = subprocess.run([
+    'systemd-run', '--quiet', '--user',
+    '--remain-after-exit', '-u', 'lilac-check', 'true',
+  ])
+  if p.returncode != 0:
+    return False
+
+  try:
+    while True:
+      ps: dict[str, Optional[int]] = {
+        'CPUUsageNSec': None,
+        'MemoryPeak': None,
+        'MainPID': None,
+      }
+      _read_service_int_properties('lilac-check', ps)
+      if ps['MainPID'] != 0:
+        time.sleep(0.01)
+        continue
+
+      ret = {}
+      for k, v in ps.items():
+        ret[k] = v is not None
+
+      return ret
+  finally:
+    subprocess.run(['systemctl', '--user', 'stop', '--quiet', 'lilac-check'])
+
+def _read_service_int_properties(name: str, properties: dict[str, Optional[int]]) -> None:
+  cmd = [
+    'systemctl', '--user', 'show', f'{name}.service',
+  ] + [f'--property={k}' for k in properties]
+
+  out = subprocess.check_output(cmd, text=True)
+  for l in out.splitlines():
+    k, v = l.split('=', 1)
+    if k in properties:
+      try:
+        properties[k] = int(v)
+      except ValueError:
+        # [not set]
+        pass
 
 def start_cmd(
   name: str, cmd: Cmd,
@@ -41,7 +93,8 @@ def start_cmd(
   cmd_s: Cmd = [
     'systemd-run', '--pipe', '--quiet', '--user',
     '--wait', '--remain-after-exit', '-u', name,
-    '-p', 'CPUWeight=100',
+    '-p', 'CPUWeight=100', '-p', 'KillMode=process',
+    '-p', 'KillSignal=INT',
   ]
 
   if cwd := kwargs.pop('cwd', None):
@@ -79,6 +132,7 @@ def _poll_cmd(pid: int) -> Generator[None, None, None]:
   except OSError as e:
     if e.errno == 22:
       return
+    raise
 
   poll = select.poll()
   poll.register(pidfd, select.POLLIN)
@@ -98,6 +152,7 @@ def poll_rusage(name: str, deadline: float) -> tuple[RUsage, bool]:
   done_state = ['exited', 'failed']
 
   try:
+    cgroup = ''
     time_start = time.monotonic()
     while True:
       pid, cgroup, state = _get_service_info(name)
@@ -114,33 +169,32 @@ def poll_rusage(name: str, deadline: float) -> tuple[RUsage, bool]:
       logger.warning('%s.service already finished: %s', name, state)
       return RUsage(0, 0), False
 
-    mem_file = f'/sys/fs/cgroup{cgroup}/memory.peak'
-
+    nsec = 0
     mem_max = 0
+    availability = available()
+    assert isinstance(availability, dict)
     for _ in _poll_cmd(pid):
-      with open(mem_file) as f:
-        mem_cur = int(f.read().rstrip())
-        mem_max = max(mem_cur, mem_max)
+      if not availability['CPUUsageNSec']:
+        nsec = _cgroup_cpu_usage(cgroup)
+      if not availability['MemoryPeak']:
+        mem_max = _cgroup_memory_usage(cgroup)
       if time.time() > deadline:
         timedout = True
         break
 
     # systemd will remove the cgroup as soon as the process exits
     # instead of racing with systemd, we just ask it for the data
-    nsec = 0
-    out = subprocess.check_output([
-      'systemctl', '--user', 'show', f'{name}.service',
-      '--property=CPUUsageNSec',
-    ], text=True)
-    for l in out.splitlines():
-      k, v = l.split('=', 1)
-      if k == 'CPUUsageNSec':
-        nsec = int(v)
+    ps: dict[str, Optional[int]] = {
+      'CPUUsageNSec': None,
+      'MemoryPeak': None,
+    }
+    _read_service_int_properties(name, ps)
+    if n := ps['CPUUsageNSec']:
+      nsec = n
+    if n := ps['MemoryPeak']:
+      mem_max = n
 
   finally:
-    if timedout:
-      logger.debug('killing worker service')
-      subprocess.run(['systemctl', '--user', 'kill', '--signal=SIGKILL', name])
     logger.debug('stopping worker service')
     # stop whatever may be running (even from a previous batch)
     subprocess.run(['systemctl', '--user', 'stop', '--quiet', name])

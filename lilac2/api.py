@@ -42,6 +42,9 @@ s = requests.Session()
 s.headers['User-Agent'] = UserAgent
 
 VCS_SUFFIXES = ('-git', '-hg', '-svn', '-bzr')
+AUR_BLACKLIST = {
+  'dnrops': "creates packages that install packages into the packager's system",
+}
 
 def _unquote_item(s: str) -> Optional[str]:
   m = re.search(r'''[ \t'"]*([^ '"]+)[ \t'"]*''', s)
@@ -190,19 +193,23 @@ def run_cmd(cmd: Cmd, **kwargs) -> str:
   else:
     return _run_cmd(cmd, **kwargs)
 
-def get_pkgver_and_pkgrel(
-) -> Tuple[Optional[str], Optional[PkgRel]]:
-  pkgrel = None
+def get_pkgver_and_pkgrel() -> Tuple[Optional[str], Optional[PkgRel]]:
+  pkgrel: Optional[PkgRel] = None
   pkgver = None
-  with suppress(FileNotFoundError), open('PKGBUILD') as f:
-    for l in f:
-      if l.startswith('pkgrel='):
-        pkgrel = l.rstrip().split(
-          '=', 1)[-1].strip('\'"')
-        with suppress(ValueError, TypeError):
-          pkgrel = int(pkgrel) # type: ignore
-      elif l.startswith('pkgver='):
-        pkgver = l.rstrip().split('=', 1)[-1].strip('\'"')
+  cmd = 'source PKGBUILD && declare -p pkgver pkgrel || :'
+  output = run_protected(['/bin/bash', '-c', cmd], silent = True)
+  pattern = re.compile('declare -- pkg(ver|rel)="([^"]+)"')
+  for line in output.splitlines():
+    m = pattern.fullmatch(line)
+    if m:
+      value = m.group(2)
+      if m.group(1) == "rel":
+        try:
+          pkgrel = int(value)
+        except (ValueError, TypeError):
+          pkgrel = value
+      else:
+        pkgver = value
 
   return pkgver, pkgrel
 
@@ -236,7 +243,7 @@ def update_pkgver_and_pkgrel(
 def update_pkgrel(
   rel: Optional[PkgRel] = None,
 ) -> None:
-  with open('PKGBUILD') as f:
+  with open('PKGBUILD', errors='replace') as f:
     pkgbuild = f.read()
 
   def replacer(m):
@@ -482,7 +489,7 @@ def _download_aur_pkgbuild(name: str) -> List[str]:
       if remain in SPECIAL_FILES + ('.AURINFO', '.SRCINFO', '.gitignore'):
         continue
       tarinfo.name = remain
-      tarf.extract(tarinfo)
+      tarf.extract(tarinfo, filter='tar')
       files.append(remain)
   return files
 
@@ -511,13 +518,13 @@ def aur_pre_build(
   if name is None:
     name = os.path.basename(os.getcwd())
 
-  if maintainers:
-    maintainer, last_packager = _get_aur_packager(name)
-    if last_packager == 'lilac':
-      who = maintainer
-    else:
-      who = last_packager
+  maintainer, last_packager = _get_aur_packager(name)
+  if last_packager == 'lilac':
+    who = maintainer
+  else:
+    who = last_packager
 
+  if maintainers:
     error = False
     if isinstance(maintainers, str):
       error = who != maintainers
@@ -525,6 +532,9 @@ def aur_pre_build(
       error = who not in maintainers
     if error:
       raise Exception('unexpected AUR package maintainer / packager', who)
+
+  if who and (msg := AUR_BLACKLIST.get(who)):
+    raise Exception('blacklisted AUR package maintainer / packager', who, msg)
 
   pkgver, pkgrel = get_pkgver_and_pkgrel()
   _g.aur_pre_files = clean_directory()
@@ -563,35 +573,38 @@ def aur_post_build() -> None:
     git_commit()
   del _g.aur_pre_files, _g.aur_building_files
 
-def download_official_pkgbuild(name: str) -> List[str]:
+def download_official_pkgbuild(name: str) -> list[str]:
   url = 'https://archlinux.org/packages/search/json/?name=' + name
   logger.info('download PKGBUILD for %s.', name)
   info = s.get(url).json()
-  r = [r for r in info['results'] if r['repo'] != 'testing'][0]
-  repo = r['repo']
-  arch = r['arch']
-  if repo in ('core', 'extra'):
-    gitrepo = 'packages'
+  pkg = [r for r in info['results'] if not r['repo'].endswith('testing')][0]
+  pkgbase = pkg['pkgbase']
+  epoch = pkg['epoch']
+  pkgver = pkg['pkgver']
+  pkgrel = pkg['pkgrel']
+  if epoch:
+    tag = f'{epoch}-{pkgver}-{pkgrel}'
   else:
-    gitrepo = 'community'
-  pkgbase = [r['pkgbase'] for r in info['results'] if r['repo'] != 'testing'][0]
+    tag = f'{pkgver}-{pkgrel}'
 
-  tarball_url = 'https://github.com/archlinux/svntogit-%s/archive/refs/heads/packages/%s.tar.gz' % (gitrepo, pkgbase)
+  tarball_url = 'https://gitlab.archlinux.org/archlinux/packaging/packages/{0}/-/archive/{1}/{0}-{1}.tar.bz2'.format(pkgbase, tag)
   logger.debug('downloading Arch package tarball from: %s', tarball_url)
   tarball = s.get(tarball_url).content
-  path = f'svntogit-{gitrepo}-packages-{pkgbase}/repos/{repo}-{arch}'
+  path = f'{pkgbase}-{tag}'
   files = []
 
   with tarfile.open(
-    name=f"{pkgbase}.tar.gz", mode="r:gz", fileobj=io.BytesIO(tarball)
+    name=f"{pkgbase}-{tag}.tar.bz2", fileobj=io.BytesIO(tarball)
   ) as tarf:
     for tarinfo in tarf:
       dirname, filename = os.path.split(tarinfo.name)
       if dirname != path:
         continue
+      if filename in ('.SRCINFO', '.gitignore', '.nvchecker.toml'):
+        continue
       tarinfo.name = filename
       logger.debug('extract file %s.', filename)
-      tarf.extract(tarinfo)
+      tarf.extract(tarinfo, filter='tar')
       files.append(filename)
 
   return files

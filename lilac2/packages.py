@@ -15,25 +15,44 @@ from . import lilacyaml
 
 def get_dependency_map(
   depman: DependencyManager, lilacinfos: LilacInfos,
-) -> Dict[str, Set[Dependency]]:
+) -> Tuple[Dict[str, Set[Dependency]], Dict[str, Set[Dependency]]]:
   '''compute ordered, complete dependency relations between pkgbases (the directory names)
 
   This function does not make use of pkgname because they maybe the same for
   different pkgdir. Those are carried by Dependency and used elsewhere.
+
+  The first returned dict has the complete set of dependencies of the given pkgbase, including
+  build-time dependencies of other dependencies. The second dict has only the dependnecies
+  required to be installed in the build chroot. For example, if A depends on B, and B makedepends
+  on C, then the first dict has "A: {B, C}" while the second dict has only "A: {B}".
   '''
   map: DefaultDict[str, Set[Dependency]] = defaultdict(set)
   pkgdir_map: DefaultDict[str, Set[str]] = defaultdict(set)
   rmap: DefaultDict[str, Set[str]] = defaultdict(set)
 
-  for pkgbase, info in lilacinfos.items():
-    depends = info.repo_depends
+  # same as above maps, but contain only normal dependencies, not makedepends or checkdepends
+  norm_map: DefaultDict[str, Set[Dependency]] = defaultdict(set)
+  norm_pkgdir_map: DefaultDict[str, Set[str]] = defaultdict(set)
+  norm_rmap: DefaultDict[str, Set[str]] = defaultdict(set)
 
-    ds = [depman.get(d) for d in depends]
-    if ds:
-      for d in ds:
-        pkgdir_map[pkgbase].add(d.pkgdir.name)
-        rmap[d.pkgdir.name].add(pkgbase)
-      map[pkgbase].update(ds)
+  for pkgbase, info in lilacinfos.items():
+    for d in info.repo_depends:
+      d = depman.get(d)
+
+      pkgdir_map[pkgbase].add(d.pkgdir.name)
+      rmap[d.pkgdir.name].add(pkgbase)
+      map[pkgbase].add(d)
+
+      norm_pkgdir_map[pkgbase].add(d.pkgdir.name)
+      norm_rmap[d.pkgdir.name].add(pkgbase)
+      norm_map[pkgbase].add(d)
+
+    for d in info.repo_makedepends:
+      d = depman.get(d)
+
+      pkgdir_map[pkgbase].add(d.pkgdir.name)
+      rmap[d.pkgdir.name].add(pkgbase)
+      map[pkgbase].add(d)
 
   dep_order = graphlib.TopologicalSorter(pkgdir_map).static_order()
   for pkgbase in dep_order:
@@ -42,8 +61,22 @@ def get_dependency_map(
       dependers = rmap[pkgbase]
       for dd in dependers:
         map[dd].update(deps)
+    if pkgbase in norm_rmap:
+      deps = norm_map[pkgbase]
+      dependers = norm_rmap[pkgbase]
+      for dd in dependers:
+        norm_map[dd].update(deps)
 
-  return map
+  build_dep_map: DefaultDict[str, Set[Dependency]] = defaultdict(set)
+  for pkgbase, info in lilacinfos.items():
+    build_deps = build_dep_map[pkgbase]
+    build_deps.update(norm_map[pkgbase])
+    for d in info.repo_makedepends:
+      d = depman.get(d)
+      build_deps.add(d)
+      build_deps.update(norm_map[d.pkgdir.name])
+
+  return map, build_dep_map
 
 _DependencyTuple = namedtuple(
   '_DependencyTuple', 'pkgdir pkgname')
@@ -70,8 +103,7 @@ class Dependency(_DependencyTuple):
     elif not pkgs:
       return None
     else:
-      ret = sorted(
-        pkgs, reverse=True, key=lambda x: x.stat().st_mtime)[0]
+      ret = max(pkgs, key=lambda x: x.stat().st_mtime)
       return ret
 
 class DependencyManager:
@@ -108,7 +140,7 @@ def get_split_packages(pkg: Path) -> Set[Tuple[str, str]]:
   pkgfile = pkg / 'package.list'
   if pkgfile.exists():
     with open(pkgfile) as f:
-      packages.update((pkgbase, x) for x in f.read().split())
+      packages.update((pkgbase, l.rstrip()) for l in f if not l.startswith('#'))
       return packages
 
   found = False

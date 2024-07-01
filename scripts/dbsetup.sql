@@ -14,7 +14,8 @@ create table pkglog (
   cputime int,
   memory bigint,
   msg text,
-  build_reasons jsonb
+  build_reasons jsonb,
+  maintainers jsonb
 );
 
 create index pkglog_ts_idx on pkglog (ts);

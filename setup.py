@@ -7,7 +7,7 @@ setup(
   description = 'The build bot for archlinuxcn',
   author = 'lilydjwg',
   author_email = 'lilydjwg@gmail.com',
-  python_requires = '>=3.7.0',
+  python_requires = '>=3.10.0',
   url = 'https://github.com/archlinuxcn/lilac',
   zip_safe = False,
   packages = find_packages(exclude=('tests',)) + ['nvchecker_source'],
@@ -25,7 +25,8 @@ setup(
   classifiers = [
     'Programming Language :: Python',
     'Programming Language :: Python :: 3',
-    'Programming Language :: Python :: 3.9',
     'Programming Language :: Python :: 3.10',
+    'Programming Language :: Python :: 3.11',
+    'Programming Language :: Python :: 3.12',
   ],
 )

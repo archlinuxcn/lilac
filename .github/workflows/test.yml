@@ -1,0 +1,38 @@
+name: run tests
+
+on: [push, pull_request]
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+
+    # Use the base-devel image of Arch Linux for building pyalpm
+    container: archlinux:base-devel
+
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version:
+        - "3.11"
+        - "3.12"
+        exclude: []
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Install Python deps
+      run: python -m pip install -U pytest pytest-asyncio nvchecker requests lxml PyYAML pyalpm structlog python_prctl
+
+    - name: workaround pycurl wheel
+      run: |
+        sudo mkdir -p /etc/pki/tls/certs
+        sudo ln -s /etc/ssl/certs/ca-certificates.crt /etc/pki/tls/certs/ca-bundle.crt
+
+    - name: Run pytest
+      run: pytest

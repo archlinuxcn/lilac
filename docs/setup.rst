@@ -10,7 +10,7 @@ It's recommended to run lilac on full-fledged Arch Linux (or derived) system, no
 
 An easy way to install lilac and its dependencies is to install the ``lilac-git`` package from the `[archlinuxcn] repository <https://wiki.archlinux.org/title/Unofficial_user_repositories#archlinuxcn>`_ or AUR.
 
-As a workaround, instead of ``devtools``, ``devtools-archlinuxcn`` from ``[archlinuxcn]`` should be used until `FS#64265 <https://bugs.archlinux.org/task/64265>`_ and `FS#64698 <https://gitlab.archlinux.org/archlinux/devtools/-/merge_requests/90>`_ are resolved.
+As a workaround, instead of ``devtools``, ``devtools-archlinuxcn`` from ``[archlinuxcn]`` should be used until `this --keep-unit issue <https://gitlab.archlinux.org/archlinux/devtools/-/merge_requests/197>`_ is resolved.
 
 .. code-block:: sh
 
@@ -183,7 +183,7 @@ Setup the database tables (run as lilac):
 
 Edit ``/etc/sudoers`` like::
 
-  Defaults env_keep += "PACKAGER MAKEFLAGS GNUPGHOME BUILDTOOL"
+  Defaults env_keep += "PACKAGER MAKEFLAGS GNUPGHOME BUILDTOOL LOGDEST"
 
   %pkg ALL= NOPASSWD: /usr/bin/build-cleaner, /usr/bin/extra-x86_64-build, /usr/bin/multilib-build
 
