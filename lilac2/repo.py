@@ -333,14 +333,14 @@ class Repo:
     self.lilacinfos, errors = lilacyaml.load_managed_lilacinfos(self.repodir)
     failed: dict[str, tuple[str, ...]] = {p: () for p in errors}
     for name, exc_info in errors.items():
-      logger.error('error while loading lilac.py for %s', name, exc_info=exc_info)
+      logger.error('error while loading lilac.yaml for %s', name, exc_info=exc_info)
       exc = exc_info[1]
       if not isinstance(exc, Exception):
         raise
       self.send_error_report(name, exc=exc,
                              subject=_('Loading lilac.py for package %s face error'))
       build_logger_old.error('%s failed', name)
-      build_logger.exception('lilac.py error', pkgbase = name, exc_info=exc_info)
+      build_logger.exception('lilac.yaml error', pkgbase = name, exc_info=exc_info)
 
     return failed
 

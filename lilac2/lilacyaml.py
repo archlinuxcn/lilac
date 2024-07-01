@@ -51,6 +51,13 @@ def load_lilac_yaml(dir: Path) -> dict[str, Any]:
         depends[i] = next(iter(entry.items()))
       else:
         depends[i] = entry, entry
+  makedepends = conf.get('repo_makedepends')
+  if makedepends:
+    for i, entry in enumerate(makedepends):
+      if isinstance(entry, dict):
+        makedepends[i] = next(iter(entry.items()))
+      else:
+        makedepends[i] = entry, entry
 
   for func in FUNCTIONS:
     name = conf.get(func)
@@ -92,6 +99,7 @@ def load_lilacinfo(dir: Path) -> LilacInfo:
     update_on_build = [OnBuildEntry(**x) for x in yamlconf.get('update_on_build', [])],
     throttle_info = throttle_info,
     repo_depends = yamlconf.get('repo_depends', []),
+    repo_makedepends = yamlconf.get('repo_makedepends', []),
     time_limit_hours = yamlconf.get('time_limit_hours', 1),
     staging = yamlconf.get('staging', False),
     managed = yamlconf.get('managed', True),
@@ -136,7 +144,8 @@ def parse_update_on(
           entry.setdefault(k, v)
 
     # fill our dbpath if not provided
-    if entry.get('source') == 'alpm':
+    source = entry.get('source')
+    if source == 'alpm' or source == 'alpmfiles':
       entry.setdefault('dbpath', str(PACMAN_DB_DIR))
 
     ret_update.append(entry)

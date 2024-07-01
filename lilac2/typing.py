@@ -35,6 +35,7 @@ class LilacInfo:
   update_on_build: list[OnBuildEntry]
   throttle_info: dict[int, datetime.timedelta]
   repo_depends: list[tuple[str, str]]
+  repo_makedepends: list[tuple[str, str]]
   time_limit_hours: float
   staging: bool
   managed: bool

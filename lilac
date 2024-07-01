@@ -12,7 +12,6 @@ from typing import List, Any, DefaultDict, Tuple
 from collections.abc import Set
 from pathlib import Path
 import graphlib
-import json
 import datetime
 import threading
 from concurrent.futures import (
@@ -70,6 +69,7 @@ MYNAME = config['lilac']['name']
 
 nvdata: dict[str, NvResults] = {}
 DEPMAP: dict[str, set[Dependency]] = {}
+BUILD_DEPMAP: dict[str, set[Dependency]] = {}
 build_reasons: DefaultDict[str, list[BuildReason]] = defaultdict(list)
 
 logger = logging.getLogger(__name__)
@@ -163,7 +163,7 @@ def packages_with_depends(
           pkgbase = pkg,
           index = idx,
           status = 'pending',
-          build_reasons = json.dumps(rs),
+          build_reasons = rs,
         )
         s.add(p)
       db.build_updated(s)
@@ -263,12 +263,18 @@ def start_build(
           limit = max_concurrency - len(futures),
         )
         for pkg in pkgs:
+          if pkg not in nvdata:
+            # this can happen when cmdline packages are specified and
+            # a package is pulled in by OnBuild
+            logger.warning('%s not in nvdata, skipping', pkg)
+            buildsorter.done(pkg)
+            continue
           fu = executor.submit(
             build_it, pkg, repo, buildsorter, built, failed)
           futures[fu] = pkg
 
-        if not futures:
-          # no task is running: we're done
+        if not pkgs and not futures:
+          # no more packages and no task is running: we're done
           break
 
         done, pending = futures_wait(futures, return_when=FIRST_COMPLETED)
@@ -312,7 +318,7 @@ def try_pick_some(
 
     if rs := build_reasons.get(pkg):
       if len(rs) == 1 and isinstance(rs[0], BuildReason.FailedByDeps):
-        ds = DEPMAP[pkg]
+        ds = BUILD_DEPMAP[pkg]
         if not all(d.resolve() for d in ds):
           buildsorter.done(pkg)
           if db.USE:
@@ -370,7 +376,7 @@ def build_it(
     update_info = nvdata[pkg],
     bindmounts = repo.bindmounts,
     tmpfs = repo.tmpfs,
-    depends = DEPMAP.get(pkg, ()),
+    depends = BUILD_DEPMAP.get(pkg, ()),
     repo = REPO,
     myname = MYNAME,
     destdir = DESTDIR,
@@ -454,6 +460,7 @@ def build_it(
       cputime = memory = None
     rs = [r.to_dict() for r in build_reasons[pkg]]
     with db.get_session() as s:
+      maintainers = repo.lilacinfos[pkg].maintainers
       p = db.PkgLog(
         pkgbase = pkg,
         nv_version = newver,
@@ -463,7 +470,8 @@ def build_it(
         cputime = cputime,
         memory = memory,
         msg = msg,
-        build_reasons = json.dumps(rs),
+        build_reasons = rs,
+        maintainers = maintainers,
       )
       s.add(p)
       db.mark_pkg_as(s, pkg, 'done')
@@ -489,12 +497,13 @@ def setup_thread():
 def main_may_raise(
   D: dict[str, Any], pkgs_from_args: List[str], logdir: Path,
 ) -> None:
-  global DEPMAP
+  global DEPMAP, BUILD_DEPMAP
 
   if get_git_branch() not in ['master', 'main']:
     raise Exception('repo not on master or main, aborting.')
 
-  pkgbuild.update_data(PACMAN_DB_DIR)
+  pacman_conf = config['misc'].get('pacman_conf')
+  pkgbuild.update_data(PACMAN_DB_DIR, pacman_conf)
 
   if dburl := config['lilac'].get('dburl'):
     import sqlalchemy
@@ -510,13 +519,34 @@ def main_may_raise(
   failed = REPO.load_managed_lilac_and_report()
 
   depman = DependencyManager(REPO.repodir)
-  DEPMAP = get_dependency_map(depman, REPO.lilacinfos)
+  DEPMAP, BUILD_DEPMAP = get_dependency_map(depman, REPO.lilacinfos)
+
+  failed_info = D.get('failed', {})
+
+  U = set(REPO.lilacinfos)
+  last_commit = D.get('last_commit', EMPTY_COMMIT)
+  changed = get_changed_packages(last_commit, 'HEAD') & U
+
+  failed_prev = set(failed_info.keys())
+  # no update from upstream, but build instructions have changed; rebuild
+  # failed ones
+  need_rebuild_failed = failed_prev & changed
+  # if pkgrel is updated, build a new release
+  need_rebuild_pkgrel = {x for x in changed
+                        if pkgrel_changed(last_commit, 'HEAD', x)}
 
   # packages we care about
   care_pkgs: set[str] = set()
-  for pkg_to_build in pkgs_from_args:
-    care_pkgs.update(dep.pkgname for dep in DEPMAP[pkg_to_build])
-    care_pkgs.add(pkg_to_build)
+  for p in pkgs_from_args:
+    if ':' in p:
+      pkg = p.split(':', 1)[0]
+    else:
+      pkg = p
+    care_pkgs.update(dep.pkgname for dep in DEPMAP[pkg])
+    care_pkgs.add(pkg)
+    # make sure they have nvdata
+    care_pkgs.update(need_rebuild_failed)
+    care_pkgs.update(need_rebuild_pkgrel)
 
   proxy = config['nvchecker'].get('proxy')
   _nvdata, unknown, rebuild = packages_need_update(
@@ -524,20 +554,7 @@ def main_may_raise(
   )
   nvdata.update(_nvdata) # update to the global object
 
-  failed_info = D.get('failed', {})
-
-  if not pkgs_from_args:
-    U = set(REPO.lilacinfos)
-    last_commit = D.get('last_commit', EMPTY_COMMIT)
-    changed = get_changed_packages(last_commit, 'HEAD') & U
-
-    failed_prev = set(failed_info.keys())
-    # no update from upstream, but build instructions have changed; rebuild
-    # failed ones
-    need_rebuild_failed = failed_prev & changed
-    # if pkgrel is updated, build a new release
-    need_rebuild_pkgrel = {x for x in changed
-                          if pkgrel_changed(last_commit, 'HEAD', x)} - unknown
+  need_rebuild_pkgrel -= unknown
 
   nv_changed = {}
   for p, vers in nvdata.items():
@@ -569,14 +586,19 @@ def main_may_raise(
 
   if pkgs_from_args:
     for p in pkgs_from_args:
-      build_reasons[p].append(BuildReason.Cmdline())
-  else:
-    for p in need_rebuild_pkgrel:
-      build_reasons[p].append(BuildReason.UpdatedPkgrel())
+      if ':' in p:
+        p, runner = p.split(':', 1)
+      else:
+        runner = None
+      build_reasons[p].append(BuildReason.Cmdline(runner))
 
-    for p in need_rebuild_failed:
-      build_reasons[p].append(BuildReason.UpdatedFailed())
+  for p in need_rebuild_pkgrel:
+    build_reasons[p].append(BuildReason.UpdatedPkgrel())
 
+  for p in need_rebuild_failed:
+    build_reasons[p].append(BuildReason.UpdatedFailed())
+
+  if not pkgs_from_args:
     for p, i in failed_info.items():
       # p might have been removed
       if p in REPO.lilacinfos and (deps := i['missing']):
@@ -587,15 +609,17 @@ def main_may_raise(
     for i in info.update_on_build:
       if_this_then_those[i.pkgbase].add(p)
   more_pkgs = set()
-  count = 0
   for p in build_reasons:
     if pkgs := if_this_then_those.get(p):
       more_pkgs.update(pkgs)
-  while len(more_pkgs) != count: # has new
-    count = len(more_pkgs)
+  while True:
+    add_to_more_pkgs = set()
     for p in more_pkgs:
       if pkgs := if_this_then_those.get(p):
-        more_pkgs.update(pkgs)
+        add_to_more_pkgs.update(pkgs)
+    if add_to_more_pkgs.issubset(more_pkgs):
+      break
+    more_pkgs.update(add_to_more_pkgs)
   for p in more_pkgs:
     update_on_build = REPO.lilacinfos[p].update_on_build
     build_reasons[p].append(BuildReason.OnBuild(update_on_build))
@@ -626,10 +650,9 @@ def main_may_raise(
       if x in failed_info:
         del failed_info[x]
     # cleanup removed package failed_info
-    if not pkgs_from_args:
-      for x in tuple(failed_info.keys()):
-        if x not in REPO.lilacinfos:
-          del failed_info[x]
+    for x in tuple(failed_info.keys()):
+      if x not in REPO.lilacinfos:
+        del failed_info[x]
     D['failed'] = failed_info
 
     if config['lilac']['rebuild_failed_pkgs']:

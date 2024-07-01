@@ -84,4 +84,7 @@ tmpfs = [
   "/build/.cache/bazel"
 ]
 
+# pacman.conf to use for repository databases
+pacman_conf = "/etc/pacman.conf"
+
 # vim: se ft=toml:
