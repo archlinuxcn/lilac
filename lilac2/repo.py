@@ -274,7 +274,7 @@ class Repo:
     if exc is not None:
       tb = ''.join(traceback.format_exception(type(exc), exc, exc.__traceback__))
       if isinstance(exc, subprocess.CalledProcessError):
-        subject_real = subject or l10n.format_value('packaging-error-subproces-subject')
+        subject_real = subject or l10n.format_value('packaging-error-subprocess-subject')
         msg1 = l10n.format_value('packaging-error-subprocess', {
           'cmd': repr(exc.cmd),
           'returncode': exc.returncode,

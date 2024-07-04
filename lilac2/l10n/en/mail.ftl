@@ -49,7 +49,7 @@ packaging-error-aur-subject = Error retrieving AUR package
 packaging-error-aur = Failed to retrieve AUR package!
 packaging-error-timeout-subject = Timeout when packaging %s
 packaging-error-unknown-subject = Unknown error when packaging %s
-packaging-error-unknown = An unknown error happend!
+packaging-error-unknown = An unknown error happened!
 packaging-log = Packaging log:
 
 lilac-yaml-loadding-error = Failed to load lilac.yaml for %s
