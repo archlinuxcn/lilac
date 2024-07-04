@@ -27,7 +27,7 @@ jobs:
         python-version: ${{ matrix.python-version }}
 
     - name: Install Python deps
-      run: python -m pip install -U pytest pytest-asyncio nvchecker requests lxml PyYAML pyalpm structlog python_prctl
+      run: python -m pip install -U pytest pytest-asyncio nvchecker requests lxml PyYAML pyalpm structlog python_prctl fluent.runtime
 
     - name: workaround pycurl wheel
       run: |
