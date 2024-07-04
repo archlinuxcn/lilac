@@ -79,6 +79,8 @@ def _gen_config_from_lilacinfos(
         newconfig[f'{name}:{i}'] = conf
       # Avoid empty-value keys as nvchecker can't handle that
       for key, value in conf.items():
+        if key == 'to_pattern':
+          continue
         if value in [None, '']:
           conf[key] = name
     counts[name] = len(confs)
