@@ -19,6 +19,7 @@ Docs
 
 * [lilac.yaml](https://archlinuxcn.github.io/lilac/)
 * [lilac.py API](https://lilac.readthedocs.io/en/latest/api.html)
+* [nvchecker usage](https://nvchecker.readthedocs.io/en/latest/usage.html) (used in the `update_on` field of `lilac.yaml`)
 * [Setup and run your own](https://lilac.readthedocs.io/en/latest/)
 
 Update
