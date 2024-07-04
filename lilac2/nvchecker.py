@@ -18,6 +18,7 @@ from .cmd import run_cmd
 from .const import mydir
 from .typing import LilacInfos, PathLike
 from .tools import reap_zombies
+from . import intl
 
 if TYPE_CHECKING:
   from .repo import Repo, Maintainer
@@ -177,15 +178,17 @@ def packages_need_update(
         'event': 'wrong or missing `update_on` config',
       })
 
+  l10n = intl.get_l10n('mail')
   for who, their_errors in error_owners.items():
     logger.warning('send nvchecker report for %r packages to %s',
                    {x['name'] for x in their_errors}, who)
-    repo.sendmail(who, 'nvchecker 错误报告',
+    repo.sendmail(who, l10n.format_value('nvchecker-error-report'),
                   '\n'.join(_format_error(e) for e in their_errors))
 
   if None in errors: # errors belong to unknown packages
-    subject = 'nvchecker 问题'
-    msg = '在更新检查时出现了一些错误：\n\n' + '\n'.join(
+    l10n = intl.get_l10n('main')
+    subject = l10n.format_value('nvchecker-issues-subject')
+    msg = l10n.format_value('nvchecker-issues-body') + '\n\n' + '\n'.join(
       _format_error(e) for e in errors[None]) + '\n'
     repo.send_repo_mail(subject, msg)
 

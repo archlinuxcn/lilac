@@ -21,6 +21,7 @@ from .packages import Dependency
 from .tools import reap_zombies
 from .nomypy import BuildResult # type: ignore
 from . import systemd
+from . import intl
 
 if TYPE_CHECKING:
   from .repo import Repo
@@ -91,10 +92,14 @@ def build_package(
         destdir.mkdir()
     sign_and_copy(pkgdir, destdir)
     if staging:
+      l10n = intl.get_l10n('mail')
       notify_maintainers(
         repo, lilacinfo,
-        f'{pkgbase} {pkg_version} 刚刚打包了',
-        '软件包已被置于 staging 目录，请查验后手动发布。',
+        l10n.format_value('package-staged-subject', {
+          'pkg': pkgbase,
+          'version': pkg_version,
+        }),
+        l10n.format_value('package-staged-body'),
       )
       result = BuildResult.staged()
     else:

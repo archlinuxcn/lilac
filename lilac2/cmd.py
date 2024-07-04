@@ -13,6 +13,7 @@ from pathlib import Path
 from contextlib import suppress
 
 from .typing import Cmd
+from . import intl
 
 logger = logging.getLogger(__name__)
 
@@ -148,7 +149,8 @@ def run_cmd(
     outs = outs.replace('\r\n', '\n')
     outs = re.sub(r'.*\r', '', outs)
     if outlen > 1024 ** 3: # larger than 1G
-      outs += '\n\n输出过多，已击杀。\n'
+      l10n = intl.get_l10n('mail')
+      outs += '\n\n' + l10n.format_value('too-much-output') + '\n'
     if code != 0:
       # set output by keyword to avoid being included in repr()
       raise subprocess.CalledProcessError(code, cmd, output=outs)

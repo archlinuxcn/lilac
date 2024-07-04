@@ -19,7 +19,7 @@ from .vendor.github import GitHub
 
 from .mail import MailService
 from .tools import ansi_escape_re
-from . import api, lilacyaml
+from . import api, lilacyaml, intl
 from .typing import LilacMod, Maintainer, LilacInfos, LilacInfo
 from .nomypy import BuildResult # type: ignore
 if TYPE_CHECKING:
@@ -62,7 +62,9 @@ class Repo:
   @lru_cache()
   def maintainer_from_github(self, username: str) -> Optional[Maintainer]:
     if self.gh is None:
-      raise ValueError('未设置 github token，无法从 GitHub 取得用户 Email 地址')
+      l10n = intl.get_l10n('mail')
+      msg = l10n.format_value('github-token-not-set')
+      raise ValueError(msg)
 
     userinfo = self.gh.get_user_info(username)
     if userinfo['email']:
@@ -77,6 +79,7 @@ class Repo:
     ret = []
     errors = []
 
+    l10n = intl.get_l10n('mail')
     for m in ms:
       if 'github' in m and 'email' in m:
         ret.append(
@@ -86,15 +89,18 @@ class Repo:
         try:
           u = self.maintainer_from_github(m['github'])
         except Exception as e:
-          errors.append(f'从 GitHub 获取用户 Email 地址时出错：{e!r}')
+          msg = l10n.format_value('github-email-error', {'error': repr(e)})
+          errors.append(msg)
         else:
           if u is None:
-            errors.append(f'GitHub 用户 {m["github"]} 未公开 Email 地址')
+            msg = l10n.format_value('github-email-private', {'user': m['github']})
+            errors.append(msg)
           else:
             ret.append(u)
       else:
         logger.error('unsupported maintainer info: %r', m)
-        errors.append(f'不支持的格式：{m!r}')
+        msg = l10n.format_value('unsupported-maintainer-info', {'info': repr(m)})
+        errors.append(msg)
         continue
 
     return ret, errors
@@ -190,10 +196,11 @@ class Repo:
 
     if errors:
       error_str = '\n'.join(errors)
+      l10n = intl.get_l10n('mail')
       self.sendmail(
         git_maintainer,
-        subject = f'{pkgbase} 的 maintainers 信息有误',
-        msg = f"以下 maintainers 信息有误，请修正。\n\n{error_str}\n",
+        subject = l10n.format_value('maintainers-error-subject', {'pkg': pkgbase}),
+        msg = l10n.format_value('maintainers-error-body') + f'\n\n{error_str}\n',
       )
 
     if not ret and fallback_git:
@@ -262,24 +269,34 @@ class Repo:
     if msg is not None:
       msgs.append(msg)
 
+    l10n = intl.get_l10n('mail')
+
     if exc is not None:
       tb = ''.join(traceback.format_exception(type(exc), exc, exc.__traceback__))
       if isinstance(exc, subprocess.CalledProcessError):
-        subject_real = subject or '在打包软件包 %s 时发生错误'
-        msgs.append('命令执行失败！\n\n命令 %r 返回了错误号 %d。' % (
-          exc.cmd, exc.returncode))
+        subject_real = subject or l10n.format_value('packaging-error-subproces-subject')
+        msg1 = l10n.format_value('packaging-error-subprocess', {
+          'cmd': repr(exc.cmd),
+          'returncode': exc.returncode,
+        })
+        msgs.append(msg1)
         if exc.output:
-          msgs.append('命令的输出如下：\n\n%s' % exc.output)
-        msgs.append('调用栈如下：\n\n' + tb)
+          msg1 = l10n.format_value('packaging-error-subprocess-output')
+          msgs.append(msg1 + '\n\n' + exc.output)
+        msg1 = l10n.format_value('packaging-error-traceback')
+        msgs.append(msg1 + '\n\n' + tb)
       elif isinstance(exc, api.AurDownloadError):
-        subject_real = subject or '在获取AUR包 %s 时发生错误'
-        msgs.append('获取AUR包失败！\n\n')
-        msgs.append('调用栈如下：\n\n' + tb)
+        subject_real = subject or l10n.format_value('packaging-error-aur-subject')
+        msg1 = l10n.format_value('packaging-error-aur')
+        msgs.append(msg1 + '\n\n')
+        msg1 = l10n.format_value('packaging-error-traceback')
+        msgs.append(msg1 + '\n\n' + tb)
       elif isinstance(exc, TimeoutError):
-        subject_real = subject or '打包软件包 %s 超时'
+        subject_real = subject or l10n.format_value('packaging-error-timeout-subject')
       else:
-        subject_real = subject or '在打包软件包 %s 时发生未知错误'
-        msgs.append('发生未知错误！调用栈如下：\n\n' + tb)
+        subject_real = subject or l10n.format_value('packaging-error-unknown-subject')
+        msg1 = l10n.format_value('packaging-error-unknown') + l10n.format_value('packaging-error-traceback')
+        msgs.append(msg1 + '\n\n' + tb)
     else:
       if subject is None:
         raise ValueError('subject should be given but not')
@@ -295,7 +312,7 @@ class Repo:
         with logfile.open(errors='replace') as f:
           build_output = f.read()
         if build_output:
-          log_header = '打包日志：'
+          log_header = l10n.format_value('packaging-log')
           with suppress(ValueError, KeyError): # invalid template or wrong key
             if self.logurl_template and len(logfile.parts) >= 2:
               # assume the directory name is the time stamp for now.
@@ -332,13 +349,14 @@ class Repo:
   def load_managed_lilac_and_report(self) -> dict[str, tuple[str, ...]]:
     self.lilacinfos, errors = lilacyaml.load_managed_lilacinfos(self.repodir)
     failed: dict[str, tuple[str, ...]] = {p: () for p in errors}
+    l10n = intl.get_l10n('mail')
     for name, exc_info in errors.items():
       logger.error('error while loading lilac.yaml for %s', name, exc_info=exc_info)
       exc = exc_info[1]
       if not isinstance(exc, Exception):
         raise
       self.send_error_report(name, exc=exc,
-                             subject='为软件包 %s 载入 lilac.yaml 时失败')
+                             subject=l10n.format_value('lilac-yaml-loadding-error'))
       build_logger_old.error('%s failed', name)
       build_logger.exception('lilac.yaml error', pkgbase = name, exc_info=exc_info)
 

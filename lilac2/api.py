@@ -24,7 +24,7 @@ from .vendor.htmlutils import parse_document_from_requests
 
 from .cmd import git_pull, git_push, UNTRUSTED_PREFIX
 from .cmd import run_cmd as _run_cmd
-from . import const
+from . import const, intl
 from .const import _G, SPECIAL_FILES
 from .typing import PkgRel, Cmd
 from .pypi2pkgbuild import gen_pkgbuild
@@ -421,10 +421,11 @@ def update_aur_repo() -> None:
   try:
     _update_aur_repo_real(pkgbase)
   except subprocess.CalledProcessError as e:
+    l10n = intl.get_l10n('mail')
     _G.repo.send_error_report(
       _G.mod,
       exc = e,
-      subject = '提交软件包 %s 到 AUR 时出错',
+      subject = l10n.format_value('aur-submit-error'),
     )
 
 def git_pkgbuild_commit() -> None:

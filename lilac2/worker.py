@@ -29,6 +29,7 @@ from .lilacpy import load_lilac
 from .lilacyaml import load_lilacinfo
 from .const import _G, PACMAN_DB_DIR, mydir
 from .repo import Repo
+from . import intl
 
 logger = logging.getLogger(__name__)
 
@@ -195,7 +196,7 @@ def run_build_cmd(cmd: Cmd) -> None:
       st = os.stat(1)
       if st.st_size > 1024 ** 3: # larger than 1G
         kill_child_processes()
-        logger.error('\n\n输出过多，已击杀。')
+        logger.error('\n\nToo much output, killed.')
     else:
       if code != 0:
         raise subprocess.CalledProcessError(code, cmd)
@@ -260,21 +261,28 @@ def handle_failure(
   e: Exception, repo: Repo, mod: Union[LilacMod, LilacInfo], logfile: Path,
 ) -> None:
   logger.error('build failed', exc_info=e)
+  l10n = intl.get_l10n('mail')
 
   if isinstance(e, pkgbuild.ConflictWithOfficialError):
     reason = ''
     if e.groups:
-      reason += f'软件包被加入了官方组：{e.groups}\n'
+      reason += l10n.format_value('package-in-official-group', {'groups': repr(e.groups)})
     if e.packages:
-      reason += f'软件包将取代官方包：{e.packages}\n'
+      reason += l10n.format_value('package-replacing-official-package', {'packages': repr(e.packages)})
+    subj = l10n.format_value('package-conflicts-with-official-repos')
     repo.send_error_report(
-      mod, subject='%s 与官方软件库冲突', msg = reason,
+      mod, subject = subj, msg = reason,
     )
 
   elif isinstance(e, pkgbuild.DowngradingError):
     repo.send_error_report(
-      mod, subject='%s 新打的包比仓库里的包旧',
-      msg=f'包 {e.pkgname} 打的版本为 {e.built_version}，但在仓库里已有较新版本 {e.repo_version}。\n',
+      mod,
+      subject = l10n.format_value('package-older-subject'),
+      msg = l10n.format_value('package-older-body', {
+        'pkg': e.pkgname,
+        'built_version': e.built_version,
+        'repo_version': e.repo_version,
+      }),
     )
 
   else:

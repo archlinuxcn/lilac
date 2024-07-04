@@ -18,3 +18,44 @@ dependency-issue-failed-this-batch = {$count_deps ->
   [one] { $faileddeps } has
  *[other] { $faileddeps } have
 } failed this time.
+
+aur-submit-error = Failed to submit %s to AUR
+
+package-staged-subject = { $pkg } { $version } has been packaged just now
+package-staged-body = The package has been placed in the staging directory, please check it and then publish manually.
+
+too-much-output = Too much output, killed.
+
+log-too-long = Log too long, omitting...
+
+nvchecker-error-report = nvchecker error report
+
+github-token-not-set = github token not configured, unable to retrieve Email address from GitHub
+github-email-error = Error retrieving maintainer's Email address from GitHub: { $error }
+github-email-private = GitHub user { $user } doesn't make their Email address public
+unsupported-maintainer-info = Unsupported format: { $info }
+
+maintainers-error-subject = maintainers for { $pkg } has errors
+maintainers-error-body = The following maintainers information has errors, please fix:
+
+packaging-error-subprocess-subject = Error packaging %s
+packaging-error-subprocess =
+    Command failed!
+    
+    Command { $cmd } returned error code { $returncode }.
+packaging-error-subprocess-output = Output of the command follows:
+packaging-error-traceback = Traceback:
+packaging-error-aur-subject = Error retrieving AUR package
+packaging-error-aur = Failed to retrieve AUR package!
+packaging-error-timeout-subject = Timeout when packaging %s
+packaging-error-unknown-subject = Unknown error when packaging %s
+packaging-error-unknown = An unknown error happend!
+packaging-log = Packaging log:
+
+lilac-yaml-loadding-error = Failed to load lilac.yaml for %s
+
+package-in-official-group = Packages is added to official groups: { $groups }{ "\n" }
+package-replacing-official-package = Package is replacing official packages: { $packages }{ "\n" }
+package-conflicts-with-official-repos = %s conflicts with official repos
+package-older-subject = Built package %s has an older version than the one in repo
+package-older-body = Package { $pkg } built as version { $built_version }, but there is a version { $repo_version } in repo already.{ "\n" }
