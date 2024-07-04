@@ -47,6 +47,7 @@ from lilac2.nomypy import BuildResult, BuildReason # type: ignore
 from lilac2 import pkgbuild
 from lilac2.building import build_package, MissingDependencies
 from lilac2 import slogconf
+from lilac2 import intl
 try:
   from lilac2 import db
 except ImportError:
@@ -131,11 +132,15 @@ def packages_with_depends(
         dep_building_map[pkgbase] = {
           x.pkgdir.name for x in DEPMAP[pkgbase]}
 
+  l10n = intl.get_l10n('mail')
   for name, deps in nonexistent.items():
     repo.send_error_report(
       repo.lilacinfos[name],
-      subject='软件包 %s 的 lilac.yaml 指定了不存在的依赖',
-      msg = f'软件包 {name} 的 lilac.yaml 指定了 repo_depends，然而其直接或者间接的依赖项 {deps!r} 并不在本仓库中。'
+      subject = l10n.format_value(
+        'nonexistent-deps-subject', {'pkg': name}),
+      msg = l10n.format_value(
+        'nonexistent-deps-body',
+        {'pkg': name, 'deps': repr(deps), 'count': len(deps)}),
     )
 
   sorter = graphlib.TopologicalSorter(dep_building_map)
@@ -343,8 +348,11 @@ def try_pick_some(
         except Exception as e:
           logger.exception('check_update_on_build')
           mod = repo.lilacinfos[pkg]
+          l10n = intl.get_l10n('mail')
           repo.send_error_report(
-            mod, subject='%s update_on_build 检查出错', exc=e,
+            mod,
+            subject = l10n.format_value('update_on_build-error'),
+            exc = e,
           )
           continue
 
@@ -427,15 +435,30 @@ def build_it(
       msg = repr(e)
       mod = repo.lilacinfos[pkg]
 
+      l10n = intl.get_l10n('mail')
       if isinstance(e, MissingDependencies):
         faileddeps = e.deps.intersection(failed)
         # e.deps - faileddeps = failed previously
         failed[pkg] = tuple(e.deps)
         if e.deps == faileddeps:
-          msg = f'{pkg} 的依赖 {faileddeps} 打包失败了。'
+          msg = l10n.format_value('dependency-issue-failed', {
+            'pkg': pkg,
+            'faileddeps': str(faileddeps),
+            'count': len(faileddeps),
+          })
         else:
-          msg = f'{pkg} 缺少依赖 {e.deps}，其中 {faileddeps} 本次打包失败了。'
-        repo.send_error_report(mod, subject='%s 出现依赖问题', msg = msg)
+          msg = l10n.format_value('dependency-issue-failed-this-batch', {
+            'pkg': pkg,
+            'deps': str(e.deps),
+            'count_deps': len(e.deps),
+            'faileddeps': str(faileddeps),
+            'count_failed': len(faileddeps),
+          })
+        repo.send_error_report(
+          mod,
+          subject = l10n.format_value('dependency-issue-subject'),
+          msg = msg,
+        )
       else:
         repo.send_error_report(mod, exc=e, logfile=logfile)
 
@@ -686,10 +709,11 @@ def main(logdir: Path, pkgs_from_args: List[str]) -> None:
     try:
       main_may_raise(D, pkgs_from_args, logdir)
     except Exception:
+      l10n = intl.get_l10n('main')
       tb = traceback.format_exc()
       logger.exception('unexpected error')
-      subject = '运行时错误'
-      msg = '调用栈如下：\n\n' + tb
+      subject = l10n.format_value('runtime-error')
+      msg = l10n.format_value('runtime-error-traceback') + '\n\n' + tb
       REPO.report_error(subject, msg)
 
 def setup() -> Path:

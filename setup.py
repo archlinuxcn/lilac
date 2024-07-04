@@ -17,10 +17,11 @@ setup(
   # See README.md
   install_requires = [
     'requests', 'lxml', 'PyYAML', 'pyalpm', 'structlog', 'python_prctl',
+    'fluent.runtime',
   ],
   include_package_data = True,
   package_data = {
-    'lilac2': ['aliases.yaml'],
+    'lilac2': ['aliases.yaml', 'l10n/*/*.ftl'],
   },
   classifiers = [
     'Programming Language :: Python',
