@@ -266,9 +266,9 @@ def handle_failure(
   if isinstance(e, pkgbuild.ConflictWithOfficialError):
     reason = ''
     if e.groups:
-      reason += l10n.format_value('package-in-official-group', {'groups': repr(e.groups)})
+      reason += l10n.format_value('package-in-official-group', {'groups': repr(e.groups)}) + '\n'
     if e.packages:
-      reason += l10n.format_value('package-replacing-official-package', {'packages': repr(e.packages)})
+      reason += l10n.format_value('package-replacing-official-package', {'packages': repr(e.packages)}) + '\n'
     subj = l10n.format_value('package-conflicts-with-official-repos')
     repo.send_error_report(
       mod, subject = subj, msg = reason,
@@ -282,7 +282,7 @@ def handle_failure(
         'pkg': e.pkgname,
         'built_version': e.built_version,
         'repo_version': e.repo_version,
-      }),
+      }) + '\n',
     )
 
   else:

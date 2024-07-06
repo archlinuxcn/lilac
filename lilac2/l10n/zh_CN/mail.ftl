@@ -42,8 +42,8 @@ packaging-log = 打包日志：
 
 lilac-yaml-loadding-error = 为软件包 %s 载入 lilac.yaml 时失败
 
-package-in-official-group = 软件包被加入了官方组：{ $groups }{ "\n" }
-package-replacing-official-package = 软件包将取代官方包：{ $packages }{ "\n" }
+package-in-official-group = 软件包被加入了官方组：{ $groups }
+package-replacing-official-package = 软件包将取代官方包：{ $packages }
 package-conflicts-with-official-repos = %s 与官方软件库冲突
 package-older-subject = %s 新打的包比仓库里的包旧
-package-older-body = 包 { $pkg } 打的版本为 { $built_version }，但在仓库里已有较新版本 { $repo_version }。{ "\n" }
+package-older-body = 包 { $pkg } 打的版本为 { $built_version }，但在仓库里已有较新版本 { $repo_version }。

@@ -54,8 +54,8 @@ packaging-log = Packaging log:
 
 lilac-yaml-loadding-error = Failed to load lilac.yaml for %s
 
-package-in-official-group = Packages is added to official groups: { $groups }{ "\n" }
-package-replacing-official-package = Package is replacing official packages: { $packages }{ "\n" }
+package-in-official-group = Packages is added to official groups: { $groups }
+package-replacing-official-package = Package is replacing official packages: { $packages }
 package-conflicts-with-official-repos = %s conflicts with official repos
 package-older-subject = Built package %s has an older version than the one in repo
-package-older-body = Package { $pkg } built as version { $built_version }, but there is a version { $repo_version } in repo already.{ "\n" }
+package-older-body = Package { $pkg } built as version { $built_version }, but there is a version { $repo_version } in repo already.
