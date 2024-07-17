@@ -26,18 +26,27 @@ class PkgCurrent(Base):
   __table_args__ = {'schema': 'lilac'}
 
 USE = False
+SCHEMA = None
 
-def setup(engine):
-  global USE
+def setup(engine, schema):
+  global USE, SCHEMA
   Session.configure(bind=engine)
   Base.prepare(engine)
   USE = True
+  if schema:
+    SCHEMA = schema
 
 Session = sessionmaker()
 
 @contextmanager
 def get_session():
   session = Session()
+  if SCHEMA:
+    session.connection(
+      execution_options = {
+        "schema_translate_map": {"lilac": SCHEMA}
+      }
+    )
   try:
     yield session
     session.commit()

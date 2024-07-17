@@ -526,7 +526,8 @@ def main_may_raise(
   if dburl := config['lilac'].get('dburl'):
     import sqlalchemy
     engine = sqlalchemy.create_engine(dburl)
-    db.setup(engine)
+    schema = config['lilac'].get('schema')
+    db.setup(engine, schema)
 
   if cmds := config.get('misc', {}).get('prerun'):
     for cmd in cmds:
