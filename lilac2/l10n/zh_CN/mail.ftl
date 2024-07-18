@@ -26,18 +26,19 @@ unsupported-maintainer-info = 不支持的格式：{ $info }
 maintainers-error-subject = { $pkg } 的 maintainers 信息有误
 maintainers-error-body = 以下 maintainers 信息有误，请修正。
 
+-traceback-follows = 调用栈如下：
 packaging-error-subprocess-subject = 在打包软件包 %s 时发生错误
 packaging-error-subprocess =
     命令执行失败！
     
     命令 { $cmd } 返回了错误号 { $returncode }。
 packaging-error-subprocess-output = 命令的输出如下：
-packaging-error-traceback = 调用栈如下：
+packaging-error-traceback = { -traceback-follows }
 packaging-error-aur-subject = 在获取AUR包 %s 时发生错误
 packaging-error-aur = 获取AUR包失败！
 packaging-error-timeout-subject = 打包软件包 %s 超时
 packaging-error-unknown-subject = 在打包软件包 %s 时发生未知错误
-packaging-error-unknown = 发生未知错误！
+packaging-error-unknown = 发生未知错误！{ -traceback-follows }
 packaging-log = 打包日志：
 
 lilac-yaml-loadding-error = 为软件包 %s 载入 lilac.yaml 时失败

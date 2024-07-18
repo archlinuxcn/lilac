@@ -295,7 +295,7 @@ class Repo:
         subject_real = subject or l10n.format_value('packaging-error-timeout-subject')
       else:
         subject_real = subject or l10n.format_value('packaging-error-unknown-subject')
-        msg1 = l10n.format_value('packaging-error-unknown') + l10n.format_value('packaging-error-traceback')
+        msg1 = l10n.format_value('packaging-error-unknown')
         msgs.append(msg1 + '\n\n' + tb)
     else:
       if subject is None:
