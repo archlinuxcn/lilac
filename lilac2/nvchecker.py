@@ -77,11 +77,14 @@ def _gen_config_from_lilacinfos(
         newconfig[f'{name}'] = conf
       else:
         newconfig[f'{name}:{i}'] = conf
-      # Avoid empty-value keys as nvchecker can't handle that
+
       for key, value in conf.items():
         if key == 'to_pattern':
-          continue
-        if value in [None, '']:
+          # TOML doesn't have None, but YAML doesn't distinguish '' and None
+          if value is None:
+            conf[key] = ''
+        elif value in [None, '']:
+          # compat with old config convention
           conf[key] = name
     counts[name] = len(confs)
 
