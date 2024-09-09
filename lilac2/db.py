@@ -58,7 +58,6 @@ SCHEMA = None
 def setup(engine, schema):
   global USE, SCHEMA
   Session.configure(bind=engine)
-  Base.prepare(engine)
   USE = True
   if schema:
     SCHEMA = schema
