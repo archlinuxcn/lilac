@@ -62,7 +62,7 @@ def get_pkgs_last_success_times(pkgs: list[str]) -> list[tuple[str, datetime.dat
   with get_session() as s:
     s.execute(
       '''select pkgbase, max(ts) from pkglog
-         where pkgbase in %s and result in ('successful', 'staged')
+         where pkgbase = any(%s) and result in ('successful', 'staged')
          group by pkgbase''', (pkgs,))
     r = s.fetchall()
   return r
@@ -76,7 +76,7 @@ def get_pkgs_last_rusage(pkgs: list[str]) -> dict[str, RUsage]:
       select pkgbase, cputime, memory from  (
         select pkgbase, cputime, memory, row_number() over (partition by pkgbase order by ts desc) as k
         from pkglog
-        where pkgbase in %s and result in ('successful', 'staged')
+        where pkgbase = any(%s) and result in ('successful', 'staged')
       ) as w where k = 1''', (pkgs,))
     rs = s.fetchall()
     ret = {r[0]: RUsage(r[1], r[2]) for r in rs}
