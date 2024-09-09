@@ -124,8 +124,9 @@ def iter_pkglog():
       cursor.execute('select * from lilac.batch where ts > %s', (last_ts,))
       logs.extend(cursor)
 
-      logs.sort(key=lambda x: x['ts'])
-      last_ts = datetime.datetime.now().astimezone()
+      if logs:
+        logs.sort(key=lambda x: x['ts'])
+        last_ts = logs[-1]['ts']
 
       for log in logs:
         log['ts'] = log['ts'].astimezone()
