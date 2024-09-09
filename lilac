@@ -159,13 +159,13 @@ def packages_with_depends(
 
       for idx, pkg in enumerate(packages):
         rs = [r.to_dict() for r in build_reasons[pkg]]
-        p = db.PkgCurrent(
+        pp = db.PkgCurrent(
           pkgbase = pkg,
           index = idx,
           status = 'pending',
           build_reasons = rs,
         )
-        s.add(p)
+        s.add(pp)
       db.build_updated(s)
 
   return sorter, dep_building_map

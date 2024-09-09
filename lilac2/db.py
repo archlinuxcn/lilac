@@ -2,28 +2,55 @@ from contextlib import contextmanager
 import datetime
 import re
 import logging
+from typing import Optional, Any
 
 from sqlalchemy import update, select, func
 from sqlalchemy.sql import functions
-from sqlalchemy.orm import sessionmaker, declarative_base
-from sqlalchemy.ext.declarative import DeclarativeMeta, DeferredReflection
+from sqlalchemy.types import BigInteger, Integer, String, DateTime
+from sqlalchemy.orm import sessionmaker, MappedAsDataclass, DeclarativeBase, mapped_column, Mapped
+from sqlalchemy.dialects.postgresql import JSONB
 
 from .typing import RUsage, OnBuildEntry
 
-Base: DeclarativeMeta = declarative_base(cls=DeferredReflection)
 logger = logging.getLogger(__name__)
+
+class Base(MappedAsDataclass, DeclarativeBase):
+  pass
 
 class PkgLog(Base):
   __tablename__ = 'pkglog'
   __table_args__ = {'schema': 'lilac'}
+  id: Mapped[int] = mapped_column(Integer, init=False, primary_key=True)
+  ts: Mapped[datetime.datetime] = mapped_column(DateTime, init=False, nullable=False)
+  pkgbase: Mapped[str]
+  nv_version: Mapped[Optional[str]]
+  pkg_version: Mapped[Optional[str]]
+  elapsed: Mapped[int]
+  result: Mapped[str]
+  cputime: Mapped[Optional[int]]
+  memory: Mapped[Optional[int]] = mapped_column(BigInteger)
+  msg: Mapped[Optional[str]]
+  build_reasons: Mapped[list[dict[str, Any]]] = mapped_column(JSONB, nullable=False)
+  maintainers: Mapped[list[dict[str, Any]]] = mapped_column(JSONB, nullable=False)
 
 class Batch(Base):
   __tablename__ = 'batch'
   __table_args__ = {'schema': 'lilac'}
+  id: Mapped[int] = mapped_column(Integer, init=False, primary_key=True)
+  ts: Mapped[datetime.datetime] = mapped_column(DateTime, init=False, nullable=False)
+  event: Mapped[str]
+  logdir: Mapped[Optional[str]] = mapped_column(String, default=None)
 
 class PkgCurrent(Base):
   __tablename__ = 'pkgcurrent'
   __table_args__ = {'schema': 'lilac'}
+  id: Mapped[int] = mapped_column(Integer, init=False, primary_key=True)
+  ts: Mapped[datetime.datetime] = mapped_column(DateTime, init=False, nullable=False)
+  updated_at: Mapped[datetime.datetime] = mapped_column(DateTime, init=False, nullable=False)
+  pkgbase: Mapped[str]
+  index: Mapped[int]
+  status: Mapped[str]
+  build_reasons: Mapped[list[dict[str, Any]]] = mapped_column(JSONB, nullable=False)
 
 USE = False
 SCHEMA = None
