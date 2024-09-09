@@ -22,7 +22,7 @@ To use PostgreSQL, the following dependencies need to be installed (besides the 
 
 .. code-block:: sh
 
-  pacman -S python-sqlalchemy python-psycopg2
+  pacman -S python-psycopg2
 
 Lilac can send error reports via email. A local mail transfer agent (MTA) is preferred (e.g. Postfix) but a remote one is supported too. We'll disable this in this article.
 
