@@ -20,6 +20,7 @@ from concurrent.futures import (
 )
 import subprocess
 from functools import partial
+import json
 
 import prctl
 import structlog
@@ -152,20 +153,17 @@ def packages_with_depends(
     logger.info('building %s because of %r', p, build_reasons[p])
 
   if db.USE:
-    from sqlalchemy import delete
     with db.get_session() as s:
-      stmt = delete(db.PkgCurrent)
-      s.execute(stmt)
+      s.execute('delete from pkgcurrent')
 
+      rows = []
       for idx, pkg in enumerate(packages):
-        rs = [r.to_dict() for r in build_reasons[pkg]]
-        pp = db.PkgCurrent(
-          pkgbase = pkg,
-          index = idx,
-          status = 'pending',
-          build_reasons = rs,
-        )
-        s.add(pp)
+        rs = json.dumps([r.to_dict() for r in build_reasons[pkg]])
+        rows.append((pkg, idx, 'pending', rs))
+      s.executemany(
+        '''insert into pkgcurrent
+           (pkgbase, index, status, build_reasons) values
+           (%s, %s, %s, %s)''', rows)
       db.build_updated(s)
 
   return sorter, dep_building_map
@@ -476,22 +474,16 @@ def build_it(
       memory = r.rusage.memory
     else:
       cputime = memory = None
-    rs = [r.to_dict() for r in build_reasons[pkg]]
+    rs = json.dumps([r.to_dict() for r in build_reasons[pkg]])
     with db.get_session() as s:
-      maintainers = repo.lilacinfos[pkg].maintainers
-      p = db.PkgLog(
-        pkgbase = pkg,
-        nv_version = newver,
-        pkg_version = version,
-        elapsed = elapsed,
-        result = r.__class__.__name__,
-        cputime = cputime,
-        memory = memory,
-        msg = msg,
-        build_reasons = rs,
-        maintainers = maintainers,
-      )
-      s.add(p)
+      maintainers = json.dumps(repo.lilacinfos[pkg].maintainers)
+      s.execute(
+        '''insert into pkglog
+        (pkgbase, nv_version, pkg_version, elapsed, result, cputime, memory,
+         msg, build_reasons, maintainers) values
+        (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)''',
+        (pkg, newver, version, elapsed, r.__class__.__name__, cputime, memory,
+         msg, rs, maintainers))
       db.mark_pkg_as(s, pkg, 'done')
       db.build_updated(s)
 
@@ -650,8 +642,8 @@ def main_may_raise(
     if db.USE:
       logdir_name = logdir.name
       with db.get_session() as s:
-        b = db.Batch(event='start', logdir=logdir_name)
-        s.add(b)
+        s.execute('insert into batch (event, logdir) values (%s, %s)',
+                  ('start', logdir_name))
         db.build_updated(s)
     start_build(REPO, logdir, failed, update_succeeded,
                 config['lilac'].get('max_concurrency', 1))
@@ -692,8 +684,7 @@ def main_may_raise(
     build_logger.info('build end')
     if db.USE:
       with db.get_session() as s:
-        b = db.Batch(event='stop')
-        s.add(b)
+        s.execute('''insert into batch (event) values ('stop')''')
         db.build_updated(s)
 
     git_reset_hard()
