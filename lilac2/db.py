@@ -23,10 +23,10 @@ def connect_with_schema(schema, dsn):
     cur.execute(f"set search_path to '{schema}'")
   return conn
 
-def setup(engine, schema):
+def setup(dsn, schema):
   global USE, Pool, SCHEMA
   Pool = psycopg2.pool.ThreadedConnectionPool(
-    1, 10, '', partial(connect_with_schema, schema))
+    1, 10, dsn, partial(connect_with_schema, schema))
   USE = True
 
 @contextmanager
