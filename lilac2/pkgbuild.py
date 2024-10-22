@@ -59,6 +59,7 @@ def update_pacmandb(dbpath: Path, pacman_conf: Optional[str] = None,
 
     cmd: List[Union[str, Path]] = [
       'fakeroot', 'pacman', update_arg, '--dbpath', dbpath,
+      '--disable-sandbox', # unusable without root
     ]
     if pacman_conf is not None:
       cmd += ['--config', pacman_conf]
