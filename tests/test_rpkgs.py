@@ -51,21 +51,21 @@ async def test_bioc(get_version):
     'source': 'rpkgs',
     'pkgname': 'BiocVersion',
     'repo': 'bioc',
-  }) == '3.19.1'
+  }) == '3.20.0'
 
 async def test_bioc_data_annotation(get_version):
   assert await get_version('GO.db', {
     'source': 'rpkgs',
     'pkgname': 'GO.db',
     'repo': 'bioc-data-annotation',
-  }) == '3.19.1'
+  }) == '3.20.0'
 
 async def test_bioc_data_experiment(get_version):
   assert await get_version('ALL', {
     'source': 'rpkgs',
     'pkgname': 'ALL',
     'repo': 'bioc-data-experiment',
-  }) == '1.46.0'
+  }) == '1.48.0'
 
 async def test_bioc_workflows(get_version):
   assert await get_version('liftOver', {
@@ -73,4 +73,4 @@ async def test_bioc_workflows(get_version):
     'pkgname': 'liftOver',
     'repo': 'bioc-workflows',
     'md5': True,
-  }) == '1.28.0#336a9b7f29647ba8b26eb4dc139d755c'
+  }) == '1.29.0#b19122c7d727499558484af2ce91df5e'
