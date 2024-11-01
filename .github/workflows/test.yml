@@ -16,6 +16,8 @@ jobs:
     - name: Enable archlinuxcn repo
       run: |
         echo -e '[archlinuxcn]\nServer = https://repo.archlinuxcn.org/$arch' >> /etc/pacman.conf
+        pacman-key --init
+        pacman-key --populate
         pacman -Sy --noconfirm archlinuxcn-keyring
 
     - name: Install Python and deps
