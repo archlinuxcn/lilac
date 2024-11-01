@@ -14,10 +14,12 @@ jobs:
       uses: actions/checkout@v4
 
     - name: Enable archlinuxcn repo
-      run: echo -e '[archlinuxcn]\nServer = https://repo.archlinuxcn.org/$arch' >> /etc/pacman.conf
+      run: |
+        echo -e '[archlinuxcn]\nServer = https://repo.archlinuxcn.org/$arch' >> /etc/pacman.conf
+        pacman -Sy --noconfirm archlinuxcn-keyring
 
     - name: Install Python and deps
-      run: pacman -Syu --noconfirm python python-pytest python-pytest-asyncio nvchecker python-requests python-lxml python-yaml pyalpm python-structlog  python-prctl  python-fluent.runtime
+      run: pacman -Su --noconfirm python python-pytest python-pytest-asyncio nvchecker python-requests python-lxml python-yaml pyalpm python-structlog  python-prctl  python-fluent.runtime
 
     - name: Run pytest
       run: pytest
