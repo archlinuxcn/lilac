@@ -17,7 +17,7 @@ jobs:
       run: echo -e '[archlinuxcn]\nServer = https://repo.archlinuxcn.org/$arch' >> /etc/pacman.conf
 
     - name: Install Python and deps
-      run: pacman -Syu python python-pytest python-pytest-asyncio nvchecker python-requests python-lxml python-yaml pyalpm python-structlog  python-prctl  python-fluent.runtime
+      run: pacman -Syu --noconfirm python python-pytest python-pytest-asyncio nvchecker python-requests python-lxml python-yaml pyalpm python-structlog  python-prctl  python-fluent.runtime
 
     - name: Run pytest
       run: pytest
