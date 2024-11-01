@@ -13,8 +13,11 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Install Python deps
-      run: python -m pip install -U pytest pytest-asyncio nvchecker requests lxml PyYAML pyalpm structlog python_prctl fluent.runtime
+    - name: Enable archlinuxcn repo
+      run: echo -e '[archlinuxcn]\nServer = https://repo.archlinuxcn.org/$arch' >> /etc/pacman.conf
+
+    - name: Install Python and deps
+      run: pacman -Syu python python-pytest python-pytest-asyncio nvchecker python-requests python-lxml python-yaml pyalpm python-structlog  python-prctl  python-fluent.runtime
 
     - name: Run pytest
       run: pytest
