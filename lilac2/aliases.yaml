@@ -73,3 +73,13 @@ libcrypto:
   alpm: openssl
   provided: libcrypto.so
   strip_release: true
+spdlog:
+  source: alpm
+  alpm: spdlog
+  provided: libspdlog.so
+  strip_release: true
+fmt:
+  source: alpm
+  alpm: fmt
+  provided: libfmt.so
+  strip_release: true
