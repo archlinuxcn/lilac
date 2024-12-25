@@ -83,3 +83,8 @@ fmt:
   alpm: fmt
   provided: libfmt.so
   strip_release: true
+qt6-base:
+  source: alpm
+  alpm: qt6-base
+  from_pattern: ^(\d+\.\d+)\..*
+  to_pattern: \1
