@@ -1,4 +1,3 @@
-tomli
 tomli-w
 requests
 lxml

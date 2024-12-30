@@ -7,7 +7,7 @@ import os
 import logging
 from contextlib import suppress
 
-import tomli
+import tomllib
 
 from .const import mydir
 
@@ -22,7 +22,7 @@ def kill_child_processes() -> None:
 def read_config() -> Dict[str, Any]:
   config_file = mydir / 'config.toml'
   with open(config_file, 'rb') as f:
-    return tomli.load(f)
+    return tomllib.load(f)
 
 def reap_zombies() -> None:
   # reap any possible dead children since we are a subreaper
