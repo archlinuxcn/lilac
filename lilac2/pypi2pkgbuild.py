@@ -185,7 +185,7 @@ prepare() {{
     'summary': j['info']['summary'],
     'arch': to_sharray(arch) if arch else 'any',
     'home_page': j['info']['home_page'] or j['info']['project_urls'].get('Homepage', ''),
-    'license': license or "'%s'" % j['info']['license'],
+    'license': license or "'%s'" % j['info']['license'].replace("'", ''),
     'depends': '\n'.join(depends_str),
     'provides': f'provides=({to_sharray(provides)})\n' if provides else '',
     'conflicts': f'conflicts=({to_sharray(conflicts)})\n' if conflicts else '',
