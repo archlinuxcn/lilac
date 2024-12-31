@@ -13,7 +13,10 @@ PkgPattern = re.compile(r'[\w.+-]+')
 def main():
   infos = {}
   for dir in iter_pkgdir(REPOPATH):
-    infos[dir.name] = load_lilac_yaml(dir)
+    try:
+      infos[dir.name] = load_lilac_yaml(dir)
+    except Exception as e:
+      print(f'Failed to load lilac.yaml for {dir.name}: {e!r}', file=sys.stderr)
 
   for line in sys.stdin:
     m = PkgPattern.search(line)
