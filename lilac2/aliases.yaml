@@ -88,3 +88,8 @@ qt6-base:
   alpm: qt6-base
   from_pattern: ^(\d+\.\d+)\..*
   to_pattern: \1
+openmpi:
+  source: alpm
+  alpm: openmpi
+  provided: libmpi.so
+  strip_release: true
