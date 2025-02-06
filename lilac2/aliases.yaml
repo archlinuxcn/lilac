@@ -93,3 +93,8 @@ openmpi:
   alpm: openmpi
   provided: libmpi.so
   strip_release: true
+libgit2:
+  source: alpm
+  alpm: libgit2
+  provided: libgit2.so
+  strip_release: true
