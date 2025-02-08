@@ -118,11 +118,14 @@ def gen_pkgbuild(
 
   if source_release:
     r = source_release[-1]
-    tarball = r['filename']
-    src_dir = tarball.rsplit('.tar', 1)[0]
-    # tarball name may be different from pypi name, e.g. django-post-office
+    filename = r['filename']
+    if filename.endswith('.zip'):
+      src_dir = filename.removesuffix('.zip')
+    else:
+      src_dir = filename.rsplit('.tar', 1)[0]
+    # filename name may be different from pypi name, e.g. django-post-office
     # Use "predictable" URL instead of `r['url']` to make AUR users happy...
-    source_line = 'source=("https://files.pythonhosted.org/packages/source/${_name::1}/${_name}/%s")' % tarball
+    source_line = 'source=("https://files.pythonhosted.org/packages/source/${_name::1}/${_name}/%s")' % filename
 
     if pep517:
       build_code = f'''\
