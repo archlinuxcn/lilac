@@ -40,9 +40,9 @@ pkg_license_tmpl = '''\
   install -Dm644 {license_file} "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
 '''
 
-pkg_pip_tmpl = '''\
+pkg_whl_tmpl = '''\
   cd "$srcdir"
-  pip install '{whl}' --root="$pkgdir" --no-deps --install-option="--optimize=1"
+  python -m installer --destdir="$pkgdir" '{whl}'
 '''
 
 class PyPIException(Exception): pass
@@ -94,15 +94,15 @@ def gen_pkgbuild(
 
   makedepends2 = makedepends or []
   if whl_release:
-    makedepends2.append('python-pip')
+    makedepends2.extend(['python-installer'])
+  elif pep517:
+    makedepends2.extend(['python-build', 'python-installer'])
+  else:
+    makedepends2.append('python-setuptools')
 
   depends2 = depends or ['python']
   if depends_setuptools:
     depends2.append('python-setuptools')
-  elif not pep517:
-    makedepends2.append('python-setuptools')
-  if pep517:
-    makedepends2.extend(['python-build', 'python-installer', 'python-wheel'])
 
   depends_str = []
   if depends2:
@@ -153,7 +153,7 @@ def gen_pkgbuild(
     whl = r['url'].rsplit('/')[-1]
     source_line = f'source=("https://files.pythonhosted.org/packages/{whl_pyver}/${{_name::1}}/$_name/{whl}")'
     build_code = '  true'
-    package_code = pkg_pip_tmpl.format(whl=whl)
+    package_code = pkg_whl_tmpl.format(whl=whl)
 
   if check is not None:
     if check == 'nose':
