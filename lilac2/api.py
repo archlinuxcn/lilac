@@ -165,6 +165,8 @@ def vcs_update() -> None:
   # clean up the old source tree
   shutil.rmtree('src', ignore_errors=True)
   run_protected(['makepkg', '-od', '--noprepare', '-A'], use_pty=True)
+  # clean up the new source tree so it doesn't take disk space for a long time
+  shutil.rmtree('src', ignore_errors=True)
 
 def _is_tmpfs(d: str) -> bool:
   cmd = ['findmnt', '-n', '-o', 'FSTYPE', '--', d]
