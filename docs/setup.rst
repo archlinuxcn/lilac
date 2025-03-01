@@ -212,6 +212,12 @@ To avoid the OOM Killer killing maintainer's processes unfairly, add ``OOMScoreA
 
 If you have a lot of memory (e.g. >100G), you may want to mount ``/var/lib/archbuild`` as a tmpfs to speed up building.
 
+There is `[an issue] <https://lore.kernel.org/git/CAFySSZBCKUiY5DO3fz340a0dTb0zUDNKxaTYU0LAqsBD2RMwSg@mail.gmail.com/>`_ preventing a ``git pull`` to succeed recently. Please set the following for the user running ``lilac`` and ``repocleaer`` to avoid issues:
+
+.. code-block:: sh
+
+  git config --global maintenance.autoDetach false
+
 Run
 ---
 
