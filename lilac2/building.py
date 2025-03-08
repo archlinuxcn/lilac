@@ -49,6 +49,7 @@ def build_package(
   bindmounts: list[str],
   tmpfs: list[str],
   update_info: NvResults,
+  commit_msg_template: str,
   depends: Iterable[Dependency],
   repo: Repo,
   myname: str,
@@ -74,6 +75,7 @@ def build_package(
         depend_packages = [str(x) for x in depend_packages],
         update_info = update_info,
         bindmounts = bindmounts,
+        commit_msg_template = commit_msg_template,
         tmpfs = tmpfs,
         logfile = logfile,
         deadline = start_time + time_limit_hours * 3600,
@@ -176,6 +178,7 @@ def call_worker(
   logfile: Path,
   depend_packages: List[str],
   update_info: NvResults,
+  commit_msg_template: str,
   bindmounts: list[str],
   tmpfs: list[str],
   deadline: float,
@@ -187,6 +190,7 @@ def call_worker(
   input = {
     'depend_packages': depend_packages,
     'update_info': update_info.to_list(),
+    'commit_msg_template': commit_msg_template,
     'bindmounts': bindmounts,
     'tmpfs': tmpfs,
     'logfile': str(logfile), # for sending error reports

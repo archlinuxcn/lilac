@@ -329,8 +329,7 @@ def git_commit(*, check_status: bool = True) -> None:
     if not ret:
       return
 
-  pkgbase = os.path.basename(os.getcwd())
-  msg = f'{_G.commit_msg_prefix}{pkgbase}: auto updated to {_G.built_version}'
+  msg = _G.commit_msg_template.format(built_version=_G.built_version)
   _run_cmd(['git', 'commit', '--no-gpg-sign', '-m', msg])
 
 class AurDownloadError(Exception):

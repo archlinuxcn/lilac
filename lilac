@@ -372,9 +372,21 @@ def build_it(
       db.mark_pkg_as(s, pkg, 'building')
       db.build_updated(s)
 
+  rs = build_reasons.get(pkg)
+  commit_msg_template = [
+    f'{repo.commit_msg_prefix}{pkg}: auto updated to {{built_version}}',
+    '',
+    'It has been built because:',
+  ]
+  if rs:
+    commit_msg_template.extend(f'* {r}' for r in rs)
+  else:
+    commit_msg_template.append('unknown reasons?!')
+
   r, version = build_package(
     pkg, repo.lilacinfos[pkg],
     update_info = nvdata[pkg],
+    commit_msg_template = '\n'.join(commit_msg_template),
     bindmounts = repo.bindmounts,
     tmpfs = repo.tmpfs,
     depends = BUILD_DEPMAP.get(pkg, ()),
@@ -474,7 +486,7 @@ def build_it(
       memory = r.rusage.memory
     else:
       cputime = memory = None
-    rs = json.dumps([r.to_dict() for r in build_reasons[pkg]])
+    reason_s = json.dumps([r.to_dict() for r in build_reasons[pkg]])
     with db.get_session() as s:
       maintainers = json.dumps(repo.lilacinfos[pkg].maintainers)
       s.execute(
@@ -483,7 +495,7 @@ def build_it(
          msg, build_reasons, maintainers) values
         (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)''',
         (pkg, newver, version, elapsed, r.__class__.__name__, cputime, memory,
-         msg, rs, maintainers))
+         msg, reason_s, maintainers))
       db.mark_pkg_as(s, pkg, 'done')
       db.build_updated(s)
 

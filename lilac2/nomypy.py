@@ -80,10 +80,20 @@ class NvChecker(BuildReason):
   def _extra_info(self) -> str:
     return repr(self.items)
 
+  def __str__(self):
+    return 'nvchecker detects the following updates: ' + ', '.join(
+      f'{k}:{v}' for k, v in self.items
+    )
+
 class UpdatedFailed(BuildReason):
   '''previously failed package gets updated'''
 
-class UpdatedPkgrel(BuildReason): pass
+  def __str__(self):
+    return 'it failed last time and has been updated'
+
+class UpdatedPkgrel(BuildReason):
+  def __str__(self):
+    return 'the pkgrel has been updated'
 
 class Depended(BuildReason):
   def __init__(self, depender):
@@ -92,9 +102,15 @@ class Depended(BuildReason):
   def _extra_info(self) -> str:
     return self.depender
 
+  def __str__(self):
+    return f'{self.depender} depends on it'
+
 class FailedByDeps(BuildReason):
   def __init__(self, deps: tuple[str]) -> None:
     self.deps = deps
+
+  def __str__(self):
+    return f'it depends on {', '.join(self.deps)} and they have been built'
 
 class Cmdline(BuildReason):
   def __init__(self, runner: Optional[str]) -> None:
@@ -106,12 +122,21 @@ class Cmdline(BuildReason):
     else:
       return ''
 
+  def __str__(self):
+    if self.runner:
+      return f'{self.runner} has requested to rebuild it'
+    else:
+      return 'it is requested on the command line'
+
 class OnBuild(BuildReason):
   def __init__(self, update_on_build: list[OnBuildEntry]) -> None:
     self.update_on_build = update_on_build
 
   def _extra_info(self) -> str:
     return repr(self.update_on_build)
+
+  def __str__(self):
+    return f'{', '.join(x.pkgbase for x in self.update_on_build)} has been built'
 
   def to_dict(self) -> str:
     d = {

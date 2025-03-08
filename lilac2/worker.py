@@ -209,10 +209,12 @@ def main() -> None:
   config = read_config()
   repo = _G.repo = Repo(config)
   pkgbuild.load_data(PACMAN_DB_DIR)
-  _G.commit_msg_prefix = repo.commit_msg_prefix
 
   input = json.load(sys.stdin)
   logger.debug('got input: %r', input)
+
+  _G.commit_msg_template = input['commit_msg_template']
+
   try:
     with load_lilac(Path('.')) as mod:
       _G.mod = mod
