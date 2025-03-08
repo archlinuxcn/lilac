@@ -124,7 +124,7 @@ class Cmdline(BuildReason):
 
   def __str__(self):
     if self.runner:
-      return f'{self.runner} has requested to rebuild it'
+      return f'{self.runner} has requested to build it'
     else:
       return 'it is requested on the command line'
 
