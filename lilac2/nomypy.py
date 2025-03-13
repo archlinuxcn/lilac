@@ -143,7 +143,14 @@ class OnBuild(BuildReason):
     return repr(self.update_on_build)
 
   def __str__(self):
-    return f'{', '.join(x.pkgbase for x in self.update_on_build)} has been built'
+    if len(self.update_on_build) == 1:
+      subj = self.update_on_build[0].pkgbase + ' has'
+    elif len(self.update_on_build) <= 10:
+      subj = ', '.join(x.pkgbase for x in self.update_on_build)
+      if len(subj) > 100:
+        subj = subj[:100].rstrip() + '...'
+      subj += ' have'
+    return f'{subj} been built'
 
   def to_dict(self) -> str:
     d = {
