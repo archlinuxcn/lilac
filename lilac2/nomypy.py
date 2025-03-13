@@ -73,16 +73,23 @@ class BuildReason(SumType):
     return d
 
 class NvChecker(BuildReason):
-  def __init__(self, items: list[tuple[int, str]]) -> None:
-    '''items: list of (nvchecker entry index, source name)'''
+  def __init__(
+    self,
+    items: list[tuple[int, str]],
+    changes: list[tuple[str, str]],
+  ) -> None:
+    '''items: list of (nvchecker entry index, source name)
+       changes: list of (oldver, newver)'''
     self.items = items
+    self.changes = changes
 
   def _extra_info(self) -> str:
-    return repr(self.items)
+    return f'items={self.items!r}, changes={self.changes!r}'
 
   def __str__(self):
     return 'nvchecker detects the following updates: ' + ', '.join(
-      f'{k}:{v}' for k, v in self.items
+      f'{v}({k}): {old} -> {new}' for (k, v), (old, new)
+      in zip(self.items, self.changes)
     )
 
 class UpdatedFailed(BuildReason):

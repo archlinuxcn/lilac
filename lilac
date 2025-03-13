@@ -509,12 +509,22 @@ def build_it(
 WORKER_NO = 0
 WORKER_NO_LOCK = threading.Lock()
 
-def setup_thread():
+def setup_thread() -> None:
   global WORKER_NO
   from lilac2.building import TLS
   with WORKER_NO_LOCK:
     TLS.worker_no = WORKER_NO
     WORKER_NO += 1
+
+def build_nvchecker_reason(
+  items: list[tuple[int, str]],
+  results: NvResults,
+) -> BuildReason.NvChecker:
+  changes = []
+  for i, _ in items:
+    ver_change = results[i]
+    changes.append((ver_change.oldver, ver_change.newver))
+  return BuildReason.NvChecker(items, changes)
 
 def main_may_raise(
   D: dict[str, Any], pkgs_from_args: List[str], logdir: Path,
@@ -600,10 +610,12 @@ def main_may_raise(
               continue
         ss.append((idx, source))
       if ss:
-        build_reasons[p].append(BuildReason.NvChecker(ss))
+        nvc = build_nvchecker_reason(ss, nvdata[p])
+        build_reasons[p].append(nvc)
   else:
     for p, sources in nv_changed.items():
-      build_reasons[p].append(BuildReason.NvChecker(sources))
+      nvc = build_nvchecker_reason(sources, nvdata[p])
+      build_reasons[p].append(nvc)
 
   if pkgs_from_args:
     for p in pkgs_from_args:
