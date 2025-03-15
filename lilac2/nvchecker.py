@@ -124,6 +124,7 @@ def packages_need_update(
 
   env = os.environ.copy()
   env['PYTHONPATH'] = str(Path(__file__).resolve().parent.parent)
+  env['PYTHONNODEBUGRANGES'] = '1'
 
   logger.info('Running nvchecker...')
   process = subprocess.Popen(
