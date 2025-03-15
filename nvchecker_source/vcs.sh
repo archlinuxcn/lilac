@@ -53,7 +53,7 @@ git_get_version() {
     else
         return 1
     fi
-    local _res=$(git ls-remote "$_url" "$_ref")
+    local _res=$(timeout 60s git ls-remote "$_url" "$_ref")
     [[ $_res =~ ^([a-fA-F0-9]*)[[:blank:]] ]] || return 1
     echo "${BASH_REMATCH[1]}"
 }
