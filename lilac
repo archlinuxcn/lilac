@@ -1,4 +1,4 @@
-#!/usr/bin/python3 -u
+#!/usr/bin/python3 -Xno_debug_ranges
 
 from __future__ import annotations
 
