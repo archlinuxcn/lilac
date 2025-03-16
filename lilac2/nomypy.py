@@ -145,7 +145,7 @@ class OnBuild(BuildReason):
   def __str__(self):
     if len(self.update_on_build) == 1:
       subj = self.update_on_build[0].pkgbase + ' has'
-    elif len(self.update_on_build) <= 10:
+    else:
       subj = ', '.join(x.pkgbase for x in self.update_on_build)
       if len(subj) > 100:
         subj = subj[:100].rstrip() + '...'
