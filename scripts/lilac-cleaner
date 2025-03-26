@@ -48,6 +48,7 @@ def is_vcs(dir):
 def process(dir, git_files):
   files = list(dir.iterdir())
   mtimes = {f: f.stat().st_mtime for f in files}
+  vcs_dirs = []
 
   # don't delete files touched near last update
   try:
@@ -75,6 +76,7 @@ def process(dir, git_files):
     is_dir = file.is_dir()
 
     if is_dir and is_vcs(file):
+      vcs_dirs.append(file)
       continue
 
     if file.name in git_files:
@@ -87,6 +89,12 @@ def process(dir, git_files):
       rmdir(file)
     else:
       rmfile(file)
+
+  if vcs_dirs:
+    vcs_max = max(mtimes[x] for x in vcs_dirs)
+    for x in vcs_dirs:
+      if vcs_max - mtimes[x] > 86400:
+        rmdir(x)
 
 def main(repodir, force):
   global DRY_RUN
@@ -127,12 +135,13 @@ if __name__ == '__main__':
     config = read_config()
     repodir = Path(config['repository']['repodir']).expanduser()
 
-  try:
-    from lilac2.vendor.myutils import lock_file
-    from lilac2.const import mydir
-  except ImportError:
-    pass
-  else:
-    lock_file(mydir / '.lock')
+  if args.f:
+    try:
+      from lilac2.vendor.myutils import lock_file
+      from lilac2.const import mydir
+    except ImportError:
+      pass
+    else:
+      lock_file(mydir / '.lock')
 
   main(repodir, args.f)
