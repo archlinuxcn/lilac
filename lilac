@@ -49,6 +49,7 @@ from lilac2 import pkgbuild
 from lilac2.building import build_package, MissingDependencies
 from lilac2 import slogconf
 from lilac2 import intl
+from lilac2.typing import PkgToBuild
 try:
   from lilac2 import db
 except ImportError:
@@ -261,15 +262,15 @@ def start_build(
           limit = max_concurrency - len(futures),
         )
         for pkg in pkgs:
-          if pkg not in nvdata:
+          if pkg.pkgbase not in nvdata:
             # this can happen when cmdline packages are specified and
             # a package is pulled in by OnBuild
-            logger.warning('%s not in nvdata, skipping', pkg)
-            buildsorter.done(pkg)
+            logger.warning('%s not in nvdata, skipping', pkg.pkgbase)
+            buildsorter.done(pkg.pkgbase)
             continue
           fu = executor.submit(
             build_it, pkg, repo, buildsorter, built, failed)
-          futures[fu] = pkg
+          futures[fu] = pkg.pkgbase
 
         if not pkgs and not futures:
           # no more packages and no task is running: we're done
@@ -291,8 +292,8 @@ def try_pick_some(
   failed: dict[str, tuple[str, ...]],
   running: Set[str],
   limit: int,
-) -> list[str]:
-  ret: list[str] = []
+) -> list[PkgToBuild]:
+  ret: list[PkgToBuild] = []
 
   if not buildsorter.is_active():
     return ret
@@ -304,6 +305,8 @@ def try_pick_some(
   for pkg in ready:
     if pkg in running:
       continue
+
+    to_build = PkgToBuild(pkg)
 
     if pkg in failed:
       buildsorter.done(pkg)
@@ -325,24 +328,33 @@ def try_pick_some(
               db.build_updated(s)
           # deps are still missing, skip
           continue
-      if len(rs) == 1 and isinstance(rs[0], BuildReason.OnBuild):
-        update_on_build = rs[0].update_on_build
-        if any(x.pkgbase in failed for x in update_on_build):
+      if update_on_build := next(
+        (r for r in rs if isinstance(rs[0], BuildReason.OnBuild)),
+        None
+      ):
+        if len(rs) == 1 and any(
+          x.pkgbase in failed for x in update_on_build
+        ):
+          # on_build packages have failures, skip
           buildsorter.done(pkg)
           if db.USE:
             with db.get_session() as s:
               db.mark_pkg_as(s, pkg, 'done')
               db.build_updated(s)
-          # deps have failures, skip
           continue
         try:
-          if db.USE and not db.check_update_on_build(update_on_build):
+          if db.USE:
+            vers = db.get_update_on_build_vers(update_on_build)
+          else:
+            vers = []
+          if len(rs) == 1 and vers and all(old == new for old, new in vers):
+            # no need to rebuild
             buildsorter.done(pkg)
             with db.get_session() as s:
               db.mark_pkg_as(s, pkg, 'done')
               db.build_updated(s)
-            # no need to rebuild
             continue
+          to_build = PkgToBuild(pkg, vers)
         except Exception as e:
           logger.exception('check_update_on_build')
           mod = repo.lilacinfos[pkg]
@@ -354,16 +366,17 @@ def try_pick_some(
           )
           continue
 
-    ret.append(pkg)
+    ret.append(to_build)
     if len(ret) == limit:
       break
 
   return ret
 
 def build_it(
-  pkg: str, repo: Repo, buildsorter: BuildSorter,
+  to_build: PkgToBuild, repo: Repo, buildsorter: BuildSorter,
   built: set[str], failed: dict[str, tuple[str, ...]],
 ) -> None:
+  pkg = to_build.pkgbase
   logger.info('building %s', pkg)
   logfile = logdir / f'{pkg}.log'
 
@@ -384,7 +397,7 @@ def build_it(
     commit_msg_template.append('unknown reasons?!')
 
   r, version = build_package(
-    pkg, repo.lilacinfos[pkg],
+    to_build, repo.lilacinfos[pkg],
     update_info = nvdata[pkg],
     commit_msg_template = '\n'.join(commit_msg_template),
     bindmounts = repo.bindmounts,

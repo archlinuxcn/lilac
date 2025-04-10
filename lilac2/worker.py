@@ -17,7 +17,7 @@ from .vendor.nicelogger import enable_pretty_logging
 from .vendor.myutils import file_lock
 
 from . import pkgbuild
-from .typing import LilacMod, LilacInfo, Cmd
+from .typing import LilacMod, LilacInfo, Cmd, OnBuildVers
 from .cmd import run_cmd, UNTRUSTED_PREFIX
 from .api import (
   vcs_update, get_pkgver_and_pkgrel, update_pkgrel,
@@ -63,6 +63,7 @@ def lilac_build(
   depend_packages: list[str] = [],
   build_prefix: Optional[str] = None,
   update_info: NvResults = NvResults(),
+  on_build_vers: OnBuildVers = [],
   bindmounts: list[str] = [],
   tmpfs: list[str] = [],
 ) -> None:
@@ -80,6 +81,7 @@ def lilac_build(
         newver = newver,
         oldvers = [x.oldver for x in update_info],
         newvers = [x.newver for x in update_info],
+        on_build_vers = [tuple(x) for x in on_build_vers],
       )
 
     prepare = getattr(mod, 'prepare', None)
@@ -223,6 +225,7 @@ def main() -> None:
         mod = mod,
         depend_packages = input['depend_packages'],
         update_info = NvResults.from_list(input['update_info']),
+        on_build_vers = input.get('on_build_vers', []),
         bindmounts = input['bindmounts'],
         tmpfs = input['tmpfs'],
       )

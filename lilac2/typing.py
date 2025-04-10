@@ -85,3 +85,7 @@ class RUsage(NamedTuple):
   cputime: float
   memory: int
 
+OnBuildVers = list[tuple[str, str]]
+class PkgToBuild(NamedTuple):
+  pkgbase: str
+  on_build_vers: OnBuildVers = []

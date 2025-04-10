@@ -15,7 +15,7 @@ import threading
 import signal
 from contextlib import suppress
 
-from .typing import LilacInfo, Cmd, RUsage
+from .typing import LilacInfo, Cmd, RUsage, PkgToBuild, OnBuildVers
 from .nvchecker import NvResults
 from .packages import Dependency
 from .tools import reap_zombies
@@ -44,7 +44,7 @@ class BuildFailed(Exception):
     self.msg = msg
 
 def build_package(
-  pkgbase: str,
+  to_build: PkgToBuild,
   lilacinfo: LilacInfo,
   bindmounts: list[str],
   tmpfs: list[str],
@@ -60,6 +60,7 @@ def build_package(
   start_time = time.time()
   pkg_version = None
   rusage = None
+  pkgbase = to_build.pkgbase
   try:
     maintainer = repo.find_maintainers(lilacinfo)[0]
     time_limit_hours = lilacinfo.time_limit_hours
@@ -74,6 +75,7 @@ def build_package(
         pkgdir = pkgdir,
         depend_packages = [str(x) for x in depend_packages],
         update_info = update_info,
+        on_build_vers = to_build.on_build_vers,
         bindmounts = bindmounts,
         commit_msg_template = commit_msg_template,
         tmpfs = tmpfs,
@@ -178,6 +180,7 @@ def call_worker(
   logfile: Path,
   depend_packages: List[str],
   update_info: NvResults,
+  on_build_vers: OnBuildVers,
   commit_msg_template: str,
   bindmounts: list[str],
   tmpfs: list[str],
@@ -190,6 +193,7 @@ def call_worker(
   input = {
     'depend_packages': depend_packages,
     'update_info': update_info.to_list(),
+    'on_build_vers': on_build_vers,
     'commit_msg_template': commit_msg_template,
     'bindmounts': bindmounts,
     'tmpfs': tmpfs,

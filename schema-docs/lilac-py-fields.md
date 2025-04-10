@@ -17,4 +17,5 @@
 * `_G.newver`: 新版本号。可能为 `None`。
 * `_G.oldvers`: 对应的 `update_on` 项目的旧版本号列表。
 * `_G.newvers`: 对应的 `update_on` 项目的新版本号列表。
+* `_G.on_build_vers` (`list[tuple[str, str]]`): 对应的 `update_on_build` 项目的旧和新的版本号列表，查不到则为空字符串。该功能需要启用数据库支持。
 * `lilac.yaml` 中的信息（如 `repo_depends`、`maintainers`，已进行基本的解析）

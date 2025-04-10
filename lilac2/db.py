@@ -7,7 +7,7 @@ from functools import partial
 import psycopg2
 import psycopg2.pool
 
-from .typing import RUsage, OnBuildEntry
+from .typing import RUsage, OnBuildEntry, OnBuildVers
 
 logger = logging.getLogger(__name__)
 
@@ -99,23 +99,22 @@ def _get_last_two_versions(s, pkg: str) -> tuple[str, str]:
   else:
     raise RuntimeError('limit 2 returns more?!')
 
-def check_update_on_build(
+def get_update_on_build_vers(
   update_on_build: list[OnBuildEntry],
-) -> bool:
+) -> OnBuildVers:
+  ret = []
+
   with get_session() as s:
     for on_build in update_on_build:
+      old, new = _get_last_two_versions(s, on_build.pkgbase)
+      if not old and not new:
+        logger.warning('no built info for %s but try to build on build it?',
+                       on_build.pkgbase)
+        continue
+
       if (regex := on_build.from_pattern) and (repl := on_build.to_pattern):
-        old, new = _get_last_two_versions(s, on_build.pkgbase)
-        if not old and not new:
-          logger.warning('no built info for %s but try to build on build it?',
-                         on_build.pkgbase)
-          continue
         old = re.sub(regex, repl, old)
         new = re.sub(regex, repl, new)
-        if old != new:
-          return True
-      else:
-        return True
+      ret.append((old, new))
 
-    # all not triggered
-    return False
+  return ret
