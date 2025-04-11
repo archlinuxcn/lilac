@@ -354,9 +354,10 @@ def try_pick_some(
               db.mark_pkg_as(s, pkg, 'done')
               db.build_updated(s)
             continue
+          logger.debug('on_build_vers: %r', vers)
           to_build = PkgToBuild(pkg, vers)
         except Exception as e:
-          logger.exception('check_update_on_build')
+          logger.exception('get_update_on_build_vers')
           mod = repo.lilacinfos[pkg]
           l10n = intl.get_l10n('mail')
           repo.send_error_report(

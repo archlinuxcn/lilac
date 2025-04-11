@@ -110,7 +110,6 @@ def get_update_on_build_vers(
       if not old and not new:
         logger.warning('no built info for %s but try to build on build it?',
                        on_build.pkgbase)
-        continue
 
       if (regex := on_build.from_pattern) and (repl := on_build.to_pattern):
         old = re.sub(regex, repl, old)
