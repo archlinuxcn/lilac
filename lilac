@@ -328,10 +328,11 @@ def try_pick_some(
               db.build_updated(s)
           # deps are still missing, skip
           continue
-      if update_on_build := next(
+      if on_build := next(
         (r for r in rs if isinstance(rs[0], BuildReason.OnBuild)),
         None
       ):
+        update_on_build = on_build.update_on_build
         if len(rs) == 1 and any(
           x.pkgbase in failed for x in update_on_build
         ):
