@@ -224,8 +224,13 @@ class BuildSorter:
     return self.sorter.is_active()
 
   def done(self, pkg: str) -> None:
-    self.ready.remove(pkg)
-    self.sorter.done(pkg)
+    try:
+      self.ready.remove(pkg)
+      self.sorter.done(pkg)
+    except ValueError:
+      # we may try to remove a pkg twice because we may run check_buildability
+      # twice: once for regular round, once for picking while starving
+      pass
 
   def get_ready(self) -> tuple[str, ...]:
     new = self.sorter.get_ready()
