@@ -40,7 +40,7 @@ from lilac2.cmd import (
   run_cmd, git_pull_override, git_push, pkgrel_changed,
   git_reset_hard, get_git_branch,
 )
-from lilac2.tools import read_config
+from lilac2 import tools
 from lilac2.repo import Repo
 from lilac2.const import mydir, _G, PACMAN_DB_DIR
 from lilac2.nvchecker import packages_need_update, nvtake, NvResults
@@ -56,7 +56,7 @@ except ImportError:
   class db: # type: ignore
     USE = False
 
-config = read_config()
+config = tools.read_config()
 
 # Setting up environment variables
 os.environ.update(config.get('envvars', ()))
@@ -260,6 +260,7 @@ def start_build(
           buildsorter, failed,
           running = frozenset(futures.values()),
           limit = max_concurrency - len(futures),
+          starving = not bool(futures),
         )
         for pkg in pkgs:
           if pkg.pkgbase not in nvdata:
@@ -292,20 +293,47 @@ def try_pick_some(
   failed: dict[str, tuple[str, ...]],
   running: Set[str],
   limit: int,
+  starving: bool,
 ) -> list[PkgToBuild]:
-  ret: list[PkgToBuild] = []
-
   if not buildsorter.is_active():
-    return ret
+    return []
 
   ready = buildsorter.get_ready()
   if not ready:
-    return ret
+    return []
 
-  for pkg in ready:
-    if pkg in running:
-      continue
+  cpu_avail_percent = tools.get_avail_cpu_percent()
+  memory_avail = tools.get_avail_memory()
 
+  ready_to_build = [pkg for pkg in ready if pkg not in running]
+  if not ready_to_build:
+    return []
+
+  rusages = db.get_pkgs_last_rusage(ready_to_build)
+  ready2 = [pkg for pkg in ready_to_build
+            if (r := rusages.get(pkg)) and r.memory < memory_avail]
+  if not ready2:
+    if starving:
+      ready2 = sorted(
+        ready_to_build,
+        key=lambda pkg: rusages.get(pkg) and r.memory or 10 * 1024**3, # type: ignore
+      )
+      limit = 1
+      logger.info('insufficient memory, starting only one build')
+    else:
+      logger.info('insufficient memory, not starting another concurrent build')
+      return []
+
+  ready2.sort(key=lambda pkg: rusages.get(pkg) and r.cputime or 3600) # type: ignore
+  if cpu_avail_percent < 0.5:
+    # low cpu usage, build a big package
+    ready2.insert(0, ready2.pop())
+  else:
+    logger.info('high cpu usage, preferring low-cpu-usage builds')
+
+  ret: list[PkgToBuild] = []
+
+  for pkg in ready2:
     to_build = PkgToBuild(pkg)
 
     if pkg in failed:

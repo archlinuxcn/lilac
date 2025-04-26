@@ -24,7 +24,7 @@ def connect_with_schema(schema, dsn):
   return conn
 
 def setup(dsn, schema):
-  global USE, Pool, SCHEMA
+  global USE, Pool
   Pool = psycopg2.pool.ThreadedConnectionPool(
     1, 10, dsn, partial(connect_with_schema, schema))
   USE = True
