@@ -8,7 +8,7 @@ import traceback
 import logging
 import time
 from collections import defaultdict
-from typing import List, Any, DefaultDict, Tuple
+from typing import List, Any, DefaultDict, Tuple, Optional
 from collections.abc import Set
 from pathlib import Path
 import graphlib
@@ -302,7 +302,7 @@ def try_pick_some(
   if not ready:
     return []
 
-  cpu_avail_percent = tools.get_avail_cpu_percent()
+  cpu_ratio = tools.get_running_task_cpu_ratio()
   memory_avail = tools.get_avail_memory()
 
   ready_to_build = [pkg for pkg in ready if pkg not in running]
@@ -310,108 +310,129 @@ def try_pick_some(
     return []
 
   rusages = db.get_pkgs_last_rusage(ready_to_build)
-  ready2 = [pkg for pkg in ready_to_build
-            if (r := rusages.get(pkg)) and r.memory < memory_avail]
-  if not ready2:
-    if starving:
-      ready2 = sorted(
-        ready_to_build,
-        key=lambda pkg: rusages.get(pkg) and r.memory or 10 * 1024**3, # type: ignore
-      )
-      limit = 1
-      logger.info('insufficient memory, starting only one build')
-    else:
-      logger.info('insufficient memory, not starting another concurrent build')
-      return []
-
-  ready2.sort(key=lambda pkg: rusages.get(pkg) and r.cputime or 3600) # type: ignore
-  if cpu_avail_percent < 0.5:
+  ready_to_build.sort(key=lambda pkg: rusages.get(pkg) and r.cputime or 3600) # type: ignore
+  if cpu_ratio < 1.0:
     # low cpu usage, build a big package
-    ready2.insert(0, ready2.pop())
+    ready_to_build.insert(0, ready_to_build.pop())
   else:
     logger.info('high cpu usage, preferring low-cpu-usage builds')
 
   ret: list[PkgToBuild] = []
 
-  for pkg in ready2:
-    to_build = PkgToBuild(pkg)
-
-    if pkg in failed:
-      buildsorter.done(pkg)
-      if db.USE:
-        with db.get_session() as s:
-          db.mark_pkg_as(s, pkg, 'done')
-          db.build_updated(s)
-      # marked as failed (by lilac loader), skip
+  for pkg in ready_to_build:
+    if (r := rusages.get(pkg)) and r.memory > memory_avail:
       continue
 
-    if rs := build_reasons.get(pkg):
-      if len(rs) == 1 and isinstance(rs[0], BuildReason.FailedByDeps):
-        ds = BUILD_DEPMAP[pkg]
-        if not all(d.resolve() for d in ds):
-          buildsorter.done(pkg)
-          if db.USE:
-            with db.get_session() as s:
-              db.mark_pkg_as(s, pkg, 'done')
-              db.build_updated(s)
-          # deps are still missing, skip
-          continue
-      if on_build := next(
-        (r for r in rs if isinstance(rs[0], BuildReason.OnBuild)),
-        None
-      ):
-        update_on_build = on_build.update_on_build
-        if len(rs) == 1 and any(
-          x.pkgbase in failed for x in update_on_build
-        ):
-          # on_build packages have failures, skip
-          buildsorter.done(pkg)
-          if db.USE:
-            with db.get_session() as s:
-              db.mark_pkg_as(s, pkg, 'done')
-              db.build_updated(s)
-          continue
-        try:
-          if db.USE:
-            vers = db.get_update_on_build_vers(update_on_build)
-          else:
-            vers = []
-          if len(rs) == 1 and vers and all(old == new for old, new in vers):
-            # no need to rebuild
-            buildsorter.done(pkg)
-            with db.get_session() as s:
-              db.mark_pkg_as(s, pkg, 'done')
-              db.build_updated(s)
-            continue
-          logger.debug('on_build_vers: %r', vers)
-          to_build = PkgToBuild(pkg, vers)
-        except Exception as e:
-          logger.exception('get_update_on_build_vers')
-          mod = repo.lilacinfos[pkg]
-          l10n = intl.get_l10n('mail')
-          repo.send_error_report(
-            mod,
-            subject = l10n.format_value('update_on_build-error'),
-            exc = e,
-          )
-          continue
-
-    if db.USE:
-      update_on_build = REPO.lilacinfos[pkg].update_on_build
-      if update_on_build and not to_build.on_build_vers:
-        # Fill in on_build_vers for packages that are not triggered by OnBuild.
-        # Provide the last version string as both old and new since it's not
-        # triggered by a change of them.
-        vers = [
-          (new, new) for _, new in db.get_update_on_build_vers(update_on_build)
-        ]
-        to_build = PkgToBuild(pkg, vers)
+    to_build = check_buildability(pkg, repo, buildsorter, failed)
+    if to_build is None:
+      continue
 
     ret.append(to_build)
     if len(ret) == limit:
       break
 
+    if r := rusages.get(pkg):
+      memory_avail -= r.memory
+    else:
+      memory_avail -= 10 * 1024 ** 3
+
+  if not ret:
+    if starving:
+      ready_to_build.sort(
+        key=lambda pkg: rusages.get(pkg) and r.memory or 10 * 1024**3, # type: ignore
+      )
+      logger.info('insufficient memory, starting only one build')
+      for pkg in ready_to_build:
+        to_build = check_buildability(pkg, repo, buildsorter, failed)
+        if to_build is None:
+          continue
+        ret.append(to_build)
+        break
+    else:
+      logger.info('insufficient memory, not starting another concurrent build')
+
   return ret
+
+def check_buildability(
+  pkg: str,
+  repo: Repo,
+  buildsorter: BuildSorter,
+  failed: dict[str, tuple[str, ...]],
+) -> Optional[PkgToBuild]:
+  to_build = PkgToBuild(pkg)
+
+  if pkg in failed:
+    buildsorter.done(pkg)
+    if db.USE:
+      with db.get_session() as s:
+        db.mark_pkg_as(s, pkg, 'done')
+        db.build_updated(s)
+    # marked as failed (by lilac loader), skip
+    return None
+
+  if rs := build_reasons.get(pkg):
+    if len(rs) == 1 and isinstance(rs[0], BuildReason.FailedByDeps):
+      ds = BUILD_DEPMAP[pkg]
+      if not all(d.resolve() for d in ds):
+        buildsorter.done(pkg)
+        if db.USE:
+          with db.get_session() as s:
+            db.mark_pkg_as(s, pkg, 'done')
+            db.build_updated(s)
+        # deps are still missing, skip
+        return None
+    if on_build := next(
+      (r for r in rs if isinstance(rs[0], BuildReason.OnBuild)),
+      None
+    ):
+      update_on_build = on_build.update_on_build
+      if len(rs) == 1 and any(
+        x.pkgbase in failed for x in update_on_build
+      ):
+        # on_build packages have failures, skip
+        buildsorter.done(pkg)
+        if db.USE:
+          with db.get_session() as s:
+            db.mark_pkg_as(s, pkg, 'done')
+            db.build_updated(s)
+        return None
+      try:
+        if db.USE:
+          vers = db.get_update_on_build_vers(update_on_build)
+        else:
+          vers = []
+        if len(rs) == 1 and vers and all(old == new for old, new in vers):
+          # no need to rebuild
+          buildsorter.done(pkg)
+          with db.get_session() as s:
+            db.mark_pkg_as(s, pkg, 'done')
+            db.build_updated(s)
+          return None
+        logger.debug('on_build_vers: %r', vers)
+        to_build = PkgToBuild(pkg, vers)
+      except Exception as e:
+        logger.exception('get_update_on_build_vers')
+        mod = repo.lilacinfos[pkg]
+        l10n = intl.get_l10n('mail')
+        repo.send_error_report(
+          mod,
+          subject = l10n.format_value('update_on_build-error'),
+          exc = e,
+        )
+        return None
+
+  if db.USE:
+    update_on_build = REPO.lilacinfos[pkg].update_on_build
+    if update_on_build and not to_build.on_build_vers:
+      # Fill in on_build_vers for packages that are not triggered by OnBuild.
+      # Provide the last version string as both old and new since it's not
+      # triggered by a change of them.
+      vers = [
+        (new, new) for _, new in db.get_update_on_build_vers(update_on_build)
+      ]
+      to_build = PkgToBuild(pkg, vers)
+
+  return to_build
 
 def build_it(
   to_build: PkgToBuild, repo: Repo, buildsorter: BuildSorter,

@@ -30,7 +30,7 @@ def reap_zombies() -> None:
     while os.waitid(os.P_ALL, 0, os.WEXITED | os.WNOHANG) is not None:
       pass
 
-def get_avail_cpu_percent() -> float:
+def get_running_task_cpu_ratio() -> float:
   ncpu = os.process_cpu_count()
   running = 0
   with open('/proc/stat') as f:
