@@ -310,7 +310,7 @@ def try_pick_some(
     return []
 
   rusages = db.get_pkgs_last_rusage(ready_to_build)
-  ready_to_build.sort(key=lambda pkg: rusages.get(pkg) and r.cputime or 3600) # type: ignore
+  ready_to_build.sort(key=lambda pkg: (r := rusages.get(pkg)) and r.cputime or 3600)
   if cpu_ratio < 1.0:
     # low cpu usage, build a big package
     ready_to_build.insert(0, ready_to_build.pop())
@@ -339,7 +339,7 @@ def try_pick_some(
   if not ret:
     if starving:
       ready_to_build.sort(
-        key=lambda pkg: rusages.get(pkg) and r.memory or 10 * 1024**3, # type: ignore
+        key=lambda pkg: (r := rusages.get(pkg)) and r.memory or 10 * 1024**3,
       )
       logger.info('insufficient memory, starting only one build')
       for pkg in ready_to_build:
