@@ -44,7 +44,7 @@ def get_running_task_cpu_ratio() -> float:
     return 0.0
 
 def get_avail_memory() -> int:
-  with open('/proc/stat') as f:
+  with open('/proc/meminfo') as f:
     for l in f:
       if l.startswith('MemAvailable:'):
         return int(l.split()[1]) * 1024
