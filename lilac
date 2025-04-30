@@ -328,7 +328,7 @@ def try_pick_some(
         break
     ready_to_build.insert(0, ready_to_build.pop(idx))
   else:
-    logger.info('high cpu usage, preferring low-cpu-usage builds')
+    logger.info('high cpu usage (%.2f), preferring low-cpu-usage builds', cpu_ratio)
 
   ret: list[PkgToBuild] = []
 
@@ -356,7 +356,7 @@ def try_pick_some(
         r = (r := rusages.get(pkg)) and r.memory or 10 * 1024**3
         return (p, r)
       ready_to_build.sort(key=sort_key)
-      logger.info('insufficient memory, starting only one build')
+      logger.info('insufficient memory, starting only one build (available: %d)', memory_avail)
       for pkg in ready_to_build:
         to_build = check_buildability(pkg, repo, buildsorter, failed)
         if to_build is None:
@@ -364,7 +364,7 @@ def try_pick_some(
         ret.append(to_build)
         break
     else:
-      logger.info('insufficient memory, not starting another concurrent build')
+      logger.info('insufficient memory, not starting another concurrent build (available: %d)', memory_avail)
 
   return ret
 
