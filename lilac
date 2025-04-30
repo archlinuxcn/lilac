@@ -334,6 +334,7 @@ def try_pick_some(
 
   for pkg in ready_to_build:
     if (r := rusages.get(pkg)) and r.memory > memory_avail:
+      logger.debug('package %s used %d memory last time, but now only %d is available', pkg, r.memory, memory_avail)
       continue
 
     to_build = check_buildability(pkg, repo, buildsorter, failed)
