@@ -313,7 +313,10 @@ def try_pick_some(
   if not ready_to_build:
     return []
 
-  rusages = db.get_pkgs_last_rusage(ready_to_build)
+  if db.USE:
+    rusages = db.get_pkgs_last_rusage(ready_to_build)
+  else:
+    rusages = {}
 
   def sort_key(pkg):
     p = buildsorter.priority_func(pkg)
