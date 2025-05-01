@@ -332,9 +332,11 @@ def try_pick_some(
 
   ret: list[PkgToBuild] = []
 
+  limited_by_memory = False
   for pkg in ready_to_build:
     if (r := rusages.get(pkg)) and r.memory > memory_avail:
       logger.debug('package %s used %d memory last time, but now only %d is available', pkg, r.memory, memory_avail)
+      limited_by_memory = True
       continue
 
     to_build = check_buildability(pkg, repo, buildsorter, failed)
@@ -350,7 +352,7 @@ def try_pick_some(
     else:
       memory_avail -= 10 * 1024 ** 3
 
-  if not ret:
+  if not ret and limited_by_memory:
     if starving:
       def sort_key(pkg):
         p = buildsorter.priority_func(pkg)
