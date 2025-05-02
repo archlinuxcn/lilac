@@ -320,16 +320,20 @@ def try_pick_some(
 
   def sort_key(pkg):
     p = buildsorter.priority_func(pkg)
-    r = (r := rusages.get(pkg)) and r.cputime or 3600
+    # FIXME: use percent time, not interval
+    # r = (r := rusages.get(pkg)) and r.cputime or 3600
+    r = 0
     return (p, r)
   ready_to_build.sort(key=sort_key)
+  logger.debug('sorted ready_to_build: %r', ready_to_build)
   if cpu_ratio < 1.0:
     # low cpu usage, build a big package
     p = buildsorter.priority_func(ready_to_build[0])
     for idx, pkg in enumerate(ready_to_build):
       if  buildsorter.priority_func(pkg) != p:
+        if idx > 2:
+          ready_to_build.insert(0, ready_to_build.pop(idx-1))
         break
-    ready_to_build.insert(0, ready_to_build.pop(idx))
   else:
     logger.info('high cpu usage (%.2f), preferring low-cpu-usage builds', cpu_ratio)
 
@@ -362,6 +366,7 @@ def try_pick_some(
         r = (r := rusages.get(pkg)) and r.memory or 10 * 1024**3
         return (p, r)
       ready_to_build.sort(key=sort_key)
+      logger.debug('sorted ready_to_build: %r', ready_to_build)
       logger.info('insufficient memory, starting only one build (available: %d)', memory_avail)
       for pkg in ready_to_build:
         to_build = check_buildability(pkg, repo, buildsorter, failed)
