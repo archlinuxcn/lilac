@@ -320,10 +320,8 @@ def try_pick_some(
 
   def sort_key(pkg):
     p = buildsorter.priority_func(pkg)
-    # FIXME: use percent time, not interval
-    # r = (r := rusages.get(pkg)) and r.cputime or 3600
-    r = 0
-    return (p, r)
+    cpu = (r := rusages.get(pkg)) and (r.cputime / r.elapsed) or 1.0
+    return (p, cpu)
   ready_to_build.sort(key=sort_key)
   logger.debug('sorted ready_to_build: %r', ready_to_build)
   if cpu_ratio < 1.0:

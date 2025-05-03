@@ -7,7 +7,7 @@ from functools import partial
 import psycopg2
 import psycopg2.pool
 
-from .typing import RUsage, OnBuildEntry, OnBuildVers
+from .typing import UsedResource, OnBuildEntry, OnBuildVers
 
 logger = logging.getLogger(__name__)
 
@@ -67,19 +67,19 @@ def get_pkgs_last_success_times(pkgs: list[str]) -> list[tuple[str, datetime.dat
     r = s.fetchall()
   return r
 
-def get_pkgs_last_rusage(pkgs: list[str]) -> dict[str, RUsage]:
+def get_pkgs_last_rusage(pkgs: list[str]) -> dict[str, UsedResource]:
   if not pkgs:
     return {}
 
   with get_session() as s:
     s.execute('''
-      select pkgbase, cputime, memory from  (
-        select pkgbase, cputime, memory, row_number() over (partition by pkgbase order by ts desc) as k
+      select pkgbase, cputime, memory, elapsed from  (
+        select pkgbase, cputime, memory, elapsed, row_number() over (partition by pkgbase order by ts desc) as k
         from pkglog
         where pkgbase = any(%s) and result in ('successful', 'staged')
       ) as w where k = 1''', (pkgs,))
     rs = s.fetchall()
-    ret = {r[0]: RUsage(r[1], r[2]) for r in rs}
+    ret = {r[0]: UsedResource(r[1], r[2], r[3]) for r in rs}
 
   return ret
 
