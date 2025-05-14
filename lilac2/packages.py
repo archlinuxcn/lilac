@@ -6,12 +6,15 @@ from typing import Dict, Union, Tuple, Set, Optional, DefaultDict
 import re
 import graphlib
 from contextlib import suppress
+import logging
 
 from .vendor import archpkg
 
 from .api import run_cmd
 from .typing import LilacInfos
 from . import lilacyaml
+
+logger = logging.getLogger(__name__)
 
 def get_dependency_map(
   depman: DependencyManager, lilacinfos: LilacInfos,
@@ -132,19 +135,19 @@ def get_changed_packages(from_: str, to: str) -> Set[str]:
 
 _re_package = re.compile(r'package(?:_(.+))?\(')
 
-def get_split_packages(pkg: Path) -> Set[Tuple[str, str]]:
+def get_package_names(pkgdir: Path) -> Set[Tuple[str, str]]:
   packages: Set[Tuple[str, str]] = set()
 
-  pkgbase = pkg.name
+  pkgbase = pkgdir.name
 
-  pkgfile = pkg / 'package.list'
+  pkgfile = pkgdir / 'package.list'
   if pkgfile.exists():
     with open(pkgfile) as f:
       packages.update((pkgbase, l.rstrip()) for l in f if not l.startswith('#'))
       return packages
 
   found = False
-  with suppress(FileNotFoundError), open(pkg / 'PKGBUILD') as f:
+  with suppress(FileNotFoundError), open(pkgdir / 'PKGBUILD') as f:
     for l in f:
       if m := _re_package.match(l):
         found = True
@@ -158,7 +161,21 @@ def get_split_packages(pkg: Path) -> Set[Tuple[str, str]]:
 
 def get_all_pkgnames(repodir: Path) -> Set[Tuple[str, str]]:
   packages: Set[Tuple[str, str]] = set()
-  for pkg in lilacyaml.iter_pkgdir(repodir):
-    packages.update(get_split_packages(pkg))
+  for pkgdir in lilacyaml.iter_pkgdir(repodir):
+    packages.update(get_package_names(pkgdir))
   return packages
 
+def get_built_package_files(pkgdir: Path) -> list[Path]:
+  names = [x[1] for x in get_package_names(pkgdir)]
+  names += [x + '-debug' for x in names]
+  ret = []
+  for file in pkgdir.iterdir():
+    if file.name.endswith(('.pkg.tar.xz', '.pkg.tar.zst')):
+      try:
+        info = archpkg.PkgNameInfo.parseFilename(file.name)
+      except TypeError:
+        logger.warning('unrecognized package file: %r', file)
+        continue
+      if info.name in names:
+        ret.append(file)
+  return ret

@@ -17,7 +17,7 @@ from contextlib import suppress
 
 from .typing import LilacInfo, Cmd, RUsage, PkgToBuild, OnBuildVers
 from .nvchecker import NvResults
-from .packages import Dependency
+from .packages import Dependency, get_built_package_files
 from .tools import reap_zombies
 from .nomypy import BuildResult # type: ignore
 from . import systemd
@@ -154,15 +154,13 @@ def may_need_cleanup() -> None:
     subprocess.check_call(['sudo', 'build-cleaner'])
 
 def sign_and_copy(pkgdir: Path, dest: Path) -> None:
-  pkgs = [x for x in pkgdir.iterdir() if x.name.endswith(('.pkg.tar.xz', '.pkg.tar.zst'))]
+  pkgs = get_built_package_files(pkgdir)
   for pkg in pkgs:
     subprocess.run([
       'gpg', '--pinentry-mode', 'loopback',
        '--passphrase', '', '--detach-sign', '--', pkg,
     ])
-  for f in pkgdir.iterdir():
-    if not f.name.endswith(('.pkg.tar.xz', '.pkg.tar.xz.sig', '.pkg.tar.zst', '.pkg.tar.zst.sig')):
-      continue
+  for f in pkgs + [x.with_name(x.name + '.sig') for x in pkgs]:
     with suppress(FileExistsError):
       (dest / f.name).hardlink_to(f)
 
