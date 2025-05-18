@@ -446,15 +446,18 @@ def check_buildability(
         return None
 
   if db.USE:
-    update_on_build = REPO.lilacinfos[pkg].update_on_build
-    if update_on_build and not to_build.on_build_vers:
-      # Fill in on_build_vers for packages that are not triggered by OnBuild.
-      # Provide the last version string as both old and new since it's not
-      # triggered by a change of them.
-      vers = [
-        (new, new) for _, new in db.get_update_on_build_vers(update_on_build)
-      ]
-      to_build = PkgToBuild(pkg, vers)
+    if mod2 := REPO.lilacinfos.get(pkg):
+      update_on_build = mod2.update_on_build
+      if update_on_build and not to_build.on_build_vers:
+        # Fill in on_build_vers for packages that are not triggered by OnBuild.
+        # Provide the last version string as both old and new since it's not
+        # triggered by a change of them.
+        vers = [
+          (new, new) for _, new in db.get_update_on_build_vers(update_on_build)
+        ]
+        to_build = PkgToBuild(pkg, vers)
+      else:
+        logger.warning('%s not in lilacinfos.', pkg)
 
   return to_build
 
