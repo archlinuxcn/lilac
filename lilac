@@ -832,12 +832,13 @@ def main(logdir: Path, pkgs_from_args: List[str]) -> None:
       msg = l10n.format_value('runtime-error-traceback') + '\n\n' + tb
       REPO.report_error(subject, msg)
 
-def setup() -> Path:
+def setup() -> tuple[Path, subprocess.Popen]:
   prctl.set_child_subreaper(1)
 
   logdir = mydir / 'log' / time.strftime('%Y-%m-%dT%H:%M:%S')
   logdir.mkdir(parents=True, exist_ok=True)
   logfile = logdir / 'lilac-main.log'
+  tail = subprocess.Popen(['tail', '-n', '+1', '-f', logfile], stdout=2, stderr=2)
   fd = os.open(logfile, os.O_WRONLY | os.O_CREAT, 0o644)
   os.dup2(fd, 1)
   os.dup2(fd, 2)
@@ -854,11 +855,15 @@ def setup() -> Path:
   setup_build_logger()
   os.chdir(REPO.repodir)
 
-  return logdir
+  return logdir, tail
 
 if __name__ == '__main__':
   try:
-    logdir = setup()
+    logdir, tail = setup()
     main(logdir, sys.argv[1:])
+
+    if tail.poll() is None:
+      tail.terminate()
+      tail.wait()
   except Exception:
     logger.exception('unexpected error')
