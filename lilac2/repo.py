@@ -18,6 +18,7 @@ import structlog
 from .vendor.github import GitHub
 
 from .mail import MailService
+from .packages import get_built_package_files
 from .tools import ansi_escape_re
 from . import api, lilacyaml, intl
 from .typing import LilacMod, Maintainer, LilacInfos, LilacInfo
@@ -366,10 +367,13 @@ class Repo:
     if not self.on_built_cmds:
       return
 
+    package_files = [f.name for f in get_built_package_files(self.repodir / pkg)]
     env = os.environ.copy()
     env['PKGBASE'] = pkg
     env['RESULT'] = result.__class__.__name__
     env['VERSION'] = version or ''
+    env['PACKAGE_FILES'] = ' '.join(package_files)
+
     for cmd in self.on_built_cmds:
       try:
         subprocess.check_call(cmd, env=env)
