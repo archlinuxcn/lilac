@@ -362,7 +362,7 @@ def _aur_exists(pkgbase: str) -> bool:
 
 def _update_aur_repo_real(pkgbase: str) -> None:
   if not _aur_exists(pkgbase):
-    raise Exception('AUR package not exists, not updating!', pkgbase)
+    raise LookupError('AUR package not exists, not updating!', pkgbase)
 
   aurpath = const.AUR_REPO_DIR / pkgbase
   if not aurpath.is_dir():
@@ -421,7 +421,7 @@ def update_aur_repo() -> None:
   pkgbase = os.path.basename(os.getcwd())
   try:
     _update_aur_repo_real(pkgbase)
-  except subprocess.CalledProcessError as e:
+  except (subprocess.CalledProcessError, LookupError) as e:
     l10n = intl.get_l10n('mail')
     _G.repo.send_error_report(
       _G.mod,
