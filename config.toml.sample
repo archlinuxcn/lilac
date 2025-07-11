@@ -75,7 +75,7 @@ postrun = [
 ]
 
 # run some commands after each package built
-# env: PKGBASE, RESULT=successful, failed, skipped, staged, VERSION
+# env: PKGBASE, RESULT=successful, failed, skipped, staged, VERSION, PACKAGE_FILES
 # postbuild = [
 #   [...]
 # ]
