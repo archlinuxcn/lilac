@@ -18,8 +18,9 @@ logger = logging.getLogger(__name__)
 def safe_overwrite(fname: str, data: Union[bytes, str], *,
                    method: str = 'write', mode: str = 'w', encoding: Optional[str] = None) -> None:
   # FIXME: directory has no read perm
-  # FIXME: symlinks and hard links
-  tmpname = fname + '.tmp'
+  # FIXME: hard links
+  resolved_path = os.path.realpath(fname)
+  tmpname = resolved_path + '.tmp'
   # if not using "with", write can fail without exception
   with open(tmpname, mode, encoding=encoding) as f:
     getattr(f, method)(data)
@@ -27,7 +28,7 @@ def safe_overwrite(fname: str, data: Union[bytes, str], *,
     f.flush()
     os.fsync(f.fileno())
   # if the above write failed (because disk is full etc), the old data should be kept
-  os.rename(tmpname, fname)
+  os.rename(tmpname, resolved_path)
 
 UNITS = 'KMGTPEZY'
 
@@ -310,7 +311,7 @@ def lock_file(path: os.PathLike) -> None:
     fcntl.flock(lock, fcntl.LOCK_EX)
 
 @contextlib.contextmanager
-def file_lock(file: os.PathLike) -> Generator[None, None, None]:
+def file_lock(file: os.PathLike | str | bytes) -> Generator[None, None, None]:
   lock = os.open(file, os.O_WRONLY | os.O_CREAT, 0o600)
   try:
     fcntl.flock(lock, fcntl.LOCK_EX)
