@@ -143,7 +143,7 @@ def get_package_names(pkgdir: Path) -> Set[Tuple[str, str]]:
   pkgfile = pkgdir / 'package.list'
   if pkgfile.exists():
     with open(pkgfile) as f:
-      packages.update((pkgbase, l.rstrip()) for l in f if not l.startswith('#'))
+      packages.update((pkgbase, p) for l in f if not l.startswith('#') and (p := l.rstrip()))
       return packages
 
   found = False
