@@ -4,9 +4,12 @@ import datetime
 import weakref
 from typing import Any, Iterator, Dict, Optional
 import enum
+import logging
 
 from . import synchttpxutils
 from httpx import Response
+
+logging.getLogger('httpcore').setLevel(logging.ERROR)
 
 JsonDict = Dict[str, Any]
 
