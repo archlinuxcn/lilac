@@ -1,5 +1,5 @@
 tomli-w
-requests
+httpx[http2]
 lxml
 PyYAML
 structlog

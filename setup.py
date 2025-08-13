@@ -16,7 +16,7 @@ setup(
   setup_requires = ['setuptools_scm'],
   # See README.md
   install_requires = [
-    'requests', 'lxml', 'PyYAML', 'pyalpm', 'structlog', 'python_prctl',
+    'httpx', 'lxml', 'PyYAML', 'pyalpm', 'structlog', 'python_prctl',
     'fluent.runtime',
   ],
   include_package_data = True,

@@ -21,7 +21,7 @@ jobs:
         pacman -Sy --noconfirm archlinuxcn-keyring
 
     - name: Install Python and deps
-      run: pacman -Su --noconfirm python python-pytest python-pytest-asyncio nvchecker python-requests python-lxml python-yaml pyalpm python-structlog  python-prctl  python-fluent.runtime
+      run: pacman -Su --noconfirm python python-pytest python-pytest-asyncio nvchecker python-httpx python-lxml python-yaml pyalpm python-structlog python-prctl  python-fluent.runtime
 
     - name: Run pytest
       run: pytest

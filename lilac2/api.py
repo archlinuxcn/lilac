@@ -17,10 +17,10 @@ from contextlib import suppress
 from collections.abc import Container
 from urllib.parse import quote
 
-import requests
+import httpx
 
 from .vendor.myutils import at_dir
-from .vendor.htmlutils import parse_document_from_requests
+from .vendor.htmlutils import parse_document_from_httpx
 
 from .cmd import git_pull, git_push, UNTRUSTED_PREFIX
 from .cmd import run_cmd as _run_cmd
@@ -38,7 +38,7 @@ logger = logging.getLogger(__name__)
 _g = SimpleNamespace()
 UserAgent = 'lilac/0.2b (package auto-build bot, by lilydjwg)'
 
-s = requests.Session()
+s = httpx.Client(http2=True)
 s.headers['User-Agent'] = UserAgent
 
 VCS_SUFFIXES = ('-git', '-hg', '-svn', '-bzr')
@@ -500,7 +500,7 @@ def git_rm_files(files: List[str]) -> None:
     _run_cmd(['git', 'rm', '--cached', '--'] + files)
 
 def _get_aur_packager(name: str) -> Tuple[Optional[str], str]:
-  doc = parse_document_from_requests(f'https://aur.archlinux.org/pkgbase/{name}', s)
+  doc = parse_document_from_httpx(f'https://aur.archlinux.org/pkgbase/{name}', s)
   maintainer_cell = doc.xpath('//th[text()="Maintainer:"]/following::td[1]')[0]
   maintainer: Optional[str] = maintainer_cell.text_content().strip().split(None, 1)[0]
   last_packager_cell = doc.xpath('//th[text()="Last Packager:"]/following::td[1]')[0]

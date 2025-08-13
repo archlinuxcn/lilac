@@ -2,10 +2,11 @@ from __future__ import annotations
 
 import datetime
 import weakref
-from typing import Any, Iterator, Dict
+from typing import Any, Iterator, Dict, Optional
+import enum
 
-from . import requestsutils
-from requests import Response
+from . import synchttpxutils
+from httpx import Response
 
 JsonDict = Dict[str, Any]
 
@@ -13,7 +14,7 @@ def parse_datetime(s: str) -> datetime.datetime:
   dt = datetime.datetime.strptime(s, '%Y-%m-%dT%H:%M:%SZ')
   return dt.replace(tzinfo=datetime.timezone.utc)
 
-class GitHub(requestsutils.RequestsBase):
+class GitHub(synchttpxutils.ClientBase):
   baseurl = 'https://api.github.com/'
 
   def __init__(self, token=None, *, session=None):
@@ -74,6 +75,11 @@ class GitHub(requestsutils.RequestsBase):
       data = {'body': comment},
     )
 
+IssueStateReason = enum.StrEnum(
+  'IssueStateReason',
+  ['completed', 'not_planned', 'reopened']
+)
+
 class Issue:
   def __init__(self, data: JsonDict, gh: GitHub) -> None:
     self.gh = weakref.proxy(gh)
@@ -83,6 +89,8 @@ class Issue:
     self.title = data['title']
     self.labels = [x['name'] for x in data['labels']]
     self.updated_at = parse_datetime(data['updated_at'])
+    self.created_at = parse_datetime(data['created_at'])
+    self.is_pull = bool(data.get('pull_request'))
     self._api_url = f"{data['repository_url']}/issues/{data['number']}"
 
   def comment(self, comment: str) -> Response:
@@ -93,9 +101,12 @@ class Issue:
       raise TypeError('labels should be a list')
     return self.gh.api_request(f'{self._api_url}/labels', data = labels)
 
-  def close(self) -> None:
+  def close(self, reason: Optional[IssueStateReason] = None) -> None:
+    data = {'state': 'closed'}
+    if reason is not None:
+      data['state_reason'] = str(reason)
     self.gh.api_request(f'{self._api_url}', method = 'patch',
-                        data = {'state': 'closed'})
+                        data = data)
 
   def __repr__(self) -> str:
     return f'<Issue {self.number}: {self.title!r}>'

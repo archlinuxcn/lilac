@@ -1,9 +1,9 @@
 import datetime
 from urllib.parse import quote
 
-import requests
+import httpx
 
-from .vendor.htmlutils import parse_document_from_requests
+from .vendor.htmlutils import parse_document_from_httpx
 
 template = '''\
 _name={name}
@@ -30,9 +30,9 @@ package() {{
 '''
 
 URL = 'https://www.mediawiki.org/wiki/Special:ExtensionDistributor?extdistname=%s&extdistversion=REL%s'
-def get_link(name: str, mwver: str, s: requests.Session) -> str:
+def get_link(name: str, mwver: str, s: httpx.Client) -> str:
   url = URL % (quote(name), mwver.replace('.', '_'))
-  doc = parse_document_from_requests(url, s)
+  doc = parse_document_from_httpx(url, s)
   link = doc.xpath('//a[starts-with(@href, "https://extdist.wmflabs.org/dist/extensions/")]')[0]
   return link.get('href')
 
@@ -41,7 +41,7 @@ def gen_pkgbuild(
   mwver: str,
   desc: str,
   license: str | list[str],
-  s: requests.Session,
+  s: httpx.Client,
 ) -> str:
   major, minor = mwver.split('.')
   mwver_next = f'{major}.{int(minor)+1}'

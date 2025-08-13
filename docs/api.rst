@@ -8,7 +8,7 @@
    :exclude-members: Path, Container, SimpleNamespace, quote
 
 .. py:data:: s
-   :type: requests.Session
+   :type: httpx.Client
 
-   A shared `requests.Session <https://docs.python-requests.org/en/master/user/quickstart/>`_ object to send out HTTP requests.
+   A shared `httpx.Client <https://www.python-httpx.org/>`_ object to send out HTTP requests.
 
