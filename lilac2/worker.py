@@ -57,6 +57,10 @@ def may_update_pkgrel() -> Generator[None, None, None]:
       # pkgrel is not a number, resetting to 1
       update_pkgrel(1)
 
+pkg_suffix = ('.gz', '.bz2', '.xz', '.zst', '.lzo', '.lrz', '.lz4', '.lz', '.Z', '')
+pkg_exts = tuple(f'.pkg.tar{s}' for s in pkg_suffix)
+pkg_glob = ' '.join(f'*{s} *{s}.sig' for s in pkg_exts)
+
 def lilac_build(
   worker_no: int,
   mod: LilacMod,
@@ -90,7 +94,7 @@ def lilac_build(
       if isinstance(msg, str):
         raise SkipBuild(msg)
 
-    run_cmd(["sh", "-c", "rm -f -- *.pkg.tar.xz *.pkg.tar.xz.sig *.pkg.tar.zst *.pkg.tar.zst.sig"])
+    run_cmd(["sh", "-c", f"rm -f -- {pkg_glob}"])
     pre_build = getattr(mod, 'pre_build', None)
 
     with may_update_pkgrel():
@@ -126,7 +130,7 @@ def lilac_build(
       build_args, makechrootpkg_args, makepkg_args,
     )
 
-    pkgs = [x for x in os.listdir() if x.endswith(('.pkg.tar.xz', '.pkg.tar.zst'))]
+    pkgs = [x for x in os.listdir() if x.endswith(pkg_exts)]
     if not pkgs:
       raise Exception('no package built')
     post_build = getattr(mod, 'post_build', None)
