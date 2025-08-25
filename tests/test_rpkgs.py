@@ -44,7 +44,7 @@ async def test_cran(get_version):
     'pkgname': 'xml2',
     'repo': 'cran',
     'md5': True,
-  }) == '1.3.8#1864349a22fb93276bd7c5e87ade8287'
+  }) == '1.4.0#600d56c3da21eebac91416ef0f5e51ff'
 
 async def test_bioc(get_version):
   assert await get_version('BiocVersion', {
