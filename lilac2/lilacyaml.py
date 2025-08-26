@@ -14,7 +14,7 @@ from . import api
 from .const import _G, PACMAN_DB_DIR
 from .typing import LilacInfo, LilacInfos, ExcInfo, NvEntries, OnBuildEntry
 
-ALIASES: dict[str, Any]
+ALIASES: dict[str, Any] = {}
 FUNCTIONS: list[str] = [
   'pre_build', 'post_build', 'post_build_always',
 ]

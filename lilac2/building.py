@@ -204,7 +204,12 @@ def call_worker(
   input_bytes = json.dumps(input).encode()
   logger.debug('worker input: %r', input_bytes)
 
-  cmd = [sys.executable, '-Xno_debug_ranges', '-m', 'lilac2.worker', pkgbase]
+  cmd = [
+    sys.executable,
+    '-Xno_debug_ranges', # save space
+    '-P', # don't prepend cwd to sys.path where unexpected directories may exist
+    '-m', 'lilac2.worker', pkgbase,
+  ]
   if systemd.available():
     _call_cmd = _call_cmd_systemd
   else:
