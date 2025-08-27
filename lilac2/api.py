@@ -423,7 +423,7 @@ def update_aur_repo() -> None:
   pkgbase = os.path.basename(os.getcwd())
   try:
     _update_aur_repo_real(pkgbase)
-  except (subprocess.CalledProcessError, LookupError) as e:
+  except Exception as e:
     l10n = intl.get_l10n('mail')
     _G.repo.send_error_report(
       _G.mod,
