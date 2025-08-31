@@ -155,6 +155,9 @@ def may_need_cleanup() -> None:
 
 def sign_and_copy(pkgdir: Path, dest: Path) -> None:
   pkgs = get_built_package_files(pkgdir)
+  if not pkgs:
+    logger.warning('no built packages found; package name and directory name mismatch?')
+
   for pkg in pkgs:
     subprocess.run([
       'gpg', '--pinentry-mode', 'loopback',
