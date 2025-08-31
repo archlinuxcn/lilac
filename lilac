@@ -636,6 +636,9 @@ def main_may_raise(
   if get_git_branch() not in ['master', 'main']:
     raise Exception('repo not on master or main, aborting.')
 
+  if os.path.islink('/etc/resolv.conf'):
+    logger.warning('/etc/resolv.conf is a symlink; this might not work!')
+
   pacman_conf = config['misc'].get('pacman_conf')
   pkgbuild.update_data(PACMAN_DB_DIR, pacman_conf)
 
