@@ -487,8 +487,9 @@ def _download_aur_pkgbuild(name: str) -> List[str]:
     name=name+".tar.gz", mode="r:gz", fileobj=content
   ) as tarf:
     for tarinfo in tarf:
-      basename, remain = os.path.split(tarinfo.name)
-      if basename == '':
+      try:
+        basename, remain = tarinfo.name.split('/', 1)
+      except ValueError:
         continue
       if remain in SPECIAL_FILES + ('.AURINFO', '.SRCINFO', '.gitignore'):
         continue
