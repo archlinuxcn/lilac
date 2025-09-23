@@ -47,7 +47,7 @@ def is_vcs(dir):
 
 def process(dir, git_files):
   files = list(dir.iterdir())
-  mtimes = {f: f.stat().st_mtime for f in files}
+  mtimes = {f: f.stat(follow_symlinks=False).st_mtime for f in files}
   vcs_dirs = []
 
   # don't delete files touched near last update
@@ -73,7 +73,7 @@ def process(dir, git_files):
       )):
       continue
 
-    is_dir = file.is_dir()
+    is_dir = file.is_dir(follow_symlinks=False)
 
     if is_dir and is_vcs(file):
       vcs_dirs.append(file)
