@@ -49,6 +49,7 @@ from lilac2 import pkgbuild
 from lilac2.building import build_package, MissingDependencies
 from lilac2 import slogconf
 from lilac2 import intl
+from lilac2 import workerman
 from lilac2.typing import PkgToBuild
 try:
   from lilac2 import db
@@ -57,6 +58,7 @@ except ImportError:
     USE = False
 
 config = tools.read_config()
+TLS = threading.local()
 
 # Setting up environment variables
 os.environ.update(config.get('envvars', ()))
@@ -246,24 +248,28 @@ def start_build(
   logdir: Path,
   failed: dict[str, tuple[str, ...]],
   built: set[str],
-  max_concurrency: int,
+  workermans: list[workerman.WorkerManager],
 ) -> None:
   # built is used to collect built package names
   sorter, depmap = packages_with_depends(repo)
 
+  max_workers = sum(wm.max_concurrency for wm in workermans)
   try:
     buildsorter = BuildSorter(sorter, depmap)
     futures: dict[Future, str] = {}
     with ThreadPoolExecutor(
-      max_workers = max_concurrency,
+      max_workers = max_workers,
       initializer = setup_thread,
     ) as executor:
       while True:
+        # TODO: use other workermans
+        workers_before_wm = 0
+        wm = workermans[0]
         pkgs = try_pick_some(
           repo,
           buildsorter, failed,
           running = frozenset(futures.values()),
-          limit = max_concurrency - len(futures),
+          limit = wm.max_concurrency - len(futures),
           starving = not bool(futures),
         )
         for pkg in pkgs:
@@ -274,7 +280,9 @@ def start_build(
             buildsorter.done(pkg.pkgbase)
             continue
           fu = executor.submit(
-            build_it, pkg, repo, buildsorter, built, failed)
+            build_it, pkg, repo, buildsorter, built, failed,
+            wm, workers_before_wm
+          )
           futures[fu] = pkg.pkgbase
 
         if not pkgs and not futures:
@@ -464,10 +472,13 @@ def check_buildability(
 def build_it(
   to_build: PkgToBuild, repo: Repo, buildsorter: BuildSorter,
   built: set[str], failed: dict[str, tuple[str, ...]],
+  wm: workerman.WorkerManager,
+  workers_before_wm: int,
 ) -> None:
   pkg = to_build.pkgbase
   logger.info('building %s', pkg)
   logfile = logdir / f'{pkg}.log'
+  worker_no = TLS.worker_no - workers_before_wm
 
   if db.USE:
     with db.get_session() as s:
@@ -485,6 +496,7 @@ def build_it(
   else:
     commit_msg_template.append('unknown reasons?!')
 
+  # TODO: use wm
   r, version = build_package(
     to_build, repo.lilacinfos[pkg],
     update_info = nvdata[pkg],
@@ -496,6 +508,7 @@ def build_it(
     myname = MYNAME,
     destdir = DESTDIR,
     logfile = logfile,
+    worker_no = worker_no,
   )
 
   elapsed = r.elapsed
@@ -613,7 +626,6 @@ WORKER_NO_LOCK = threading.Lock()
 
 def setup_thread() -> None:
   global WORKER_NO
-  from lilac2.building import TLS
   with WORKER_NO_LOCK:
     TLS.worker_no = WORKER_NO
     WORKER_NO += 1
@@ -627,6 +639,15 @@ def build_nvchecker_reason(
     ver_change = results[i]
     changes.append((ver_change.oldver, ver_change.newver))
   return BuildReason.NvChecker(items, changes)
+
+def get_workermans():
+  max_concurrency = config['lilac'].get('max_concurrency', 1)
+  local = workerman.LocalWorkerManager(max_concurrency)
+  remotes = [
+    workerman.RemoteWorkerManager(remote)
+    for remote in config.get('remoteworker', [])
+  ]
+  return [local] + remotes
 
 def main_may_raise(
   D: dict[str, Any], pkgs_from_args: List[str], logdir: Path,
@@ -763,6 +784,7 @@ def main_may_raise(
     build_reasons[p].append(BuildReason.OnBuild(update_on_build))
 
   update_succeeded: set[str] = set()
+  workermans = get_workermans()
 
   try:
     build_logger.info('build start')
@@ -772,8 +794,7 @@ def main_may_raise(
         s.execute('insert into batch (event, logdir) values (%s, %s)',
                   ('start', logdir_name))
         db.build_updated(s)
-    start_build(REPO, logdir, failed, update_succeeded,
-                config['lilac'].get('max_concurrency', 1))
+    start_build(REPO, logdir, failed, update_succeeded, workermans)
   finally:
     D['last_commit'] = git_last_commit()
     # handle what has been processed even on exception

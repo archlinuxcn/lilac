@@ -41,6 +41,13 @@ logurl = "https://example.com/${pkgbase}/${datetime}.html"
 # schema = "lilac"
 max_concurrency = 1
 
+# build packages over ssh
+[[remoteworker]]
+host = "builder.example.org"
+# the same repodir but on remote host
+repodir = "/path/to/gitrepo"
+max_concurrency = 2
+
 [nvchecker]
 # set proxy for nvchecker
 # proxy = "http://localhost:8000"

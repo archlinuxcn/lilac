@@ -11,7 +11,6 @@ import tempfile
 from pathlib import Path
 import time
 import json
-import threading
 import signal
 from contextlib import suppress
 
@@ -29,7 +28,6 @@ if TYPE_CHECKING:
   del Repo
 
 logger = logging.getLogger(__name__)
-TLS = threading.local()
 
 class MissingDependencies(Exception):
   def __init__(self, pkgs: Set[str]) -> None:
@@ -55,6 +53,7 @@ def build_package(
   myname: str,
   destdir: Path,
   logfile: Path,
+  worker_no: int,
 ) -> tuple[BuildResult, Optional[str]]:
   '''return BuildResult and version string if successful'''
   start_time = time.time()
@@ -82,6 +81,7 @@ def build_package(
         logfile = logfile,
         deadline = start_time + time_limit_hours * 3600,
         packager = packager,
+        worker_no = worker_no,
       )
       if error:
         raise error
@@ -187,6 +187,7 @@ def call_worker(
   tmpfs: list[str],
   deadline: float,
   packager: str,
+  worker_no: int,
 ) -> tuple[Optional[str], RUsage, Optional[Exception]]:
   '''
   return: package version, resource usage, error information
@@ -199,7 +200,7 @@ def call_worker(
     'bindmounts': bindmounts,
     'tmpfs': tmpfs,
     'logfile': str(logfile), # for sending error reports
-    'worker_no': TLS.worker_no,
+    'worker_no': worker_no,
   }
   fd, resultpath = tempfile.mkstemp(prefix=f'{pkgbase}-', suffix='.lilac')
   os.close(fd)
@@ -217,7 +218,7 @@ def call_worker(
     _call_cmd = _call_cmd_systemd
   else:
     _call_cmd = _call_cmd_subprocess
-  name = f'lilac-worker-{TLS.worker_no}'
+  name = f'lilac-worker-{worker_no}'
   rusage, timedout = _call_cmd(
     name, cmd, logfile, pkgdir, deadline,
     input_bytes, packager,
