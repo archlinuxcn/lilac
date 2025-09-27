@@ -69,6 +69,7 @@ def build_package(
     depend_packages = resolve_depends(repo, depends)
     pkgdir = repo.repodir / pkgbase
     try:
+      # TODO: use to_build.wm
       pkg_version, rusage, error = call_worker(
         pkgbase = pkgbase,
         pkgdir = pkgdir,

@@ -3,11 +3,12 @@ import datetime
 import re
 import logging
 from functools import partial
+from itertools import groupby
 
 import psycopg2
 import psycopg2.pool
 
-from .typing import UsedResource, OnBuildEntry, OnBuildVers
+from .typing import UsedResource, OnBuildEntry, OnBuildVers, Rusages
 
 logger = logging.getLogger(__name__)
 
@@ -67,21 +68,23 @@ def get_pkgs_last_success_times(pkgs: list[str]) -> list[tuple[str, datetime.dat
     r = s.fetchall()
   return r
 
-def get_pkgs_last_rusage(pkgs: list[str]) -> dict[str, UsedResource]:
+def get_pkgs_last_rusage(pkgs: list[str]) -> Rusages:
   if not pkgs:
-    return {}
+    return Rusages({})
 
   with get_session() as s:
     s.execute('''
-      select pkgbase, cputime, memory, elapsed from  (
-        select pkgbase, cputime, memory, elapsed, row_number() over (partition by pkgbase order by ts desc) as k
+      select pkgbase, builder, cputime, memory, elapsed from  (
+        select pkgbase, builder, cputime, memory, elapsed, row_number() over (partition by pkgbase, builder order by ts desc) as k
         from pkglog
         where pkgbase = any(%s) and result in ('successful', 'staged')
       ) as w where k = 1''', (pkgs,))
     rs = s.fetchall()
-    ret = {r[0]: UsedResource(r[1], r[2], r[3]) for r in rs}
+    ret = {}
+    for pkgbase, rr in groupby(rs, lambda r: r[0]):
+      ret[pkgbase] = {r[1]: UsedResource(r[2], r[3], r[4]) for r in rr}
 
-  return ret
+  return Rusages(ret)
 
 def _get_last_two_versions(s, pkg: str) -> tuple[str, str]:
   s.execute(

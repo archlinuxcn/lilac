@@ -3,11 +3,14 @@ from __future__ import annotations
 import types
 from typing import (
   Union, Dict, Tuple, Type, NamedTuple, Optional,
-  Sequence,
+  Sequence, TYPE_CHECKING,
 )
 from pathlib import Path
 import dataclasses
 import datetime
+
+if TYPE_CHECKING:
+  from .workerman import WorkerManager
 
 class LilacMod(types.ModuleType):
   time_limit_hours: float
@@ -90,7 +93,29 @@ class UsedResource(NamedTuple):
   memory: int
   elapsed: int
 
+class Rusages:
+  def __init__(self, data: dict[str, dict[str, UsedResource]]) -> None:
+    '''data: pkgbase -> builder -> UsedResource'''
+    self.data = data
+
+  def for_package(
+    self,
+    pkgbase: str,
+    builder_hints: list[str],
+  ) -> Optional[UsedResource]:
+    if a := self.data.get(pkgbase):
+      for builder in builder_hints:
+        if b := a.get(builder):
+          return b
+      if a:
+        return next(iter(a.values()))
+
+    return None
+
 OnBuildVers = list[tuple[str, str]]
-class PkgToBuild(NamedTuple):
+
+@dataclasses.dataclass
+class PkgToBuild:
   pkgbase: str
   on_build_vers: OnBuildVers = []
+  workerman: Optional[WorkerManager] = None

@@ -8,7 +8,7 @@ import traceback
 import logging
 import time
 from collections import defaultdict
-from typing import List, Any, DefaultDict, Tuple, Optional
+from typing import List, Any, DefaultDict, Tuple, Optional, cast
 from collections.abc import Set
 from pathlib import Path
 import graphlib
@@ -49,8 +49,8 @@ from lilac2 import pkgbuild
 from lilac2.building import build_package, MissingDependencies
 from lilac2 import slogconf
 from lilac2 import intl
-from lilac2 import workerman
-from lilac2.typing import PkgToBuild
+from lilac2.workerman import WorkerManager
+from lilac2.typing import PkgToBuild, Rusages
 try:
   from lilac2 import db
 except ImportError:
@@ -248,7 +248,7 @@ def start_build(
   logdir: Path,
   failed: dict[str, tuple[str, ...]],
   built: set[str],
-  workermans: list[workerman.WorkerManager],
+  workermans: list[WorkerManager],
 ) -> None:
   # built is used to collect built package names
   sorter, depmap = packages_with_depends(repo)
@@ -256,21 +256,18 @@ def start_build(
   max_workers = sum(wm.max_concurrency for wm in workermans)
   try:
     buildsorter = BuildSorter(sorter, depmap)
-    futures: dict[Future, str] = {}
+    futures: dict[Future, PkgToBuild] = {}
     with ThreadPoolExecutor(
       max_workers = max_workers,
       initializer = setup_thread,
     ) as executor:
       while True:
-        # TODO: use other workermans
-        workers_before_wm = 0
-        wm = workermans[0]
         pkgs = try_pick_some(
           repo,
           buildsorter, failed,
-          running = frozenset(futures.values()),
-          limit = wm.max_concurrency - len(futures),
+          running = frozenset(x.pkgbase for x in futures.values()),
           starving = not bool(futures),
+          workermans = workermans,
         )
         for pkg in pkgs:
           if pkg.pkgbase not in nvdata:
@@ -278,12 +275,12 @@ def start_build(
             # a package is pulled in by OnBuild
             logger.warning('%s not in nvdata, skipping', pkg.pkgbase)
             buildsorter.done(pkg.pkgbase)
+            wm = cast(WorkerManager, pkg.workerman)
+            wm.current_task_count -= 1
             continue
           fu = executor.submit(
-            build_it, pkg, repo, buildsorter, built, failed,
-            wm, workers_before_wm
-          )
-          futures[fu] = pkg.pkgbase
+            build_it, pkg, repo, buildsorter, built, failed)
+          futures[fu] = pkg
 
         if not pkgs and not futures:
           # no more packages and no task is running: we're done
@@ -291,7 +288,9 @@ def start_build(
 
         done, pending = futures_wait(futures, return_when=FIRST_COMPLETED)
         for fu in done:
-          del futures[fu]
+          pkg = futures.pop(fu)
+          wm = cast(WorkerManager, pkg.workerman)
+          wm.current_task_count -= 1
           fu.result()
 
         # at least one task is done, try pick new tasks
@@ -304,8 +303,8 @@ def try_pick_some(
   buildsorter: BuildSorter,
   failed: dict[str, tuple[str, ...]],
   running: Set[str],
-  limit: int,
   starving: bool,
+  workermans: list[WorkerManager],
 ) -> list[PkgToBuild]:
   if not buildsorter.is_active():
     return []
@@ -314,9 +313,6 @@ def try_pick_some(
   if not ready:
     return []
 
-  cpu_ratio = tools.get_running_task_cpu_ratio()
-  memory_avail = tools.get_avail_memory()
-
   ready_to_build = [pkg for pkg in ready if pkg not in running]
   if not ready_to_build:
     return []
@@ -324,64 +320,40 @@ def try_pick_some(
   if db.USE:
     rusages = db.get_pkgs_last_rusage(ready_to_build)
   else:
-    rusages = {}
-
-  def sort_key(pkg):
-    p = buildsorter.priority_func(pkg)
-    cpu = (r := rusages.get(pkg)) and (r.cputime / r.elapsed) or 1.0
-    return (p, cpu)
-  ready_to_build.sort(key=sort_key)
-  logger.debug('sorted ready_to_build: %r', ready_to_build)
-  if cpu_ratio < 1.0:
-    # low cpu usage, build a big package
-    p = buildsorter.priority_func(ready_to_build[0])
-    for idx, pkg in enumerate(ready_to_build):
-      if  buildsorter.priority_func(pkg) != p:
-        if idx > 2:
-          ready_to_build.insert(0, ready_to_build.pop(idx-1))
-        break
-  else:
-    logger.info('high cpu usage (%.2f), preferring low-cpu-usage builds', cpu_ratio)
+    rusages = Rusages({})
 
   ret: list[PkgToBuild] = []
 
-  limited_by_memory = False
-  for pkg in ready_to_build:
-    if (r := rusages.get(pkg)) and r.memory > memory_avail:
-      logger.debug('package %s used %d memory last time, but now only %d is available', pkg, r.memory, memory_avail)
-      limited_by_memory = True
-      continue
+  for wm in workermans:
+    to_builds = wm.try_accept_package(
+      ready_to_build,
+      rusages,
+      buildsorter.priority_func,
+      lambda pkg: check_buildability(pkg,repo, buildsorter, failed),
+    )
+    ret.extend(to_builds)
 
-    to_build = check_buildability(pkg, repo, buildsorter, failed)
-    if to_build is None:
-      continue
-
-    ret.append(to_build)
-    if len(ret) == limit:
+  if not ret and starving:
+    wm = workermans[0]
+    def sort_key(pkg):
+      p = buildsorter.priority_func(pkg)
+      r = rusages.for_package(pkg, [wm.name])
+      if r is not None:
+        m = r.memory
+      else:
+        m = 10 * 1024**3
+      return (p, m)
+    ready_to_build.sort(key=sort_key)
+    logger.debug('sorted ready_to_build: %r', ready_to_build)
+    memory_avail = wm.get_resource_usage()[1]
+    logger.info('insufficient memory, starting only one build on %s (available: %d)', wm.name, memory_avail)
+    for pkg in ready_to_build:
+      to_build = check_buildability(pkg, repo, buildsorter, failed)
+      if to_build is None:
+        continue
+      to_build.workerman = wm
+      ret.append(to_build)
       break
-
-    if r := rusages.get(pkg):
-      memory_avail -= r.memory
-    else:
-      memory_avail -= 10 * 1024 ** 3
-
-  if not ret and limited_by_memory:
-    if starving:
-      def sort_key(pkg):
-        p = buildsorter.priority_func(pkg)
-        r = (r := rusages.get(pkg)) and r.memory or 10 * 1024**3
-        return (p, r)
-      ready_to_build.sort(key=sort_key)
-      logger.debug('sorted ready_to_build: %r', ready_to_build)
-      logger.info('insufficient memory, starting only one build (available: %d)', memory_avail)
-      for pkg in ready_to_build:
-        to_build = check_buildability(pkg, repo, buildsorter, failed)
-        if to_build is None:
-          continue
-        ret.append(to_build)
-        break
-    else:
-      logger.info('insufficient memory, not starting another concurrent build (available: %d)', memory_avail)
 
   return ret
 
@@ -391,6 +363,7 @@ def check_buildability(
   buildsorter: BuildSorter,
   failed: dict[str, tuple[str, ...]],
 ) -> Optional[PkgToBuild]:
+  '''NOTE: caller needs to set workerman on returned value'''
   to_build = PkgToBuild(pkg)
 
   if pkg in failed:
@@ -472,13 +445,12 @@ def check_buildability(
 def build_it(
   to_build: PkgToBuild, repo: Repo, buildsorter: BuildSorter,
   built: set[str], failed: dict[str, tuple[str, ...]],
-  wm: workerman.WorkerManager,
-  workers_before_wm: int,
 ) -> None:
   pkg = to_build.pkgbase
   logger.info('building %s', pkg)
   logfile = logdir / f'{pkg}.log'
-  worker_no = TLS.worker_no - workers_before_wm
+  wm = cast(WorkerManager, to_build.workerman)
+  worker_no = TLS.worker_no - wm.workers_before_me
 
   if db.USE:
     with db.get_session() as s:
@@ -496,7 +468,6 @@ def build_it(
   else:
     commit_msg_template.append('unknown reasons?!')
 
-  # TODO: use wm
   r, version = build_package(
     to_build, repo.lilacinfos[pkg],
     update_info = nvdata[pkg],
@@ -641,13 +612,21 @@ def build_nvchecker_reason(
   return BuildReason.NvChecker(items, changes)
 
 def get_workermans():
+  from lilac2 import workerman
+
   max_concurrency = config['lilac'].get('max_concurrency', 1)
   local = workerman.LocalWorkerManager(max_concurrency)
   remotes = [
     workerman.RemoteWorkerManager(remote)
     for remote in config.get('remoteworker', [])
   ]
-  return [local] + remotes
+  ret = [local] + remotes
+
+  workers_before = max_concurrency
+  for remote in remotes:
+    remote.workers_before_me = workers_before
+    workers_before += remote.max_concurrency
+  return ret
 
 def main_may_raise(
   D: dict[str, Any], pkgs_from_args: List[str], logdir: Path,
