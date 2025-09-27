@@ -607,10 +607,10 @@ def build_it(
       s.execute(
         '''insert into pkglog
         (pkgbase, nv_version, pkg_version, elapsed, result, cputime, memory,
-         msg, build_reasons, maintainers) values
-        (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)''',
+         msg, build_reasons, maintainers, builder) values
+        (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)''',
         (pkg, newver, version, elapsed, r.__class__.__name__, cputime, memory,
-         msg, reason_s, maintainers))
+         msg, reason_s, maintainers, wm.name))
       db.mark_pkg_as(s, pkg, 'done')
       db.build_updated(s)
 

@@ -2,6 +2,7 @@ from pathlib import Path
 from typing import override
 
 class WorkerManager:
+  name: str
   max_concurrency: int
 
   def prepare(self) -> None:
@@ -14,7 +15,9 @@ class WorkerManager:
     raise NotImplementedError
 
 class LocalWorkerManager(WorkerManager):
+  name: str = 'local'
   max_concurrency: int
+
   def __init__(self, max_concurrency) -> None:
     self.max_concurrency = max_concurrency
 
@@ -32,6 +35,7 @@ class LocalWorkerManager(WorkerManager):
     ...
 
 class RemoteWorkerManager(WorkerManager):
+  name: str
   max_concurrency: int
   repodir: Path
 

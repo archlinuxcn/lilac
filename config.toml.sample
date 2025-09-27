@@ -43,6 +43,7 @@ max_concurrency = 1
 
 # build packages over ssh
 [[remoteworker]]
+name = "remotebuilder"
 host = "builder.example.org"
 # the same repodir but on remote host
 repodir = "/path/to/gitrepo"
