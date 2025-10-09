@@ -332,6 +332,10 @@ def try_pick_some(
       lambda pkg: check_buildability(pkg,repo, buildsorter, failed),
     )
     ret.extend(to_builds)
+    # remove picked packages from ready_to_build
+    picked = {x.pkgbase for x in to_builds}
+    ready_to_build = [x for x in ready_to_build
+                      if x not in picked]
 
   if not ret and starving:
     wm = workermans[0]
