@@ -221,7 +221,11 @@ class RemoteWorkerManager(WorkerManager):
     setenv = {
       'MAKEFLAGS': os.environ.get('MAKEFLAGS', ''),
       'PACKAGER': os.environ.get('PACKAGER', ''),
+      'LANG': os.environ.get('LANG', 'C.UTF-8'),
     }
+    if tz := os.environ.get('TZ'):
+      setenv['TZ'] = tz
+
     name = f'lilac-worker-{worker_no}'
 
     fd, resultpath = tempfile.mkstemp(prefix=f'{name}-', suffix='.lilac')
