@@ -619,6 +619,7 @@ def get_workermans():
   remotes = [
     workerman.RemoteWorkerManager(remote)
     for remote in config.get('remoteworker', [])
+    if remote.get('enabled', False)
   ]
   ret = [local] + remotes
 

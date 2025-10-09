@@ -3,13 +3,14 @@ from __future__ import annotations
 import os
 import logging
 import subprocess
-from typing import Optional, List, Generator, Union
+from typing import Optional, Generator, Any
 from types import SimpleNamespace
 import contextlib
 import json
 import sys
 from pathlib import Path
 import platform
+import traceback
 
 import pyalpm
 
@@ -17,7 +18,7 @@ from .vendor.nicelogger import enable_pretty_logging
 from .vendor.myutils import file_lock
 
 from . import pkgbuild
-from .typing import LilacMod, LilacInfo, Cmd, OnBuildVers
+from .typing import LilacMod, Cmd, OnBuildVers
 from .cmd import run_cmd, UNTRUSTED_PREFIX
 from .api import (
   vcs_update, get_pkgver_and_pkgrel, update_pkgrel,
@@ -26,10 +27,8 @@ from .api import (
 from .nvchecker import NvResults
 from .tools import kill_child_processes
 from .lilacpy import load_lilac
-from .lilacyaml import load_lilacinfo
 from .const import _G, PACMAN_DB_DIR, mydir
-from .repo import Repo
-from . import intl
+from . import intl, api
 
 logger = logging.getLogger(__name__)
 
@@ -56,6 +55,12 @@ def may_update_pkgrel() -> Generator[None, None, None]:
     except ValueError:
       # pkgrel is not a number, resetting to 1
       update_pkgrel(1)
+
+def get_bindmounts(bindmounts: dict[str, str]) -> list[str]:
+  items = [(os.path.expanduser(src), dst)
+          for src, dst in bindmounts.items()]
+  items.sort(reverse=True)
+  return [f'{src}:{dst}' for src, dst in items]
 
 def lilac_build(
   worker_no: int,
@@ -109,7 +114,7 @@ def lilac_build(
     if not isinstance(build_prefix, str):
       raise TypeError('build_prefix', build_prefix)
 
-    build_args: List[str] = []
+    build_args: list[str] = []
     if hasattr(mod, 'build_args'):
       build_args = mod.build_args
 
@@ -141,12 +146,12 @@ def lilac_build(
       post_build_always(success=success)
 
 def call_build_cmd(
-  build_prefix: str, depends: List[str],
+  build_prefix: str, depends: list[str],
   bindmounts: list[str] = [],
   tmpfs: list[str] = [],
   build_args: list[str] = [],
-  makechrootpkg_args: List[str] = [],
-  makepkg_args: List[str] = [],
+  makechrootpkg_args: list[str] = [],
+  makepkg_args: list[str] = [],
 ) -> None:
   cmd: Cmd
   if build_prefix == 'makepkg':
@@ -207,9 +212,6 @@ def run_build_cmd(cmd: Cmd) -> None:
 def main() -> None:
   enable_pretty_logging('DEBUG')
 
-  from .tools import read_config
-  config = read_config()
-  repo = _G.repo = Repo(config)
   pkgbuild.load_data(PACMAN_DB_DIR)
 
   input = json.load(sys.stdin)
@@ -217,6 +219,7 @@ def main() -> None:
 
   _G.commit_msg_template = input['commit_msg_template']
 
+  r: dict[str, Any]
   try:
     with load_lilac(Path('.')) as mod:
       _G.mod = mod
@@ -226,7 +229,7 @@ def main() -> None:
         depend_packages = input['depend_packages'],
         update_info = NvResults.from_list(input['update_info']),
         on_build_vers = input.get('on_build_vers', []),
-        bindmounts = input['bindmounts'],
+        bindmounts = get_bindmounts(input['bindmounts']),
         tmpfs = input['tmpfs'],
       )
     r = {'status': 'done'}
@@ -241,12 +244,7 @@ def main() -> None:
       'msg': repr(e),
     }
     sys.stdout.flush()
-    try:
-      handle_failure(e, repo, mod, Path(input['logfile']))
-    except UnboundLocalError:
-      # mod failed to load
-      info = load_lilacinfo(Path('.'))
-      handle_failure(e, repo, info, Path(input['logfile']))
+    r['report'] = gen_failure_report(e)
   except KeyboardInterrupt:
     logger.info('KeyboardInterrupt received')
     r = {
@@ -257,16 +255,16 @@ def main() -> None:
     # say goodbye to all our children
     kill_child_processes()
 
-  r['version'] = getattr(_G, 'built_version', None) # type: ignore
+  r['version'] = getattr(_G, 'built_version', None)
 
   with open(input['result'], 'w') as f:
     json.dump(r, f)
 
-def handle_failure(
-  e: Exception, repo: Repo, mod: Union[LilacMod, LilacInfo], logfile: Path,
-) -> None:
+def gen_failure_report(e: Exception) -> dict[str, str]:
   logger.error('build failed', exc_info=e)
   l10n = intl.get_l10n('mail')
+
+  report = {}
 
   if isinstance(e, pkgbuild.ConflictWithOfficialError):
     reason = ''
@@ -275,23 +273,46 @@ def handle_failure(
     if e.packages:
       reason += l10n.format_value('package-replacing-official-package', {'packages': repr(e.packages)}) + '\n'
     subj = l10n.format_value('package-conflicts-with-official-repos')
-    repo.send_error_report(
-      mod, subject = subj, msg = reason,
-    )
+    report['subject'] = subj
+    report['msg'] = reason,
 
   elif isinstance(e, pkgbuild.DowngradingError):
-    repo.send_error_report(
-      mod,
-      subject = l10n.format_value('package-older-subject'),
-      msg = l10n.format_value('package-older-body', {
-        'pkg': e.pkgname,
-        'built_version': e.built_version,
-        'repo_version': e.repo_version,
-      }) + '\n',
-    )
+    report['subject'] = l10n.format_value('package-older-subject')
+    report['msg'] = l10n.format_value('package-older-body', {
+      'pkg': e.pkgname,
+      'built_version': e.built_version,
+      'repo_version': e.repo_version,
+    }) + '\n'
 
   else:
-    repo.send_error_report(mod, exc=e, logfile=logfile)
+    msgs = []
+    tb = ''.join(traceback.format_exception(type(e), e, e.__traceback__))
+    if isinstance(e, subprocess.CalledProcessError):
+      subject = l10n.format_value('packaging-error-subprocess-subject')
+      msg1 = l10n.format_value('packaging-error-subprocess', {
+        'cmd': repr(e.cmd),
+        'returncode': e.returncode,
+      })
+      msgs.append(msg1)
+      if e.output:
+        msg1 = l10n.format_value('packaging-error-subprocess-output')
+        msgs.append(msg1 + '\n\n' + e.output)
+      msg1 = l10n.format_value('packaging-error-traceback')
+      msgs.append(msg1 + '\n\n' + tb)
+    elif isinstance(e, api.AurDownloadError):
+      subject = l10n.format_value('packaging-error-aur-subject')
+      msg1 = l10n.format_value('packaging-error-aur')
+      msgs.append(msg1 + '\n\n')
+      msg1 = l10n.format_value('packaging-error-traceback')
+      msgs.append(msg1 + '\n\n' + tb)
+    else:
+      subject = l10n.format_value('packaging-error-unknown-subject')
+      msg1 = l10n.format_value('packaging-error-unknown')
+      msgs.append(msg1 + '\n\n' + tb)
+    report['subject'] = subject
+    report['msg'] = '\n'.join(msgs)
+
+  return report
 
 if __name__ == '__main__':
   main()

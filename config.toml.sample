@@ -44,10 +44,12 @@ max_concurrency = 1
 # build packages over ssh
 [[remoteworker]]
 name = "remotebuilder"
+# ssh host string; ControlMaster is advised to be used
 host = "builder.example.org"
-# the same repodir but on remote host
+# the directory on remote host that stores files
 repodir = "/path/to/gitrepo"
 max_concurrency = 2
+enabled = true
 
 [nvchecker]
 # set proxy for nvchecker

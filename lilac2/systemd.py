@@ -144,6 +144,9 @@ def _poll_cmd(pid: int) -> Generator[None, None, None]:
         logger.debug('worker exited')
         return
       yield
+  except KeyboardInterrupt:
+    # give up the service and continue
+    pass
   finally:
     os.close(pidfd)
 

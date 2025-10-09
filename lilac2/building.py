@@ -1,11 +1,10 @@
 from __future__ import annotations
 
 import os
-import sys
 import logging
 import subprocess
 from typing import (
-  Optional, Iterable, List, Set, TYPE_CHECKING,
+  Optional, Iterable, Set, TYPE_CHECKING,
 )
 import tempfile
 from pathlib import Path
@@ -21,6 +20,7 @@ from .tools import reap_zombies
 from .nomypy import BuildResult # type: ignore
 from . import systemd
 from . import intl
+from .workerman import WorkerManager
 
 if TYPE_CHECKING:
   from .repo import Repo
@@ -66,14 +66,17 @@ def build_package(
     packager = '%s (on behalf of %s) <%s>' % (
       myname, maintainer.name, maintainer.email)
 
+    assert to_build.workerman is not None
     depend_packages = resolve_depends(repo, depends)
+    to_build.workerman.sync_depended_packages(depend_packages)
     pkgdir = repo.repodir / pkgbase
     try:
-      # TODO: use to_build.wm
       pkg_version, rusage, error = call_worker(
+        repo = repo,
+        lilacinfo = lilacinfo,
         pkgbase = pkgbase,
         pkgdir = pkgdir,
-        depend_packages = [str(x) for x in depend_packages],
+        depend_packages = depend_packages,
         update_info = update_info,
         on_build_vers = to_build.on_build_vers,
         bindmounts = bindmounts,
@@ -83,6 +86,7 @@ def build_package(
         deadline = start_time + time_limit_hours * 3600,
         packager = packager,
         worker_no = worker_no,
+        workerman = to_build.workerman,
       )
       if error:
         raise error
@@ -129,9 +133,10 @@ def build_package(
     )
   return result, pkg_version
 
-def resolve_depends(repo: Optional[Repo], depends: Iterable[Dependency]) -> List[str]:
+def resolve_depends(repo: Optional[Repo], depends: Iterable[Dependency]) -> list[str]:
   need_build_first = set()
   depend_packages = []
+  cwd = os.getcwd()
 
   for x in depends:
     p = x.resolve()
@@ -141,7 +146,7 @@ def resolve_depends(repo: Optional[Repo], depends: Iterable[Dependency]) -> List
         continue
       need_build_first.add(x.pkgname)
     else:
-      depend_packages.append(str(p))
+      depend_packages.append(f'../{p.relative_to(cwd)}')
 
   if need_build_first:
     raise MissingDependencies(need_build_first)
@@ -177,10 +182,12 @@ def notify_maintainers(
   repo.sendmail(addresses, subject, body)
 
 def call_worker(
+  repo: Repo,
+  lilacinfo: LilacInfo,
   pkgbase: str,
   pkgdir: Path,
   logfile: Path,
-  depend_packages: List[str],
+  depend_packages: list[str],
   update_info: NvResults,
   on_build_vers: OnBuildVers,
   commit_msg_template: str,
@@ -189,6 +196,7 @@ def call_worker(
   deadline: float,
   packager: str,
   worker_no: int,
+  workerman: WorkerManager,
 ) -> tuple[Optional[str], RUsage, Optional[Exception]]:
   '''
   return: package version, resource usage, error information
@@ -200,8 +208,9 @@ def call_worker(
     'commit_msg_template': commit_msg_template,
     'bindmounts': bindmounts,
     'tmpfs': tmpfs,
-    'logfile': str(logfile), # for sending error reports
     'worker_no': worker_no,
+    'workerman': workerman.name,
+    'deadline': deadline,
   }
   fd, resultpath = tempfile.mkstemp(prefix=f'{pkgbase}-', suffix='.lilac')
   os.close(fd)
@@ -209,17 +218,12 @@ def call_worker(
   input_bytes = json.dumps(input).encode()
   logger.debug('worker input: %r', input_bytes)
 
-  cmd = [
-    sys.executable,
-    '-Xno_debug_ranges', # save space
-    '-P', # don't prepend cwd to sys.path where unexpected directories may exist
-    '-m', 'lilac2.worker', pkgbase,
-  ]
+  cmd = workerman.get_worker_cmd(pkgbase)
   if systemd.available():
     _call_cmd = _call_cmd_systemd
   else:
     _call_cmd = _call_cmd_subprocess
-  name = f'lilac-worker-{worker_no}'
+  name = f'lilac-worker-{workerman.name}-{worker_no}'
   rusage, timedout = _call_cmd(
     name, cmd, logfile, pkgdir, deadline,
     input_bytes, packager,
@@ -249,11 +253,20 @@ def call_worker(
   elif st == 'skipped':
     error = SkipBuild(r['msg'])
   elif st == 'failed':
+    if report := r.get('report'):
+      repo.send_error_report(
+        lilacinfo,
+        subject = report['subject'],
+        msg = report['msg'],
+        logfile = logfile,
+      )
     error = BuildFailed(r['msg'])
   else:
     error = RuntimeError('unknown status from worker', st)
 
   version = r['version']
+  if ru2 := r.get('rusage'):
+    rusage = RUsage(*ru2)
   return version, rusage, error
 
 def _call_cmd_subprocess(
