@@ -437,8 +437,8 @@ def check_buildability(
           (new, new) for _, new in db.get_update_on_build_vers(update_on_build)
         ]
         to_build = PkgToBuild(pkg, vers)
-      else:
-        logger.warning('%s not in lilacinfos.', pkg)
+    else:
+      logger.warning('%s not in lilacinfos.', pkg)
 
   return to_build
 

@@ -56,7 +56,7 @@ class Repo:
 
     self.on_built_cmds = config.get('misc', {}).get('postbuild', [])
 
-    self.lilacinfos: LilacInfos = {}  # to be filled by self.load_all_lilac_and_report()
+    self.lilacinfos: LilacInfos = {}  # to be filled by self.load_managed_lilac_and_report()
     self.yamls: dict[str, Any] = {}
     self._maint_cache: dict[str, list[Maintainer]] = {}
 
