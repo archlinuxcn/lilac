@@ -22,7 +22,6 @@ def main() -> None:
 
   cmd = ['python', '-m', 'lilac2.worker'] + sys.argv[1:]
 
-  input2: dict[str, str] = {}
   fd, resultpath = tempfile.mkstemp(prefix='remoterunner-', suffix='.lilac')
   os.close(fd)
   input['result'] = resultpath
@@ -34,7 +33,7 @@ def main() -> None:
     cwd = input.pop('pkgdir'),
     setenv = input.pop('setenv'),
   )
-  p.stdin.write(json.dumps(input2).encode()) # type: ignore
+  p.stdin.write(json.dumps(input).encode()) # type: ignore
   p.stdin.close() # type: ignore
 
   rusage, _ = systemd.poll_rusage(name, deadline)

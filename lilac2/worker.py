@@ -215,7 +215,7 @@ def main() -> None:
   pkgbuild.load_data(PACMAN_DB_DIR)
 
   input = json.load(sys.stdin)
-  logger.debug('got input: %r', input)
+  logger.debug('[worker] got input: %r', input)
 
   _G.commit_msg_template = input['commit_msg_template']
   _G.reponame = input['reponame']
