@@ -42,7 +42,7 @@ from lilac2.cmd import (
 )
 from lilac2 import tools
 from lilac2.repo import Repo
-from lilac2.const import mydir, _G, PACMAN_DB_DIR
+from lilac2.const import mydir, _G
 from lilac2.nvchecker import packages_need_update, nvtake, NvResults
 from lilac2.nomypy import BuildResult, BuildReason # type: ignore
 from lilac2.building import build_package, MissingDependencies
@@ -649,7 +649,7 @@ def main_may_raise(
   pacman_conf = config['misc'].get('pacman_conf')
   workermans = get_workermans()
   for wm in workermans:
-    wm.update_pacmandb(PACMAN_DB_DIR, pacman_conf)
+    wm.update_pacmandb(pacman_conf)
 
   if dburl := config['lilac'].get('dburl'):
     schema = config['lilac'].get('schema')

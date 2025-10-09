@@ -6,7 +6,6 @@ import json
 import signal
 import sys
 import tempfile
-from pathlib import Path
 
 from .typing import PkgToBuild, Rusages, RUsage
 
@@ -28,7 +27,7 @@ class WorkerManager:
   def sync_depended_packages(self, depends: list[str]) -> None:
     raise NotImplementedError
 
-  def update_pacmandb(self, dbdir: Path, conf: Optional[str]) -> None:
+  def update_pacmandb(self, conf: Optional[str]) -> None:
     raise NotImplementedError
 
   def try_accept_package(
@@ -139,9 +138,9 @@ class LocalWorkerManager(WorkerManager):
     pass
 
   @override
-  def update_pacmandb(self, dbdir: Path, conf: Optional[str]) -> None:
+  def update_pacmandb(self, conf: Optional[str]) -> None:
     from . import pkgbuild
-    pkgbuild.update_data(dbdir, conf)
+    pkgbuild.update_data(conf)
 
 class RemoteWorkerManager(WorkerManager):
   name: str
@@ -184,9 +183,9 @@ class RemoteWorkerManager(WorkerManager):
     subprocess.run(rsync_cmd, text=True, input=includes, check=True)
 
   @override
-  def update_pacmandb(self, dbdir: Path, conf: Optional[str]) -> None:
+  def update_pacmandb(self, conf: Optional[str]) -> None:
     sshcmd = self.get_sshcmd_prefix() + [
-      'python', '-m', 'lilac2.pkgbuild', str(dbdir), conf or '',
+      'python', '-m', 'lilac2.pkgbuild', conf or '',
     ]
     subprocess.check_call(sshcmd)
 
