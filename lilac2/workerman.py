@@ -9,7 +9,6 @@ import tempfile
 
 from . import tools
 from .typing import PkgToBuild, Rusages, RUsage
-from .cmd import run_cmd
 
 logger = logging.getLogger(__name__)
 
@@ -177,7 +176,6 @@ class RemoteWorkerManager(WorkerManager):
 
   def prepare_files(self, pkgname: str) -> None:
     # run in remote.worker
-    run_cmd(['recv_gpg_keys'])
     out = subprocess.check_output(['git', 'ls-files', '.'], text=True)
     rsync_cmd = [
       'rsync', '-avi',
