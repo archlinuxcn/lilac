@@ -40,6 +40,8 @@ logurl = "https://example.com/${pkgbase}/${datetime}.html"
 # the schema to use; by default lilac uses the schema "lilac"
 # schema = "lilac"
 max_concurrency = 1
+# whether to disable local worker (and use remote only)
+# disable_local_worker = false
 
 # build packages over ssh
 [[remoteworker]]
