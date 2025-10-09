@@ -117,5 +117,5 @@ OnBuildVers = list[tuple[str, str]]
 @dataclasses.dataclass
 class PkgToBuild:
   pkgbase: str
-  on_build_vers: OnBuildVers = []
+  on_build_vers: OnBuildVers = dataclasses.field(default_factory=list)
   workerman: Optional[WorkerManager] = None
