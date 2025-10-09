@@ -617,7 +617,7 @@ def get_workermans():
   ret = []
   workers_before = 0
 
-  if config['lilac'].get('disable_local_worker', False):
+  if not config['lilac'].get('disable_local_worker', False):
     max_concurrency = config['lilac'].get('max_concurrency', 1)
     local = workerman.LocalWorkerManager(max_concurrency)
     ret.append(local)
