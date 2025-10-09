@@ -108,7 +108,7 @@ def load_lilacinfo(dir: Path) -> LilacInfo:
 def expand_alias_arg(value: str) -> str:
   return value.format(
     pacman_db_dir = PACMAN_DB_DIR,
-    repo_name = _G.repo.name,
+    repo_name = _G.reponame,
   )
 
 def parse_update_on(
@@ -134,7 +134,7 @@ def parse_update_on(
     if alias == 'alpm-lilac':
       entry['source'] = 'alpm'
       entry.setdefault('dbpath', str(PACMAN_DB_DIR))
-      entry.setdefault('repo', _G.repo.name)
+      entry.setdefault('repo', _G.reponame)
 
     elif alias is not None:
       for k, v in ALIASES[alias].items():

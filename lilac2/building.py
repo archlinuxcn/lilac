@@ -211,6 +211,7 @@ def call_worker(
     'worker_no': worker_no,
     'workerman': workerman.name,
     'deadline': deadline,
+    'reponame': repo.name,
   }
   fd, resultpath = tempfile.mkstemp(prefix=f'{pkgbase}-', suffix='.lilac')
   os.close(fd)

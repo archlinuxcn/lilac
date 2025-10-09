@@ -45,7 +45,6 @@ from lilac2.repo import Repo
 from lilac2.const import mydir, _G, PACMAN_DB_DIR
 from lilac2.nvchecker import packages_need_update, nvtake, NvResults
 from lilac2.nomypy import BuildResult, BuildReason # type: ignore
-from lilac2 import pkgbuild
 from lilac2.building import build_package, MissingDependencies
 from lilac2 import slogconf
 from lilac2 import intl
@@ -641,7 +640,9 @@ def main_may_raise(
     logger.warning('/etc/resolv.conf is a symlink; this might not work!')
 
   pacman_conf = config['misc'].get('pacman_conf')
-  pkgbuild.update_data(PACMAN_DB_DIR, pacman_conf)
+  workermans = get_workermans()
+  for wm in workermans:
+    wm.update_pacmandb(PACMAN_DB_DIR, pacman_conf)
 
   if dburl := config['lilac'].get('dburl'):
     schema = config['lilac'].get('schema')
@@ -764,7 +765,6 @@ def main_may_raise(
     build_reasons[p].append(BuildReason.OnBuild(update_on_build))
 
   update_succeeded: set[str] = set()
-  workermans = get_workermans()
 
   try:
     build_logger.info('build start')

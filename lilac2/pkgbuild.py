@@ -167,3 +167,9 @@ def _get_package_version(srcinfo: List[str]) -> PkgVers:
   assert pkgver is not None
   assert pkgrel is not None
   return PkgVers(epoch, pkgver, pkgrel)
+
+if __name__ == '__main__':
+  import sys
+  dbdir = Path(sys.argv[1])
+  conf = sys.argv[2] or None
+  update_data(dbdir, conf)

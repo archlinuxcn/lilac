@@ -218,6 +218,7 @@ def main() -> None:
   logger.debug('got input: %r', input)
 
   _G.commit_msg_template = input['commit_msg_template']
+  _G.reponame = input['reponame']
 
   r: dict[str, Any]
   try:

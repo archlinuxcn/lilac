@@ -6,8 +6,8 @@ import json
 import signal
 import sys
 import tempfile
+from pathlib import Path
 
-from . import tools
 from .typing import PkgToBuild, Rusages, RUsage
 
 logger = logging.getLogger(__name__)
@@ -26,6 +26,9 @@ class WorkerManager:
     raise NotImplementedError
 
   def sync_depended_packages(self, depends: list[str]) -> None:
+    raise NotImplementedError
+
+  def update_pacmandb(self, dbdir: Path, conf: Optional[str]) -> None:
     raise NotImplementedError
 
   def try_accept_package(
@@ -126,6 +129,7 @@ class LocalWorkerManager(WorkerManager):
 
   @override
   def get_resource_usage(self) -> tuple[float, int]:
+    from . import tools
     cpu_ratio = tools.get_running_task_cpu_ratio()
     memory_avail = tools.get_avail_memory()
     return cpu_ratio, memory_avail
@@ -133,6 +137,11 @@ class LocalWorkerManager(WorkerManager):
   @override
   def sync_depended_packages(self, depends: list[str]) -> None:
     pass
+
+  @override
+  def update_pacmandb(self, dbdir: Path, conf: Optional[str]) -> None:
+    from . import pkgbuild
+    pkgbuild.update_data(dbdir, conf)
 
 class RemoteWorkerManager(WorkerManager):
   name: str
@@ -173,6 +182,13 @@ class RemoteWorkerManager(WorkerManager):
       './', f'{self.host}:{self.repodir.removesuffix('/')}',
     ]
     subprocess.run(rsync_cmd, text=True, input=includes, check=True)
+
+  @override
+  def update_pacmandb(self, dbdir: Path, conf: Optional[str]) -> None:
+    sshcmd = self.get_sshcmd_prefix() + [
+      'python', '-m', 'lilac2.pkgbuild', str(dbdir), conf or '',
+    ]
+    subprocess.check_call(sshcmd)
 
   def prepare_files(self, pkgname: str) -> None:
     # run in remote.worker
