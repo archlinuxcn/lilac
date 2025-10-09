@@ -215,7 +215,7 @@ class RemoteWorkerManager(WorkerManager):
     deadline: float,
     worker_no: int,
     input: dict[str, Any],
-  ) -> None:
+  ) -> dict[str, Any]:
     # run in remote.worker
 
     setenv = {
@@ -278,9 +278,10 @@ class RemoteWorkerManager(WorkerManager):
       sshcmd = self.get_sshcmd_prefix() + ['cat', resultpath]
       out = subprocess.check_output(sshcmd, text=True)
       r = json.loads(out)
-      self.rusage = RUsage(*r['rusage'])
+      self.rusage = RUsage(*r.pop('rusage'))
       if r['status'] == 'failed':
         raise Exception(r['msg'])
+      return r
     finally:
       if e:
         raise e

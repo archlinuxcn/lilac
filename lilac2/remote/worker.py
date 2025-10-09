@@ -27,7 +27,7 @@ def main() -> None:
   try:
     pkgname = os.path.basename(os.getcwd())
     workerman.prepare_files(pkgname)
-    workerman.run_remote(pkgname, deadline, worker_no, input)
+    remote_r = workerman.run_remote(pkgname, deadline, worker_no, input)
     workerman.fetch_files(pkgname)
     r = {'status': 'done'}
   except Exception as e:
@@ -47,7 +47,8 @@ def main() -> None:
     kill_child_processes()
 
   with open(myresultpath, 'w') as f:
-    json.dump(r, f)
+    remote_r.update(r)
+    json.dump(remote_r, f)
 
 if __name__ == '__main__':
   main()
