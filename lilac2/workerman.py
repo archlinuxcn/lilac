@@ -263,7 +263,6 @@ class RemoteWorkerManager(WorkerManager):
     # run in remote.worker
 
     setenv = {
-      'MAKEFLAGS': os.environ.get('MAKEFLAGS', ''),
       'PACKAGER': os.environ.get('PACKAGER', ''),
       'LANG': os.environ.get('LANG', 'C.UTF-8'),
     }

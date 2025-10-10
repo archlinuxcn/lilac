@@ -31,12 +31,20 @@ def main() -> None:
   os.close(fd)
   input['result'] = resultpath
 
+  setenv = input.pop('setenv')
+  if v := os.environ.get('MAKEFLAGS'):
+    setenv['MAKEFLAGS'] = v
+  else:
+    cores = os.process_cpu_count()
+    if cores is not None:
+      setenv['MAKEFLAGS'] = '-j{0}'.format(cores)
+
   p = systemd.start_cmd(
     name,
     cmd,
     stdin = subprocess.PIPE,
     cwd = input.pop('pkgdir'),
-    setenv = input.pop('setenv'),
+    setenv = setenv,
   )
   p.stdin.write(json.dumps(input).encode()) # type: ignore
   p.stdin.close() # type: ignore

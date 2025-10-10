@@ -864,7 +864,7 @@ def setup() -> Path:
 
   enable_pretty_logging('DEBUG')
   if 'MAKEFLAGS' not in os.environ:
-    cores = os.cpu_count()
+    cores = os.process_cpu_count()
     if cores is not None:
       os.environ['MAKEFLAGS'] = '-j{0}'.format(cores)
 
