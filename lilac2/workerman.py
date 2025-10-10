@@ -27,7 +27,13 @@ class WorkerManager:
   def sync_depended_packages(self, depends: list[str]) -> None:
     raise NotImplementedError
 
-  def update_pacmandb(self, conf: Optional[str]) -> None:
+  def prepare_batch(
+    self,
+    pacman_conf: Optional[str],
+  ) -> None:
+    raise NotImplementedError
+
+  def finish_batch(self) -> None:
     raise NotImplementedError
 
   def try_accept_package(
@@ -138,21 +144,30 @@ class LocalWorkerManager(WorkerManager):
     pass
 
   @override
-  def update_pacmandb(self, conf: Optional[str]) -> None:
+  def prepare_batch(
+    self,
+    pacman_conf: Optional[str],
+  ) -> None:
     from . import pkgbuild
-    pkgbuild.update_data(conf)
+    pkgbuild.update_data(pacman_conf)
+
+  @override
+  def finish_batch(self) -> None:
+    pass
 
 class RemoteWorkerManager(WorkerManager):
   name: str
   max_concurrency: int
   repodir: str
   host: str
+  config: dict[str, Any]
 
-  def __init__(self, remote) -> None:
+  def __init__(self, remote: dict[str, Any]) -> None:
     self.name = remote['name']
     self.repodir = remote['repodir']
     self.host = remote['host']
     self.max_concurrency = remote.get('max_concurrency', 1)
+    self.config = remote
 
   @override
   def get_worker_cmd(self, pkgbase: str) -> list[str]:
@@ -172,6 +187,9 @@ class RemoteWorkerManager(WorkerManager):
 
   @override
   def sync_depended_packages(self, depends: list[str]) -> None:
+    if not depends:
+      return
+
     includes = ''.join(f'/{p.rsplit('/', 2)[1]}\n' for p in depends)
     rsync_cmd = [
       'rsync', '-avi',
@@ -183,21 +201,28 @@ class RemoteWorkerManager(WorkerManager):
     subprocess.run(rsync_cmd, text=True, input=includes, check=True)
 
   @override
-  def update_pacmandb(self, conf: Optional[str]) -> None:
+  def prepare_batch(
+    self,
+    pacman_conf: Optional[str],
+  ) -> None:
+    # update pacman databases
     sshcmd = self.get_sshcmd_prefix() + [
-      'python', '-m', 'lilac2.pkgbuild', conf or '',
+      'python', '-m', 'lilac2.pkgbuild', pacman_conf or '',
     ]
     subprocess.check_call(sshcmd)
 
-  def prepare_files(self, pkgname: str) -> None:
-    # run in remote.worker
-    out = subprocess.check_output(['git', 'ls-files', '.'], text=True)
-    rsync_cmd = [
-      'rsync', '-avi',
-      '--include-from=-',
-      './', f'{self.host}:{self.repodir.removesuffix('/')}/{pkgname}',
+    sshcmd = self.get_sshcmd_prefix() + [
+      'python', '-m', 'lilac2.remote.git_pull', f'"{self.repodir}"',
     ]
-    subprocess.run(rsync_cmd, input=out, text=True, check=True)
+    subprocess.run(sshcmd, check=True)
+    
+    if prerun := self.config.get('prerun'):
+      run_cmds(prerun)
+
+  @override
+  def finish_batch(self) -> None:
+    if postrun := self.config.get('postrun'):
+      run_cmds(postrun)
 
   def fetch_files(self, pkgname: str) -> None:
     # run in remote.worker
@@ -295,3 +320,7 @@ class RemoteWorkerManager(WorkerManager):
       return ['ssh', '-t', self.host]
     else:
       return ['ssh', '-T', self.host]
+
+def run_cmds(cmds: list[list[str]]) -> None:
+  for cmd in cmds:
+    subprocess.check_call(cmd)

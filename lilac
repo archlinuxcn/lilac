@@ -653,7 +653,7 @@ def main_may_raise(
   pacman_conf = config['misc'].get('pacman_conf')
   workermans = get_workermans()
   for wm in workermans:
-    wm.update_pacmandb(pacman_conf)
+    wm.prepare_batch(pacman_conf)
 
   if dburl := config['lilac'].get('dburl'):
     schema = config['lilac'].get('schema')
@@ -829,6 +829,9 @@ def main_may_raise(
     git_reset_hard()
     if config['lilac']['git_push']:
       git_push()
+
+    for wm in workermans:
+      wm.finish_batch()
 
     if cmds := config.get('misc', {}).get('postrun'):
       for cmd in cmds:

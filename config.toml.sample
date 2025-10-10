@@ -52,6 +52,15 @@ host = "builder.example.org"
 repodir = "/path/to/gitrepo"
 max_concurrency = 2
 enabled = true
+# run some commands before each run
+# prerun = [
+#   ["sudo", "update_something"],
+# ]
+
+# run some commands after each run
+# postrun = [
+#   ["upload-packages"],
+# ]
 
 [nvchecker]
 # set proxy for nvchecker
