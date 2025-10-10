@@ -7,7 +7,7 @@ import signal
 import sys
 import tempfile
 
-from .typing import PkgToBuild, Rusages, RUsage
+from .typing import PkgToBuild, Rusages
 
 logger = logging.getLogger(__name__)
 
@@ -16,7 +16,6 @@ class WorkerManager:
   max_concurrency: int
   workers_before_me: int = 0
   current_task_count: int = 0
-  rusage: Optional[RUsage] = None
 
   def get_worker_cmd(self, pkgbase: str) -> list[str]:
     raise NotImplementedError
@@ -330,7 +329,6 @@ class RemoteWorkerManager(WorkerManager):
       sshcmd = self.get_sshcmd_prefix() + ['cat', resultpath]
       out = subprocess.check_output(sshcmd, text=True)
       r = json.loads(out)
-      self.rusage = RUsage(*r.pop('rusage'))
       return r
     finally:
       if e:
