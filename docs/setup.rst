@@ -45,6 +45,8 @@ Make sure in ``/etc/makepkg.conf`` or similar files there aren't any changes to 
 
 The ``PKGBUILD`` files needs to be in a git repo. A subdirectory inside it is recommended.
 
+Configure the desired git committer name and email in ``~/.gitconfig`` or using a ``git config`` command.
+
 Setup a passphrase-less GPG key for the build user to sign packages:
 
 .. code-block:: sh
