@@ -217,12 +217,23 @@ class RemoteWorkerManager(WorkerManager):
     subprocess.run(sshcmd, check=True)
     
     if prerun := self.config.get('prerun'):
-      run_cmds(prerun)
+      self.run_cmds(prerun)
 
   @override
   def finish_batch(self) -> None:
+    out = subprocess.check_output(['git', 'remote'])
+    remotes = out.splitlines()
+    if self.name not in remotes:
+      subprocess.check_call([
+        'git', 'remote', 'add', self.name,
+        f'{self.host}:{self.repodir}',
+      ])
+    subprocess.check_call([
+      'git', 'pull', '--no-edit', self.name, 'master',
+    ])
+
     if postrun := self.config.get('postrun'):
-      run_cmds(postrun)
+      self.run_cmds(postrun)
 
   def fetch_files(self, pkgname: str) -> None:
     # run in remote.worker
@@ -321,6 +332,6 @@ class RemoteWorkerManager(WorkerManager):
     else:
       return ['ssh', '-T', self.host]
 
-def run_cmds(cmds: list[list[str]]) -> None:
-  for cmd in cmds:
-    subprocess.check_call(cmd)
+  def run_cmds(self, cmds: list[str]) -> None:
+    for cmd in cmds:
+      subprocess.check_call(self.get_sshcmd_prefix() + [cmd])

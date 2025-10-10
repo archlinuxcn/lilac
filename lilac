@@ -787,6 +787,10 @@ def main_may_raise(
         db.build_updated(s)
     start_build(REPO, logdir, failed, update_succeeded, workermans)
   finally:
+    # fetch remote commits
+    for wm in workermans:
+      wm.finish_batch()
+
     D['last_commit'] = git_last_commit()
     # handle what has been processed even on exception
     for k, v in failed.items():
@@ -829,9 +833,6 @@ def main_may_raise(
     git_reset_hard()
     if config['lilac']['git_push']:
       git_push()
-
-    for wm in workermans:
-      wm.finish_batch()
 
     if cmds := config.get('misc', {}).get('postrun'):
       for cmd in cmds:
