@@ -224,9 +224,14 @@ class RemoteWorkerManager(WorkerManager):
     out = subprocess.check_output(['git', 'remote'])
     remotes = out.splitlines()
     if self.name not in remotes:
+      sshcmd = self.get_sshcmd_prefix() + ['git rev-parse --show-prefix']
+      out = subprocess.check_output(sshcmd).strip('\n/')
+      if out:
+        reporoot = self.repodir.removesuffix(out).rstrip('/')
+      else:
+        reporoot = self.repodir
       subprocess.check_call([
-        'git', 'remote', 'add', self.name,
-        f'{self.host}:{self.repodir}',
+        'git', 'remote', 'add', self.name, f'{self.host}:{reporoot}',
       ])
     subprocess.check_call([
       'git', 'pull', '--no-edit', self.name, 'master',
