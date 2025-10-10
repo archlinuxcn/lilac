@@ -247,7 +247,7 @@ class RemoteWorkerManager(WorkerManager):
     # run in remote.worker
     rsync_cmd = [
       'rsync', '-avi',
-      '--include=*.pkg.tar.zst', '--exclude=*'
+      '--include=*.pkg.tar.zst', '--exclude=*',
       f'{self.host}:{self.repodir.removesuffix('/')}/{pkgname}/',
       '.',
     ]
