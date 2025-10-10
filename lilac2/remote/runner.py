@@ -20,7 +20,12 @@ def main() -> None:
   deadline = input.pop('deadline')
   myresultpath = input.pop('result')
 
-  cmd = ['python', '-m', 'lilac2.worker'] + sys.argv[1:]
+  cmd = [
+    sys.executable,
+    '-Xno_debug_ranges', # save space
+    '-P', # don't prepend cwd to sys.path where unexpected directories may exist
+    '-m', 'lilac2.worker',
+  ] + sys.argv[1:]
 
   fd, resultpath = tempfile.mkstemp(prefix='remoterunner-', suffix='.lilac')
   os.close(fd)
