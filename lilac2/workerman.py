@@ -324,8 +324,6 @@ class RemoteWorkerManager(WorkerManager):
       out = subprocess.check_output(sshcmd, text=True)
       r = json.loads(out)
       self.rusage = RUsage(*r.pop('rusage'))
-      if r['status'] == 'failed':
-        raise Exception(r['msg'])
       return r
     finally:
       if e:
