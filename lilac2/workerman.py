@@ -222,13 +222,13 @@ class RemoteWorkerManager(WorkerManager):
 
   @override
   def finish_batch(self) -> None:
-    out = subprocess.check_output(['git', 'remote'])
+    out = subprocess.check_output(['git', 'remote'], text=True)
     remotes = out.splitlines()
     if self.name not in remotes:
       sshcmd = self.get_sshcmd_prefix() + [
         f'cd "{self.repodir}" && git rev-parse --show-prefix'
       ]
-      out = subprocess.check_output(sshcmd).strip('\n/')
+      out = subprocess.check_output(sshcmd, text=True).strip('\n/')
       if out:
         reporoot = self.repodir.removesuffix(out).rstrip('/')
       else:
