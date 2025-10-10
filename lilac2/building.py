@@ -91,7 +91,8 @@ def build_package(
       if error:
         raise error
     finally:
-      may_need_cleanup()
+      if to_build.workerman.name == 'local':
+        may_need_cleanup()
       reap_zombies()
 
     staging = lilacinfo.staging
