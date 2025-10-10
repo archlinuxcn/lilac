@@ -283,7 +283,10 @@ class RemoteWorkerManager(WorkerManager):
 
     input_bytes = json.dumps(input).encode()
     sshcmd: list[str] = self.get_sshcmd_prefix(pty=True) + [
-      'python', '-m', 'lilac2.remote.runner', pkgname, str(worker_no),
+      'python',
+      '-Xno_debug_ranges', # save space
+      '-P', # don't prepend cwd to sys.path where unexpected directories may exist
+      '-m', 'lilac2.remote.runner', pkgname, str(worker_no),
     ]
     p = subprocess.Popen(
       sshcmd,
