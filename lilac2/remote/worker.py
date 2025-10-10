@@ -24,6 +24,7 @@ def main() -> None:
   deadline = input['deadline']
   myresultpath = input.pop('result')
 
+  remote_r = {}
   try:
     pkgname = os.path.basename(os.getcwd())
     remote_r = workerman.run_remote(pkgname, deadline, worker_no, input)
