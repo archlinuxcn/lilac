@@ -168,7 +168,7 @@ def sign_and_copy(pkgdir: Path, dest: Path) -> None:
   for pkg in pkgs:
     subprocess.run([
       'gpg', '--pinentry-mode', 'loopback',
-       '--passphrase', '', '--detach-sign', '--', pkg,
+       '--passphrase', '', '--detach-sign', '--yes', '--', pkg,
     ])
   for f in pkgs + [x.with_name(x.name + '.sig') for x in pkgs]:
     with suppress(FileExistsError):
