@@ -198,6 +198,7 @@ class RemoteWorkerManager(WorkerManager):
       '--delete',
       './', f'{self.host}:{self.repodir.removesuffix('/')}',
     ]
+    logger.info('[%s] sync_depended_packages: %s', self.name, rsync_cmd)
     subprocess.run(rsync_cmd, text=True, input=includes, check=True)
 
   @override
@@ -250,6 +251,7 @@ class RemoteWorkerManager(WorkerManager):
       f'{self.host}:{self.repodir.removesuffix('/')}/{pkgname}/',
       '.',
     ]
+    logger.info('[%s] fetch_files: %s', self.name, rsync_cmd)
     subprocess.run(rsync_cmd, check=True)
 
   def run_remote(

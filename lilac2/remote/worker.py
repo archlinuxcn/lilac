@@ -24,12 +24,12 @@ def main() -> None:
   deadline = input['deadline']
   myresultpath = input.pop('result')
 
-  remote_r = {}
+  remote_r = {'status': 'done', 'version': None}
+  r = {}
   try:
     pkgname = os.path.basename(os.getcwd())
     remote_r = workerman.run_remote(pkgname, deadline, worker_no, input)
     workerman.fetch_files(pkgname)
-    r = {'status': 'done', 'version': None}
   except Exception as e:
     r = {
       'status': 'failed',
