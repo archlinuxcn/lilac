@@ -207,12 +207,14 @@ class RemoteWorkerManager(WorkerManager):
   ) -> None:
     # update pacman databases
     sshcmd = self.get_sshcmd_prefix() + [
-      'python', '-m', 'lilac2.pkgbuild', pacman_conf or '',
+      'python', '-Xno_debug_ranges', '-P',
+      '-m', 'lilac2.pkgbuild', pacman_conf or '',
     ]
     subprocess.check_call(sshcmd)
 
     sshcmd = self.get_sshcmd_prefix() + [
-      'python', '-m', 'lilac2.remote.git_pull', f'"{self.repodir}"',
+      'python', '-Xno_debug_ranges', '-P',
+      '-m', 'lilac2.remote.git_pull', f'"{self.repodir}"',
     ]
     subprocess.run(sshcmd, check=True)
     
