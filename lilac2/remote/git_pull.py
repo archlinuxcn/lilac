@@ -11,3 +11,4 @@ def main():
 if __name__ == '__main__':
   wd = sys.argv[1]
   os.chdir(wd)
+  main()
