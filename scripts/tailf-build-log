@@ -18,7 +18,7 @@ FMT = {
   'staged': f'[{c(12)}%(ts)s{c(7)}] {c(15)}%(pkgbase)s{c(7)} %(nv_version)s %(action)s{c(7)} as {c(15)}%(pkg_version)s{c(7)} in {c(6)}%(elapsed)s',
   'failed': f'[{c(12)}%(ts)s{c(7)}] {c(15)}%(pkgbase)s{c(7)} %(nv_version)s %(action)s{c(7)} to build as {c(15)}%(pkg_version)s{c(7)} in {c(6)}%(elapsed)s',
   'skipped': f'[{c(12)}%(ts)s{c(7)}] {c(15)}%(pkgbase)s{c(7)} %(nv_version)s %(action)s{c(7)} because {c(15)}%(msg)s',
-  '_rusage': f'{c(7)}; CPU time: {c(6)}%(cputime)s{c(7)} (%(cpupercent)s%%{c(7)}), Memory: {c(5)}%(memory)s{c(7)} on {c(6)}%(builder)s\n',
+  '_rusage': f'{c(7)}; CPU time: {c(6)}%(cputime)s{c(7)} (%(cpupercent)s%%{c(7)}), Memory: {c(5)}%(memory)s{c(7)}',
   '_batch': f'[{c(12)}%(ts)s{c(7)}] {c(14)}build %(event)s\n',
 }
 
@@ -65,11 +65,12 @@ def pretty_print(log):
     cputime = 0
     memory = 0
 
+  builder = log['builder']
+  n_cores = N_CORES.get(builder, N_CORES['local'])
   if log['elapsed']:
     cpupercent = round(100 * cputime / log['elapsed'])
   else:
     cpupercent = 0
-  n_cores = N_CORES.get(log['builder'], 'local')
   cpupercent = color_gradient(1 - cpupercent / 100 / n_cores) + str(cpupercent)
 
   args = {
@@ -83,11 +84,14 @@ def pretty_print(log):
     'cputime': humantime(cputime),
     'cpupercent': cpupercent,
     'memory': filesize(memory),
-    'builder': log['builder'],
+    'builder': builder,
   }
 
   fmt = FMT[result]
   out = c(7) + fmt % args + FMT['_rusage'] % args
+  if builder != 'local':
+    out += f' on {c(6)}{builder}'
+  out += '\n'
   if result == 'failed':
     out += f'{c(8)}{log["msg"][:1000]}\n'
   sys.stdout.write(out)
