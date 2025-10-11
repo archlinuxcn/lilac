@@ -21,7 +21,8 @@ def main() -> None:
   logger.debug('[remote.worker] got input: %r', input)
   workerman = WorkerManager.from_name(config, input.pop('workerman'))
   worker_no = input['worker_no']
-  deadline = input['deadline']
+  # make remote process to exit 60s earlier so that we could do some cleanup
+  deadline = input.pop('deadline') - 60
   myresultpath = input.pop('result')
 
   remote_r = {'status': 'done', 'version': None}
