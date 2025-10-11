@@ -148,6 +148,7 @@ class LocalWorkerManager(WorkerManager):
     pacman_conf: Optional[str],
   ) -> None:
     from . import pkgbuild
+    logger.info('[%s] updating pacman databases', self.name)
     pkgbuild.update_data(pacman_conf)
 
   @override
@@ -210,12 +211,14 @@ class RemoteWorkerManager(WorkerManager):
       'python', '-Xno_debug_ranges', '-P',
       '-m', 'lilac2.pkgbuild', pacman_conf or '',
     ]
+    logger.info('[%s] running %s', self.name, sshcmd)
     subprocess.check_call(sshcmd)
 
     sshcmd = self.get_sshcmd_prefix() + [
       'python', '-Xno_debug_ranges', '-P',
       '-m', 'lilac2.remote.git_pull', f'"{self.repodir}"',
     ]
+    logger.info('[%s] running %s', self.name, sshcmd)
     subprocess.run(sshcmd, check=True)
     
     if prerun := self.config.get('prerun'):
