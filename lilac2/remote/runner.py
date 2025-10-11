@@ -19,6 +19,7 @@ def main() -> None:
   name = input.pop('name')
   deadline = input.pop('deadline')
   myresultpath = input.pop('result')
+  worker_no = input['worker_no']
 
   cmd = [
     sys.executable,
@@ -49,7 +50,7 @@ def main() -> None:
   p.stdin.write(json.dumps(input).encode()) # type: ignore
   p.stdin.close() # type: ignore
 
-  rusage, _ = systemd.poll_rusage(name, deadline)
+  rusage, _ = systemd.poll_rusage(name, deadline, worker_no=worker_no)
   p.wait()
 
   with open(resultpath, 'rb') as f:
