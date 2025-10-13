@@ -8,6 +8,7 @@ import sys
 import tempfile
 
 from .typing import PkgToBuild, Rusages
+from .cmd import git_pull_override
 
 logger = logging.getLogger(__name__)
 
@@ -240,9 +241,7 @@ class RemoteWorkerManager(WorkerManager):
       subprocess.check_call([
         'git', 'remote', 'add', self.name, f'{self.host}:{reporoot}',
       ])
-    subprocess.check_call([
-      'git', 'pull', '--no-edit', self.name, 'master',
-    ])
+    git_pull_override(self.name, 'master')
 
     if postrun := self.config.get('postrun'):
       self.run_cmds(postrun)
