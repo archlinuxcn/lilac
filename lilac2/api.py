@@ -474,10 +474,15 @@ def _try_aur_url(name: str) -> bytes:
   templates = [aur4url]
   urls = [url.format(first_two=name[:2], name=name) for url in templates]
   for url in urls:
-    response = s.get(url)
-    if response.status_code == 200:
-      logger.debug("downloaded aur tarball '%s' from url '%s'", name, url)
-      return response.content
+    for _ in range(2):
+      response = s.get(url)
+      if response.status_code == 200:
+        logger.debug("downloaded aur tarball '%s' from url '%s'", name, url)
+        return response.content
+      elif response.status_code >= 500:
+        logger.warning('AUR download failed, retrying.')
+      else:
+        break
   logger.error("failed to find aur url for '%s'", name)
   raise AurDownloadError(name)
 
