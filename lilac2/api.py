@@ -480,7 +480,7 @@ def _try_aur_url(name: str) -> bytes:
         logger.debug("downloaded aur tarball '%s' from url '%s'", name, url)
         return response.content
       elif response.status_code >= 500:
-        logger.warning('AUR download failed, retrying.')
+        logger.warning('AUR download failed.')
       else:
         break
   logger.error("failed to find aur url for '%s'", name)
