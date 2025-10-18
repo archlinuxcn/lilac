@@ -45,6 +45,24 @@ Make sure in ``/etc/makepkg.conf`` or similar files there aren't any changes to 
 
 The ``PKGBUILD`` files needs to be in a git repo. A subdirectory inside it is recommended.
 
+Configure the desired git committer name and email in ``~/.gitconfig`` or using a ``git config`` command.
+
+To avoid an issue with recent git version, configure the follow git option too:
+
+.. code-block:: sh
+
+  git config --global maintenance.autoDetach false
+
+Or you may get the following errors from time to time::
+
+  fatal: update_ref failed for ref 'HEAD': cannot lock ref 'HEAD': Unable to create '...repo/.git/HEAD.lock': File exists.
+  
+  Another git process seems to be running in this repository, e.g.
+  an editor opened by 'git commit'. Please make sure all processes
+  are terminated then try again. If it still fails, a git process
+  may have crashed in this repository earlier:
+  remove the file manually to continue.
+
 Setup a passphrase-less GPG key for the build user to sign packages:
 
 .. code-block:: sh

@@ -25,6 +25,14 @@ Docs
 Update
 ----
 
+### 2025-09-27
+if database is in use, run the following SQL to update:
+
+```sql
+
+alter table lilac.pkglog add column builder text not null default 'local';
+```
+
 ### 2024-06-28
 
 if database is in use, run the following SQL to update:

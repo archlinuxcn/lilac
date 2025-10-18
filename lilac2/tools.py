@@ -49,3 +49,8 @@ def get_avail_memory() -> int:
       if l.startswith('MemAvailable:'):
         return int(l.split()[1]) * 1024
   return 10 *  1024 ** 3
+
+if __name__ == '__main__':
+  cpu = get_running_task_cpu_ratio()
+  mem = get_avail_memory()
+  print(cpu, mem)

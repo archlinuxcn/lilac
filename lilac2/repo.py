@@ -20,7 +20,7 @@ from .vendor.github import GitHub
 from .mail import MailService
 from .packages import get_built_package_files
 from .tools import ansi_escape_re
-from . import api, lilacyaml, intl
+from . import lilacyaml, intl
 from .typing import LilacMod, Maintainer, LilacInfos, LilacInfo
 from .nomypy import BuildResult # type: ignore
 if TYPE_CHECKING:
@@ -44,7 +44,7 @@ class Repo:
     self.commit_msg_prefix = config['lilac'].get('commit_msg_prefix', '')
 
     self.repodir = Path(config['repository']['repodir']).expanduser()
-    self.bindmounts = self._get_bindmounts(config.get('bindmounts'))
+    self.bindmounts = config.get('bindmounts', [])
     self.tmpfs = config.get('misc', {}).get('tmpfs', [])
 
     self.ms = MailService(config)
@@ -56,7 +56,7 @@ class Repo:
 
     self.on_built_cmds = config.get('misc', {}).get('postbuild', [])
 
-    self.lilacinfos: LilacInfos = {}  # to be filled by self.load_all_lilac_and_report()
+    self.lilacinfos: LilacInfos = {}  # to be filled by self.load_managed_lilac_and_report()
     self.yamls: dict[str, Any] = {}
     self._maint_cache: dict[str, list[Maintainer]] = {}
 
@@ -286,12 +286,6 @@ class Repo:
           msgs.append(msg1 + '\n\n' + exc.output)
         msg1 = l10n.format_value('packaging-error-traceback')
         msgs.append(msg1 + '\n\n' + tb)
-      elif isinstance(exc, api.AurDownloadError):
-        subject_real = subject or l10n.format_value('packaging-error-aur-subject')
-        msg1 = l10n.format_value('packaging-error-aur')
-        msgs.append(msg1 + '\n\n')
-        msg1 = l10n.format_value('packaging-error-traceback')
-        msgs.append(msg1 + '\n\n' + tb)
       elif isinstance(exc, TimeoutError):
         subject_real = subject or l10n.format_value('packaging-error-timeout-subject')
       else:
@@ -312,6 +306,15 @@ class Repo:
         # strictly encoded, disallowing surrogate pairs
         with logfile.open(errors='replace') as f:
           build_output = f.read()
+
+        if len(build_output) > 200 * 1024:
+          too_long = l10n.format_value('log-too-long')
+          build_output = (
+            build_output[:100 * 1024]
+            + '\n\n' + too_long + '\n\n'
+            + build_output[-100 * 1024:]
+          )
+
         if build_output:
           log_header = l10n.format_value('packaging-log')
           with suppress(ValueError, KeyError): # invalid template or wrong key
@@ -380,13 +383,3 @@ class Repo:
       except Exception:
         logger.exception('postbuild cmd error for %r', cmd)
 
-  def _get_bindmounts(
-    self, bindmounts: Optional[dict[str, str]],
-  ) -> list[str]:
-    if bindmounts is None:
-      return []
-
-    items = [(os.path.expanduser(src), dst)
-            for src, dst in bindmounts.items()]
-    items.sort(reverse=True)
-    return [f'{src}:{dst}' for src, dst in items]

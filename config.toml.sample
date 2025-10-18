@@ -40,6 +40,29 @@ logurl = "https://example.com/${pkgbase}/${datetime}.html"
 # the schema to use; by default lilac uses the schema "lilac"
 # schema = "lilac"
 max_concurrency = 1
+# whether to disable local worker (and use remote only)
+# disable_local_worker = false
+
+# build packages over ssh
+[[remoteworker]]
+# this is also used to name the git remote
+name = "remotebuilder"
+# ssh host string; ControlMaster is advised to be enabled in ~/.ssh/config
+host = "builder.example.org"
+# the same as local "repodir" but in remote host
+repodir = "/path/to/gitrepo"
+max_concurrency = 2
+enabled = true
+
+# run some commands before each run
+# prerun = [
+#   "sudo update_something",
+# ]
+
+# run some commands after each run
+# postrun = [
+#   "do_something",
+# ]
 
 [nvchecker]
 # set proxy for nvchecker

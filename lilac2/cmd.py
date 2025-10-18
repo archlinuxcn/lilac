@@ -31,14 +31,14 @@ def git_pull() -> bool:
   output = run_cmd(['git', 'pull', '--no-edit'])
   return 'up-to-date' not in output
 
-def git_pull_override() -> bool:
+def git_pull_override(*args: str) -> bool:
   try:
     env = os.environ.copy()
     env['LANG'] = 'en_US.UTF-8'
     with suppress(KeyError):
       del env['LANGUAGE']
     output = run_cmd(
-      ['git', 'pull', '--no-edit'],
+      ['git', 'pull', '--no-edit', *args],
       env = env,
     )
   except subprocess.CalledProcessError as e:

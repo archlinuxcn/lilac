@@ -13,12 +13,12 @@ logger = logging.getLogger(__name__)
 _available = None
 _check_lock = threading.Lock()
 
-def available() -> bool | dict[str, bool]:
+def available(worker_no: Optional[int] = None) -> bool | dict[str, bool]:
   global _available
 
   with _check_lock:
     if _available is None:
-      _available = _check_availability()
+      _available = _check_availability(worker_no)
       logger.debug('systemd availability: %s', _available)
   return _available
 
@@ -35,15 +35,21 @@ def _cgroup_cpu_usage(cgroup: str) -> int:
         return int(l.split()[1]) * 1000
   return 0
 
-def _check_availability() -> bool | dict[str, bool]:
+def _check_availability(worker_no: Optional[int]) -> bool | dict[str, bool]:
   if 'DBUS_SESSION_BUS_ADDRESS' not in os.environ:
     dbus = f'/run/user/{os.getuid()}/bus'
     if not os.path.exists(dbus):
       return False
     os.environ['DBUS_SESSION_BUS_ADDRESS'] = f'unix:path={dbus}'
+
+  if worker_no is None:
+    unit_name = 'lilac-check'
+  else:
+    unit_name = f'lilac-check-{worker_no}'
+
   p = subprocess.run([
     'systemd-run', '--quiet', '--user',
-    '--remain-after-exit', '-u', 'lilac-check', 'true',
+    '--remain-after-exit', '-u', unit_name, 'true',
   ])
   if p.returncode != 0:
     return False
@@ -55,7 +61,7 @@ def _check_availability() -> bool | dict[str, bool]:
         'MemoryPeak': None,
         'MainPID': None,
       }
-      _read_service_int_properties('lilac-check', ps)
+      _read_service_int_properties(unit_name, ps)
       if ps['MainPID'] != 0:
         time.sleep(0.01)
         continue
@@ -66,7 +72,7 @@ def _check_availability() -> bool | dict[str, bool]:
 
       return ret
   finally:
-    subprocess.run(['systemctl', '--user', 'stop', '--quiet', 'lilac-check'])
+    subprocess.run(['systemctl', '--user', 'stop', '--quiet', unit_name])
 
 def _read_service_int_properties(name: str, properties: dict[str, Optional[int]]) -> None:
   cmd = [
@@ -144,10 +150,18 @@ def _poll_cmd(pid: int) -> Generator[None, None, None]:
         logger.debug('worker exited')
         return
       yield
+  except KeyboardInterrupt:
+    # give up the service and continue
+    pass
   finally:
     os.close(pidfd)
 
-def poll_rusage(name: str, deadline: float) -> tuple[RUsage, bool]:
+def poll_rusage(
+  name: str,
+  deadline: float,
+  worker_no: Optional[int] = None,
+) -> tuple[RUsage, bool]:
+  '''worker_no: for remote.runner and used to make check unit name unique'''
   timedout = False
   done_state = ['exited', 'failed']
 
@@ -171,7 +185,7 @@ def poll_rusage(name: str, deadline: float) -> tuple[RUsage, bool]:
 
     nsec = 0
     mem_max = 0
-    availability = available()
+    availability = available(worker_no)
     assert isinstance(availability, dict)
     for _ in _poll_cmd(pid):
       if not availability['CPUUsageNSec']:

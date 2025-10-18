@@ -71,8 +71,10 @@ def update_pacmandb(dbpath: Path, pacman_conf: Optional[str] = None,
     else:
       p.check_returncode()
 
-def update_data(dbpath: Path, pacman_conf: Optional[str],
+def update_data(pacman_conf: Optional[str],
                 *, quiet: bool = False) -> None:
+  from .const import PACMAN_DB_DIR
+  dbpath = PACMAN_DB_DIR
   update_pacmandb(dbpath, pacman_conf, quiet=quiet)
 
   now = int(time.time())
@@ -167,3 +169,8 @@ def _get_package_version(srcinfo: List[str]) -> PkgVers:
   assert pkgver is not None
   assert pkgrel is not None
   return PkgVers(epoch, pkgver, pkgrel)
+
+if __name__ == '__main__':
+  import sys
+  conf = sys.argv[1] if len(sys.argv) == 2 else None
+  update_data(conf)
