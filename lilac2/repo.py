@@ -220,7 +220,7 @@ class Repo:
     me = self.myaddress
 
     cmd = [
-      "git", "log", "--format=%H %an <%ae>", "--", file,
+      "git", "log", "--format=%H %cn <%ce>", "--", file,
     ]
     p = subprocess.Popen(
       cmd, stdout=subprocess.PIPE, universal_newlines=True,
