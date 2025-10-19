@@ -475,7 +475,12 @@ def _try_aur_url(name: str) -> bytes:
   urls = [url.format(first_two=name[:2], name=name) for url in templates]
   for url in urls:
     for _ in range(2):
-      response = s.get(url)
+      try:
+        response = s.get(url)
+      except httpx.ReadTimeout:
+        logger.warning('AUR download timed out.')
+        continue
+
       if response.status_code == 200:
         logger.debug("downloaded aur tarball '%s' from url '%s'", name, url)
         return response.content
