@@ -103,6 +103,7 @@ def load_lilacinfo(dir: Path) -> LilacInfo:
     time_limit_hours = yamlconf.get('time_limit_hours', 1),
     staging = yamlconf.get('staging', False),
     managed = yamlconf.get('managed', True),
+    allowed_workers = yamlconf.get('allowed_workers', []),
   )
 
 def expand_alias_arg(value: str) -> str:

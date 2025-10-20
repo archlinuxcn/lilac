@@ -42,6 +42,7 @@ class LilacInfo:
   time_limit_hours: float
   staging: bool
   managed: bool
+  allowed_workers: list[str]
 
 LilacInfos = Dict[str, LilacInfo]
 

@@ -327,8 +327,19 @@ def try_pick_some(
   for wm in workermans:
     if not ready_to_build:
       break
+
+    name = wm.name
+    ready_to_build_wm = [
+      x for x in ready_to_build
+      if not (
+        (info := repo.lilacinfos.get(x))
+        and info.allowed_workers
+        and name not in info.allowed_workers
+      )
+    ]
+
     to_builds = wm.try_accept_package(
-      ready_to_build,
+      ready_to_build_wm,
       rusages,
       buildsorter.priority_func,
       lambda pkg: check_buildability(pkg,repo, buildsorter, failed),
