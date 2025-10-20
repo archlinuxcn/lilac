@@ -338,6 +338,9 @@ def try_pick_some(
       )
     ]
 
+    if not ready_to_build_wm:
+      continue
+
     to_builds = wm.try_accept_package(
       ready_to_build_wm,
       rusages,
