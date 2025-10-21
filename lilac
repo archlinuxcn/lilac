@@ -635,13 +635,6 @@ def get_workermans():
   from lilac2 import workerman
 
   ret = []
-  workers_before = 0
-
-  if not config['lilac'].get('disable_local_worker', False):
-    max_concurrency = config['lilac'].get('max_concurrency', 1)
-    local = workerman.LocalWorkerManager(max_concurrency)
-    ret.append(local)
-    workers_before = max_concurrency
 
   remotes = [
     workerman.RemoteWorkerManager(remote)
@@ -650,9 +643,16 @@ def get_workermans():
   ]
   ret.extend(remotes)
 
-  for remote in remotes:
-    remote.workers_before_me = workers_before
-    workers_before += remote.max_concurrency
+  if not config['lilac'].get('disable_local_worker', False):
+    max_concurrency = config['lilac'].get('max_concurrency', 1)
+    local = workerman.LocalWorkerManager(max_concurrency)
+    ret.append(local)
+
+  workers_before = 0
+  for wm in ret:
+    wm.workers_before_me = workers_before
+    workers_before += wm.max_concurrency
+
   return ret
 
 def main_may_raise(
