@@ -8,6 +8,7 @@ import os
 from ..vendor.nicelogger import enable_pretty_logging
 
 from ..tools import kill_child_processes, read_config
+from ..cmd import run_cmd
 from ..workerman import WorkerManager
 
 logger = logging.getLogger(__name__)
@@ -24,6 +25,9 @@ def main() -> None:
   # make remote process to exit 60s earlier so that we could do some cleanup
   deadline = input.pop('deadline') - 60
   myresultpath = input.pop('result')
+
+  # remove previous locally built packages
+  run_cmd(["sh", "-c", "rm -f -- *.pkg.tar.xz *.pkg.tar.xz.sig *.pkg.tar.zst *.pkg.tar.zst.sig"])
 
   remote_r = {'status': 'done', 'version': None}
   r = {}
