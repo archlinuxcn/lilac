@@ -261,6 +261,9 @@ def start_build(
       max_workers = max_workers,
       initializer = setup_thread,
     ) as executor:
+      # initialize all threads so they get their worker_no
+      executor.map(lambda: None)
+
       while True:
         pkgs = try_pick_some(
           repo,
