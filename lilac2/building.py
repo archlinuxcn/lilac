@@ -247,6 +247,15 @@ def call_worker(
 
   st = r['status']
 
+  for rr in r.get('reports', []):
+    report = Report(**rr)
+    repo.send_error_report(
+      lilacinfo,
+      subject = report.subject,
+      msg = report.msg,
+      logfile = logfile if report.sendlog else None,
+    )
+
   error: Optional[Exception]
   if timedout:
     error = TimeoutError()
@@ -255,15 +264,6 @@ def call_worker(
   elif st == 'skipped':
     error = SkipBuild(r['msg'])
   elif st == 'failed':
-    if reports := r.get('reports'):
-      for r in reports:
-        report = Report(**r)
-        repo.send_error_report(
-          lilacinfo,
-          subject = report.subject,
-          msg = report.msg,
-          logfile = logfile if report.sendlog else None,
-        )
     error = BuildFailed(r['msg'])
   else:
     error = RuntimeError('unknown status from worker', st)
