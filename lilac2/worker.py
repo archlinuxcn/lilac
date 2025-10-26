@@ -11,6 +11,8 @@ import sys
 from pathlib import Path
 import platform
 import traceback
+from functools import partial
+import dataclasses
 
 import pyalpm
 
@@ -18,7 +20,7 @@ from .vendor.nicelogger import enable_pretty_logging
 from .vendor.myutils import file_lock
 
 from . import pkgbuild
-from .typing import LilacMod, Cmd, OnBuildVers
+from .typing import LilacMod, Cmd, OnBuildVers, Report
 from .cmd import run_cmd, UNTRUSTED_PREFIX
 from .api import (
   vcs_update, get_pkgver_and_pkgrel, update_pkgrel,
@@ -219,6 +221,8 @@ def main() -> None:
 
   _G.commit_msg_template = input['commit_msg_template']
   _G.reponame = input['reponame']
+  reports: list[Report] = []
+  _G.add_report = partial(add_report, reports)
 
   r: dict[str, Any]
   try:
@@ -245,7 +249,8 @@ def main() -> None:
       'msg': repr(e),
     }
     sys.stdout.flush()
-    r['report'] = gen_failure_report(e)
+    logger.error('build failed', exc_info=e)
+    reports.append(gen_failure_report(e))
   except KeyboardInterrupt:
     logger.info('KeyboardInterrupt received')
     r = {
@@ -257,15 +262,13 @@ def main() -> None:
     kill_child_processes()
 
   r['version'] = getattr(_G, 'built_version', None)
+  r['reports'] = [dataclasses.asdict(r) for r in reports]
 
   with open(input['result'], 'w') as f:
     json.dump(r, f)
 
-def gen_failure_report(e: Exception) -> dict[str, str]:
-  logger.error('build failed', exc_info=e)
+def gen_failure_report(e: Exception) -> Report:
   l10n = intl.get_l10n('mail')
-
-  report = {}
 
   if isinstance(e, pkgbuild.ConflictWithOfficialError):
     reason = ''
@@ -274,16 +277,16 @@ def gen_failure_report(e: Exception) -> dict[str, str]:
     if e.packages:
       reason += l10n.format_value('package-replacing-official-package', {'packages': repr(e.packages)}) + '\n'
     subj = l10n.format_value('package-conflicts-with-official-repos')
-    report['subject'] = subj
-    report['msg'] = reason,
+    report = Report(subject=subj, msg=reason)
 
   elif isinstance(e, pkgbuild.DowngradingError):
-    report['subject'] = l10n.format_value('package-older-subject')
-    report['msg'] = l10n.format_value('package-older-body', {
+    subj = l10n.format_value('package-older-subject')
+    msg = l10n.format_value('package-older-body', {
       'pkg': e.pkgname,
       'built_version': e.built_version,
       'repo_version': e.repo_version,
     }) + '\n'
+    report = Report(subject=subj, msg=msg)
 
   else:
     msgs = []
@@ -310,10 +313,19 @@ def gen_failure_report(e: Exception) -> dict[str, str]:
       subject = l10n.format_value('packaging-error-unknown-subject')
       msg1 = l10n.format_value('packaging-error-unknown')
       msgs.append(msg1 + '\n\n' + tb)
-    report['subject'] = subject
-    report['msg'] = '\n'.join(msgs)
+    report = Report(subject=subject, msg='\n'.join(msgs))
 
   return report
+
+def add_report(
+  reports: list[Report],
+  exc: Exception,
+  subject: str,
+) -> None:
+  report = gen_failure_report(exc)
+  report.subject = subject
+  report.sendlog = False
+  reports.append(report)
 
 if __name__ == '__main__':
   main()

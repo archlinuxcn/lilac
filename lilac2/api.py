@@ -426,8 +426,7 @@ def update_aur_repo() -> None:
     _update_aur_repo_real(pkgbase)
   except Exception as e:
     l10n = intl.get_l10n('mail')
-    _G.repo.send_error_report(
-      _G.mod,
+    _G.add_report(
       exc = e,
       subject = l10n.format_value('aur-submit-error'),
     )

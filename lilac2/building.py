@@ -13,7 +13,7 @@ import json
 import signal
 from contextlib import suppress
 
-from .typing import LilacInfo, Cmd, RUsage, PkgToBuild, OnBuildVers
+from .typing import LilacInfo, Cmd, RUsage, PkgToBuild, OnBuildVers, Report
 from .nvchecker import NvResults
 from .packages import Dependency, get_built_package_files
 from .tools import reap_zombies
@@ -255,13 +255,15 @@ def call_worker(
   elif st == 'skipped':
     error = SkipBuild(r['msg'])
   elif st == 'failed':
-    if report := r.get('report'):
-      repo.send_error_report(
-        lilacinfo,
-        subject = report['subject'],
-        msg = report['msg'],
-        logfile = logfile,
-      )
+    if reports := r.get('reports'):
+      for r in reports:
+        report = Report(**r)
+        repo.send_error_report(
+          lilacinfo,
+          subject = report.subject,
+          msg = report.msg,
+          logfile = logfile if report.sendlog else None,
+        )
     error = BuildFailed(r['msg'])
   else:
     error = RuntimeError('unknown status from worker', st)

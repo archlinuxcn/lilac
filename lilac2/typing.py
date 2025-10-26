@@ -120,3 +120,9 @@ class PkgToBuild:
   pkgbase: str
   on_build_vers: OnBuildVers = dataclasses.field(default_factory=list)
   workerman: Optional[WorkerManager] = None
+
+@dataclasses.dataclass
+class Report:
+  subject: str
+  msg: str
+  sendlog: bool = True
