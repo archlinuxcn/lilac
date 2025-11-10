@@ -44,28 +44,28 @@ async def test_cran(get_version):
     'pkgname': 'xml2',
     'repo': 'cran',
     'md5': True,
-  }) == '1.4.0#600d56c3da21eebac91416ef0f5e51ff'
+  }) == '1.4.1#72615e3ac78acae253ce195d0045a800'
 
 async def test_bioc(get_version):
   assert await get_version('BiocVersion', {
     'source': 'rpkgs',
     'pkgname': 'BiocVersion',
     'repo': 'bioc',
-  }) == '3.21.1'
+  }) == '3.22.0'
 
 async def test_bioc_data_annotation(get_version):
   assert await get_version('GO.db', {
     'source': 'rpkgs',
     'pkgname': 'GO.db',
     'repo': 'bioc-data-annotation',
-  }) == '3.21.0'
+  }) == '3.22.0'
 
 async def test_bioc_data_experiment(get_version):
   assert await get_version('ALL', {
     'source': 'rpkgs',
     'pkgname': 'ALL',
     'repo': 'bioc-data-experiment',
-  }) == '1.50.0'
+  }) == '1.52.0'
 
 async def test_bioc_workflows(get_version):
   ver = await get_version('liftOver', {
