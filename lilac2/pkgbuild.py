@@ -101,9 +101,9 @@ def load_data(dbpath: Path) -> None:
   _official_groups.update(
     _load_timed_dict(dbpath / 'groups.txt', deadline))
 
-  if hasattr(_G, 'repo'):
+  if hasattr(_G, 'reponame'):
     H = pyalpm.Handle('/', str(dbpath))
-    db = H.register_syncdb(_G.repo.name, 0)
+    db = H.register_syncdb(_G.reponame, 0)
     _repo_package_versions = {p.name: p.version for p in db.pkgcache}
 
 def check_srcinfo() -> PkgVers:
