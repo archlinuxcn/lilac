@@ -236,6 +236,8 @@ There is `[an issue] <https://lore.kernel.org/git/CAFySSZBCKUiY5DO3fz340a0dTb0zU
 
   git config --global maintenance.autoDetach false
 
+Remember to setup a ssh key for the AUR user and ssh into AUR once to accept the host key if you want to pull from / push to AUR.
+
 Run
 ---
 
