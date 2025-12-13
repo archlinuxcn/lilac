@@ -19,7 +19,7 @@ from urllib.parse import quote
 
 import httpx
 
-from .vendor.myutils import at_dir
+from .vendor.myutils import at_dir, file_lock
 from .vendor.htmlutils import parse_document_from_httpx
 
 from .cmd import git_pull, git_push, UNTRUSTED_PREFIX
@@ -364,16 +364,18 @@ def _aur_exists(pkgbase: str) -> bool:
   return r.status_code != 404
 
 def _ensure_aur_repo(pkgbase: str) -> Path:
-  aurpath = const.AUR_REPO_DIR / pkgbase
-  if not aurpath.is_dir():
-    logger.info('cloning AUR repo: %s', aurpath)
-    with at_dir(const.AUR_REPO_DIR):
-      _run_cmd(['git', 'clone', f'aur@aur.archlinux.org:{pkgbase}.git'])
-  else:
-    with at_dir(aurpath):
-      # reset everything, dropping local commits
-      _run_cmd(['git', 'reset', '--hard', 'origin/master'])
-      git_pull()
+  lockfile = const.AUR_REPO_DIR / (pkgbase + '.lock')
+  with file_lock(lockfile):
+    aurpath = const.AUR_REPO_DIR / pkgbase
+    if not aurpath.is_dir():
+      logger.info('cloning AUR repo: %s', aurpath)
+      with at_dir(const.AUR_REPO_DIR):
+        _run_cmd(['git', 'clone', f'aur@aur.archlinux.org:{pkgbase}.git'])
+    else:
+      with at_dir(aurpath):
+        # reset everything, dropping local commits
+        _run_cmd(['git', 'reset', '--hard', 'origin/master'])
+        git_pull()
 
   return aurpath
 
