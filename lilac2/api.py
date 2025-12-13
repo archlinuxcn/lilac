@@ -363,10 +363,7 @@ def _aur_exists(pkgbase: str) -> bool:
     r.raise_for_status()
   return r.status_code != 404
 
-def _update_aur_repo_real(pkgbase: str) -> None:
-  if not _aur_exists(pkgbase):
-    raise LookupError('AUR package not exists, not updating!', pkgbase)
-
+def _ensure_aur_repo(pkgbase: str) -> Path:
   aurpath = const.AUR_REPO_DIR / pkgbase
   if not aurpath.is_dir():
     logger.info('cloning AUR repo: %s', aurpath)
@@ -377,6 +374,14 @@ def _update_aur_repo_real(pkgbase: str) -> None:
       # reset everything, dropping local commits
       _run_cmd(['git', 'reset', '--hard', 'origin/master'])
       git_pull()
+
+  return aurpath
+
+def _update_aur_repo_real(pkgbase: str) -> None:
+  if not _aur_exists(pkgbase):
+    raise LookupError('AUR package not exists, not updating!', pkgbase)
+
+  aurpath = _ensure_aur_repo(pkgbase)
 
   with at_dir(aurpath):
     oldfiles = set(_run_cmd(['git', 'ls-files']).splitlines())
@@ -468,33 +473,17 @@ def clean_directory() -> List[str]:
       os.unlink(f)
   return ret
 
-def _try_aur_url(name: str) -> bytes:
-  aur4url = 'https://aur.archlinux.org/cgit/aur.git/snapshot/{name}.tar.gz'
-  templates = [aur4url]
-  urls = [url.format(first_two=name[:2], name=name) for url in templates]
-  for url in urls:
-    for _ in range(2):
-      try:
-        response = s.get(url)
-      except httpx.ReadTimeout:
-        logger.warning('AUR download timed out.')
-        continue
-
-      if response.status_code == 200:
-        logger.debug("downloaded aur tarball '%s' from url '%s'", name, url)
-        return response.content
-      elif response.status_code >= 500:
-        logger.warning('AUR download failed.')
-      else:
-        break
-  logger.error("failed to find aur url for '%s'", name)
-  raise AurDownloadError(name)
+def _get_aur_tarball(name: str) -> bytes:
+  aurpath = _ensure_aur_repo(name)
+  return subprocess.check_output([
+    'git', 'archive', f'--prefix={name}/', 'HEAD',
+  ], cwd=aurpath)
 
 def _download_aur_pkgbuild(name: str) -> List[str]:
-  content = io.BytesIO(_try_aur_url(name))
+  content = io.BytesIO(_get_aur_tarball(name))
   files = []
   with tarfile.open(
-    name=name+".tar.gz", mode="r:gz", fileobj=content
+    name=name+".tar", mode="r:", fileobj=content
   ) as tarf:
     for tarinfo in tarf:
       try:
@@ -553,7 +542,10 @@ def aur_pre_build(
 
   pkgver, pkgrel = get_pkgver_and_pkgrel()
   _g.aur_pre_files = clean_directory()
-  _g.aur_building_files = _download_aur_pkgbuild(name)
+  try:
+    _g.aur_building_files = _download_aur_pkgbuild(name)
+  except Exception:
+    raise AurDownloadError(name)
 
   aur_pkgver, aur_pkgrel = get_pkgver_and_pkgrel()
   if pkgver and pkgver == aur_pkgver:
