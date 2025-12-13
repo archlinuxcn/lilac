@@ -1,4 +1,5 @@
 import asyncio
+import re
 
 import pytest
 import pytest_asyncio
@@ -39,12 +40,13 @@ async def get_version():
 
 
 async def test_cran(get_version):
-  assert await get_version('xml2', {
+  ver = await get_version('xml2', {
     'source': 'rpkgs',
     'pkgname': 'xml2',
     'repo': 'cran',
     'md5': True,
-  }) == '1.5.0#d8291d4edf45b9b802dc67d97bb20c7a'
+  })
+  assert re.match(r'1\.[0-9.]+#[0-9a-f]{32}', ver)
 
 async def test_bioc(get_version):
   assert await get_version('BiocVersion', {
