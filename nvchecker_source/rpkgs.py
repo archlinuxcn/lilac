@@ -40,7 +40,8 @@ async def get_versions(repo: str) -> Dict[str, Tuple[str, str]]:
         md5 = line[MD5_FLEN:].decode('utf8')
     if pkg is None or ver is None or md5 is None:
       raise GetVersionError('Invalid package data', pkg = pkg, ver = ver, md5 = md5)
-    result[pkg] = (ver, md5)
+    if pkg not in result: # don't let packages in other "Path"s override
+      result[pkg] = (ver, md5)
 
   return result
 
