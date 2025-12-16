@@ -25,8 +25,12 @@ Docs
 Update
 ----
 
+### 2025-12-13
+
+If you fetch PKGBUILDs from AUR, you need to make sure you can `ssh aur@aur.archlinux.org`.
+
 ### 2025-09-27
-if database is in use, run the following SQL to update:
+If database is in use, run the following SQL to update:
 
 ```sql
 
@@ -35,7 +39,7 @@ alter table lilac.pkglog add column builder text not null default 'local';
 
 ### 2024-06-28
 
-if database is in use, run the following SQL to update:
+If database is in use, run the following SQL to update:
 
 ```sql
 
