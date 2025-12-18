@@ -22,7 +22,7 @@ import httpx
 from .vendor.myutils import at_dir, file_lock
 from .vendor.htmlutils import parse_document_from_httpx
 
-from .cmd import git_pull, git_push, UNTRUSTED_PREFIX
+from .cmd import git_push, UNTRUSTED_PREFIX
 from .cmd import run_cmd as _run_cmd
 from . import const, intl
 from .const import _G, SPECIAL_FILES
@@ -365,17 +365,20 @@ def _aur_exists(pkgbase: str) -> bool:
 
 def _ensure_aur_repo(pkgbase: str) -> Path:
   lockfile = const.AUR_REPO_DIR / (pkgbase + '.lock')
+  env = os.environ.copy()
+  env['GIT_SSH_COMMAND'] = 'ssh -o ControlPersist=no'
   with file_lock(lockfile):
     aurpath = const.AUR_REPO_DIR / pkgbase
     if not aurpath.is_dir():
       logger.info('cloning AUR repo: %s', aurpath)
       with at_dir(const.AUR_REPO_DIR):
-        _run_cmd(['git', 'clone', f'aur@aur.archlinux.org:{pkgbase}.git'])
+        _run_cmd(['git', 'clone', f'aur@aur.archlinux.org:{pkgbase}.git'],
+                env=env)
     else:
       with at_dir(aurpath):
         # reset everything, dropping local commits
         _run_cmd(['git', 'reset', '--hard', 'origin/master'])
-        git_pull()
+        _run_cmd(['git', 'pull', '--no-edit'], env=env)
 
   return aurpath
 
