@@ -422,7 +422,9 @@ def _update_aur_repo_real(pkgbase: str) -> None:
     if p.returncode != 0:
       msg = f'[lilac] updated to {_G.built_version}'
       _run_cmd(['git', 'commit', '--no-gpg-sign', '-m', msg])
-      _run_cmd(['git', 'push'])
+      env = os.environ.copy()
+      env['GIT_SSH_COMMAND'] = 'ssh -o ControlPersist=no'
+      _run_cmd(['git', 'push'], env=env)
 
 def update_aur_repo() -> None:
   '''update the package on AUR if suitable.
