@@ -8,6 +8,7 @@ import subprocess
 from typing import Dict, List, Optional, Union
 from pathlib import Path
 from contextlib import suppress
+import logging
 
 import pyalpm
 
@@ -17,6 +18,7 @@ from .const import _G, OFFICIAL_REPOS
 from .cmd import UNTRUSTED_PREFIX
 from .typing import PkgVers
 
+logger = logging.getLogger(__name__)
 _official_packages: Dict[str, int] = {}
 _official_groups: Dict[str, int] = {}
 _repo_package_versions: Dict[str, str] = {}
@@ -133,11 +135,13 @@ def check_srcinfo() -> PkgVers:
   for pkgname in pkgnames:
     try:
       repo_version = _repo_package_versions[pkgname]
+      logger.debug('comparing versions: built=%s, repo=%s',
+                   built_version, repo_version)
       if pyalpm.vercmp(built_version, repo_version) < 0:
         raise DowngradingError(pkgname, built_version, repo_version)
     except KeyError:
+      logger.debug('new package: %s %s', pkgname, built_version)
       # the newly built package is not in repos yet - fine
-      pass
 
   if bad_groups or bad_packages:
     raise ConflictWithOfficialError(bad_groups, bad_packages)
