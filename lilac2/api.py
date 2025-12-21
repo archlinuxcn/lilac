@@ -22,7 +22,7 @@ import httpx
 from .vendor.myutils import at_dir, file_lock
 from .vendor.htmlutils import parse_document_from_httpx
 
-from .cmd import git_push, UNTRUSTED_PREFIX
+from .cmd import git_push, git_pull, UNTRUSTED_PREFIX
 from .cmd import run_cmd as _run_cmd
 from . import const, intl
 from .const import _G, SPECIAL_FILES
@@ -32,6 +32,7 @@ from . import mediawiki2pkgbuild
 from .pkgbuild import get_srcinfo
 
 git_push
+git_pull
 
 logger = logging.getLogger(__name__)
 
