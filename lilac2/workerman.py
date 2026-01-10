@@ -12,6 +12,9 @@ from .cmd import git_pull_override
 
 logger = logging.getLogger(__name__)
 
+class ResourceTemporarilyOverloaded(Exception):
+  pass
+
 class WorkerManager:
   name: str
   max_concurrency: int
@@ -50,7 +53,7 @@ class WorkerManager:
 
     if cpu_ratio > 1.0 and self.current_task_count > 0:
       logger.debug('[%s] high CPU usage (%.2f), idling', self.name, cpu_ratio)
-      return []
+      raise ResourceTemporarilyOverloaded
 
     def sort_key(pkg):
       p = priority_func(pkg)

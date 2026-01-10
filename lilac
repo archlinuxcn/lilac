@@ -48,7 +48,7 @@ from lilac2.nomypy import BuildResult, BuildReason # type: ignore
 from lilac2.building import build_package, MissingDependencies
 from lilac2 import slogconf
 from lilac2 import intl
-from lilac2.workerman import WorkerManager
+from lilac2.workerman import WorkerManager, ResourceTemporarilyOverloaded
 from lilac2.typing import PkgToBuild, Rusages
 try:
   from lilac2 import db
@@ -265,7 +265,7 @@ def start_build(
       executor.map(lambda x: None, range(max_workers))
 
       while True:
-        pkgs = try_pick_some(
+        pkgs, overloaded = try_pick_some(
           repo,
           buildsorter, failed,
           running = frozenset(x.pkgbase for x in futures.values()),
@@ -289,14 +289,16 @@ def start_build(
           # no more packages and no task is running: we're done
           break
 
-        done, pending = futures_wait(futures, return_when=FIRST_COMPLETED)
+        timeout = 60 if overloaded else None
+        done, pending = futures_wait(
+          futures, timeout=timeout, return_when=FIRST_COMPLETED)
         for fu in done:
           pkg = futures.pop(fu)
           wm = cast(WorkerManager, pkg.workerman)
           wm.current_task_count -= 1
           fu.result()
 
-        # at least one task is done, try pick new tasks
+        # at least one task is done or timed out, try pick new tasks
 
   except KeyboardInterrupt:
     logger.info('keyboard interrupted, bye~')
@@ -308,17 +310,19 @@ def try_pick_some(
   running: Set[str],
   starving: bool,
   workermans: list[WorkerManager],
-) -> list[PkgToBuild]:
+) -> tuple[list[PkgToBuild], bool]:
+  overloaded = False
+
   if not buildsorter.is_active():
-    return []
+    return [], overloaded
 
   ready = buildsorter.get_ready()
   if not ready:
-    return []
+    return [], overloaded
 
   ready_to_build = [pkg for pkg in ready if pkg not in running]
   if not ready_to_build:
-    return []
+    return [], overloaded
 
   if db.USE:
     rusages = db.get_pkgs_last_rusage(ready_to_build)
@@ -344,12 +348,17 @@ def try_pick_some(
     if not ready_to_build_wm:
       continue
 
-    to_builds = wm.try_accept_package(
-      ready_to_build_wm,
-      rusages,
-      buildsorter.priority_func,
-      lambda pkg: check_buildability(pkg,repo, buildsorter, failed),
-    )
+    try:
+      to_builds = wm.try_accept_package(
+        ready_to_build_wm,
+        rusages,
+        buildsorter.priority_func,
+        lambda pkg: check_buildability(pkg,repo, buildsorter, failed),
+      )
+    except ResourceTemporarilyOverloaded:
+      overloaded = True
+      continue
+
     ret.extend(to_builds)
     # remove picked packages from ready_to_build
     picked = {x.pkgbase for x in to_builds}
@@ -378,7 +387,7 @@ def try_pick_some(
       ret.append(to_build)
       break
 
-  return ret
+  return ret, overloaded
 
 def check_buildability(
   pkg: str,
