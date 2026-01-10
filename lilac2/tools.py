@@ -6,6 +6,7 @@ from typing import Dict, Any
 import os
 import logging
 from contextlib import suppress
+import time
 
 import tomllib
 
@@ -30,18 +31,18 @@ def reap_zombies() -> None:
     while os.waitid(os.P_ALL, 0, os.WEXITED | os.WNOHANG) is not None:
       pass
 
-def get_running_task_cpu_ratio() -> float:
-  ncpu = os.process_cpu_count()
-  running = 0
+def get_cpu_idle() -> tuple[int, int]:
   with open('/proc/stat') as f:
-    for l in f:
-      if l.startswith('procs_running '):
-        running = int(l.split()[1])
-        break
-  if ncpu and running:
-    return running / ncpu
-  else:
-    return 0.0
+    line = f.readline()
+    numbers = [int(x) for x in line.split()[1:]]
+    return numbers[3], sum(numbers)
+
+def get_running_task_cpu_ratio() -> float:
+  a = get_cpu_idle()
+  time.sleep(1)
+  b = get_cpu_idle()
+  idle = (b[0] - a[0]) / (b[1] - a[1])
+  return 1 - idle
 
 def get_avail_memory() -> int:
   with open('/proc/meminfo') as f:

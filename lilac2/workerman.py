@@ -49,6 +49,7 @@ class WorkerManager:
     cpu_ratio, memory_avail = self.get_resource_usage()
 
     if cpu_ratio > 1.0 and self.current_task_count > 0:
+      logger.debug('[%s] high CPU usage (%.2f), idling', self.name, cpu_ratio)
       return []
 
     def sort_key(pkg):
