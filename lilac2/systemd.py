@@ -174,7 +174,7 @@ def poll_rusage(
         if time.monotonic() - time_start > 60:
           logger.error('%s.service not started in 60s, giving up.', name)
           raise Exception('systemd error: service not started in 60s')
-        logger.debug('%s.service state: %s, waiting', name, state)
+        logger.debug('%s.service state: %s, waiting for it to start', name, state)
         time.sleep(0.1)
       else:
         break
@@ -187,6 +187,7 @@ def poll_rusage(
     mem_max = 0
     availability = available(worker_no)
     assert isinstance(availability, dict)
+    logger.debug('%s.service waiting it to finish', name)
     for _ in _poll_cmd(pid):
       if not availability['CPUUsageNSec']:
         nsec = _cgroup_cpu_usage(cgroup)
