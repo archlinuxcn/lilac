@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import datetime
 import weakref
 from typing import Any, Iterator, Dict, Optional
