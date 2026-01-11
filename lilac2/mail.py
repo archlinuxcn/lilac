@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import smtplib
 from typing import Union, Type, List, Dict, Any
 

@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import types
 from typing import (
   Union, Dict, Tuple, Type, NamedTuple, Optional,
