@@ -214,6 +214,9 @@ def call_worker(
     'deadline': deadline,
     'reponame': repo.name,
   }
+  if ua := repo.user_agent:
+    input['user_agent'] = ua
+
   fd, resultpath = tempfile.mkstemp(prefix=f'{pkgbase}-', suffix='.lilac')
   os.close(fd)
   input['result'] = resultpath

@@ -37,13 +37,11 @@ git_pull
 logger = logging.getLogger(__name__)
 
 _g = SimpleNamespace()
-UserAgent = 'lilac/0.2b (package auto-build bot, by lilydjwg)'
 
 logging.getLogger('httpcore').setLevel(logging.ERROR)
 logging.getLogger('hpack').setLevel(logging.ERROR)
 
 s = httpx.Client(http2=True)
-s.headers['User-Agent'] = UserAgent
 
 VCS_SUFFIXES = ('-git', '-hg', '-svn', '-bzr')
 AUR_BLACKLIST = {

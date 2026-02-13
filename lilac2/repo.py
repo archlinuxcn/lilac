@@ -42,6 +42,7 @@ class Repo:
     self.name = config['repository']['name']
     self.trim_ansi_codes = not config['smtp'].get('use_ansi', False)
     self.commit_msg_prefix = config['lilac'].get('commit_msg_prefix', '')
+    self.user_agent = config['lilac'].get('user_agent')
 
     self.repodir = Path(config['repository']['repodir']).expanduser()
     self.bindmounts = config.get('bindmounts', [])

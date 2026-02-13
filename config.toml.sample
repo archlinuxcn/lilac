@@ -21,6 +21,8 @@ name = "lilac"
 email = "lilac@example.com"
 # for internal error reports
 master = "Your Name <youremail@example.com>"
+# the user_agent to use for fetching HTTP resources
+# user_agent = "lilac/0.3 (URL; email)"
 # Set and unsubscribe_address to receive unsubscribe requests
 # unsubscribe_address = "unsubscribe@example.com"
 # Set to yes to automatically rebuild packages which failed to build last time

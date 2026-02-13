@@ -224,6 +224,9 @@ def main() -> None:
   reports: list[Report] = []
   _G.add_report = partial(add_report, reports)
 
+  if ua := input.get('user_agent'):
+    api.s.headers['User-Agent'] = ua
+
   r: dict[str, Any]
   try:
     with load_lilac(Path('.')) as mod:
