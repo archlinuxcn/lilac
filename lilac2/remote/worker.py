@@ -17,6 +17,7 @@ def main() -> None:
   enable_pretty_logging('DEBUG')
 
   config = read_config()
+  os.environ.update(config.get('envvars', ()))
 
   input = json.load(sys.stdin)
   logger.debug('[remote.worker] got input: %r', input)
