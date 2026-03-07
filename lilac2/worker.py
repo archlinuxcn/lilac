@@ -214,8 +214,6 @@ def run_build_cmd(cmd: Cmd) -> None:
 def main() -> None:
   enable_pretty_logging('DEBUG')
 
-  pkgbuild.load_data(PACMAN_DB_DIR)
-
   input = json.load(sys.stdin)
   logger.debug('[worker] got input: %r', input)
 
@@ -223,6 +221,9 @@ def main() -> None:
   _G.reponame = input['reponame']
   reports: list[Report] = []
   _G.add_report = partial(add_report, reports)
+
+  # after _G.reponame is set
+  pkgbuild.load_data(PACMAN_DB_DIR)
 
   if ua := input.get('user_agent'):
     api.s.headers['User-Agent'] = ua
