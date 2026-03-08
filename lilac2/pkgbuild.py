@@ -137,7 +137,7 @@ def check_srcinfo() -> PkgVers:
       repo_version = _repo_package_versions[pkgname]
       logger.debug('comparing versions: built=%s, repo=%s',
                    built_version, repo_version)
-      if pyalpm.vercmp(built_version, repo_version) < 0:
+      if pyalpm.vercmp(built_version, repo_version) <= 0:
         raise DowngradingError(pkgname, built_version, repo_version)
     except KeyError:
       logger.debug('new package: %s %s', pkgname, built_version)
