@@ -215,26 +215,43 @@ def poll_rusage(
     subprocess.run(['systemctl', '--user', 'stop', '--quiet', name])
     if cgroup:
       # if we actually got the cgroup (i.e. service was started when we looked)
-      wait_cgroup_disappear(cgroup, name)
+      wait_cgroup_empty(cgroup, name)
 
     p = subprocess.run(['systemctl', '--user', 'is-failed', '--quiet', name])
     if p.returncode == 0:
       subprocess.run(['systemctl', '--user', 'reset-failed', '--quiet', name])
   return RUsage(nsec / 1_000_000_000, mem_max), timedout
 
-def wait_cgroup_disappear(cgroup: str, name: str) -> None:
-  d = f'/sys/fs/cgroup/{cgroup}'
-  if not os.path.exists(d):
+def wait_cgroup_empty(cgroup: str, name: str) -> None:
+  try:
+    f = open(f'/sys/fs/cgroup/{cgroup}/cgroup.events')
+    f.read()
+  except FileNotFoundError:
     return
 
-  count = 0
-  while os.path.exists(d):
-    logger.warning('waiting %s to disappear...', cgroup)
-    time.sleep(1)
-    count += 1
-    if count == 10:
-      logger.warning('killing %s.', name)
-      subprocess.run(['systemctl', '--user', 'kill', name])
-    elif count == 30:
-      logger.warning('killing %s with SIGKILL.', name)
-      subprocess.run(['systemctl', '--user', 'kill', '--signal=KILL', name])
+  poll = select.poll()
+  poll.register(f, select.POLLPRI)
+
+  timeout = 10
+  killed = False
+  while True:
+    logger.warning('waiting %s to become empty...', cgroup)
+    if not poll.poll(timeout * 1000):
+      if not killed:
+        logger.warning('killing %s.', name)
+        subprocess.run(['systemctl', '--user', 'kill', name])
+        timeout = 20
+        killed = True
+      else:
+        logger.warning('killing %s with SIGKILL.', name)
+        subprocess.run(['systemctl', '--user', 'kill', '--signal=KILL', name])
+    try:
+      f.seek(0)
+      for line in f:
+        if f == 'populated 0':
+          f.close()
+          return
+    except OSError: # no such device
+      f.close()
+      return
+
