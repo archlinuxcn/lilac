@@ -248,7 +248,7 @@ def wait_cgroup_empty(cgroup: str, name: str) -> None:
     try:
       f.seek(0)
       for line in f:
-        if f == 'populated 0\n':
+        if line == 'populated 0\n':
           f.close()
           return
     except OSError: # no such device
