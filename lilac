@@ -408,7 +408,8 @@ def check_buildability(
     return None
 
   if rs := build_reasons.get(pkg):
-    if len(rs) == 1 and isinstance(rs[0], BuildReason.FailedByDeps):
+    if any(isinstance(r, BuildReason.FailedByDeps) for r in rs) and \
+       all(isinstance(r, (BuildReason.FailedByDeps, BuildReason.Depended)) for r in rs):
       ds = BUILD_DEPMAP[pkg]
       if not all(d.resolve() for d in ds):
         buildsorter.done(pkg)
