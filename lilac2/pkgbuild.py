@@ -17,7 +17,6 @@ from .vendor.myutils import safe_overwrite
 from .const import _G, OFFICIAL_REPOS
 from .cmd import UNTRUSTED_PREFIX
 from .typing import PkgVers
-from .tools import has_pacfiles
 
 logger = logging.getLogger(__name__)
 _official_packages: Dict[str, int] = {}
@@ -188,4 +187,4 @@ def _get_package_version(srcinfo: List[str]) -> PkgVers:
 if __name__ == '__main__':
   import sys
   conf = sys.argv[1] if len(sys.argv) == 2 else None
-  update_data(conf, update_pacfiles=has_pacfiles())
+  update_data(conf)
