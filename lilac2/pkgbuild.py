@@ -17,6 +17,7 @@ from .vendor.myutils import safe_overwrite
 from .const import _G, OFFICIAL_REPOS
 from .cmd import UNTRUSTED_PREFIX
 from .typing import PkgVers
+from .tools import has_pacfiles
 
 logger = logging.getLogger(__name__)
 _official_packages: Dict[str, int] = {}
@@ -53,8 +54,11 @@ def _save_timed_dict(
   data_str = ''.join(f'{k} {v}\n' for k, v in data.items())
   safe_overwrite(str(path), data_str, mode='w')
 
-def update_pacmandb(dbpath: Path, pacman_conf: Optional[str] = None,
-                    *, quiet: bool = False) -> None:
+def update_pacmandb(
+  dbpath: Path, pacman_conf: Optional[str] = None, *,
+  quiet: bool = False,
+  update_pacfiles: bool = False,
+) -> None:
   stdout = subprocess.DEVNULL if quiet else None
 
   for update_arg in ['-Sy', '-Fy']:
@@ -73,11 +77,18 @@ def update_pacmandb(dbpath: Path, pacman_conf: Optional[str] = None,
     else:
       p.check_returncode()
 
-def update_data(pacman_conf: Optional[str],
-                *, quiet: bool = False) -> None:
+  if update_pacfiles:
+    cmd = ['pacfiles', '--dbpath', dbpath, '--update-db']
+    subprocess.check_call(cmd, stdout = stdout)
+
+def update_data(
+  pacman_conf: Optional[str], *,
+  quiet: bool = False, update_pacfiles: bool = False,
+) -> None:
   from .const import PACMAN_DB_DIR
   dbpath = PACMAN_DB_DIR
-  update_pacmandb(dbpath, pacman_conf, quiet=quiet)
+  update_pacmandb(dbpath, pacman_conf,
+                  quiet=quiet, update_pacfiles=update_pacfiles)
 
   now = int(time.time())
   deadline = now - 90 * 86400
@@ -177,4 +188,4 @@ def _get_package_version(srcinfo: List[str]) -> PkgVers:
 if __name__ == '__main__':
   import sys
   conf = sys.argv[1] if len(sys.argv) == 2 else None
-  update_data(conf)
+  update_data(conf, update_pacfiles=has_pacfiles())

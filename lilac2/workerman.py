@@ -9,6 +9,7 @@ import tempfile
 
 from .typing import PkgToBuild, Rusages
 from .cmd import git_pull_override
+from .tools import has_pacfiles
 
 logger = logging.getLogger(__name__)
 
@@ -154,7 +155,7 @@ class LocalWorkerManager(WorkerManager):
   ) -> None:
     from . import pkgbuild
     logger.info('[%s] updating pacman databases', self.name)
-    pkgbuild.update_data(pacman_conf)
+    pkgbuild.update_data(pacman_conf, update_pacfiles=has_pacfiles())
 
   @override
   def finish_batch(self) -> None:

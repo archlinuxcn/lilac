@@ -19,7 +19,7 @@ from .vendor.github import GitHub
 
 from .mail import MailService
 from .packages import get_built_package_files
-from .tools import ansi_escape_re
+from .tools import ansi_escape_re, has_pacfiles
 from . import lilacyaml, intl
 from .typing import LilacMod, Maintainer, LilacInfos, LilacInfo
 from .nomypy import BuildResult # type: ignore
@@ -352,7 +352,8 @@ class Repo:
     return dep.pkgdir.name in self.lilacinfos
 
   def load_managed_lilac_and_report(self) -> dict[str, tuple[str, ...]]:
-    self.lilacinfos, errors = lilacyaml.load_managed_lilacinfos(self.repodir)
+    self.lilacinfos, errors = lilacyaml.load_managed_lilacinfos(
+      self.repodir, use_pacfiles=has_pacfiles())
     failed: dict[str, tuple[str, ...]] = {p: () for p in errors}
     l10n = intl.get_l10n('mail')
     for name, exc_info in errors.items():

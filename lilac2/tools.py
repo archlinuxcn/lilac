@@ -51,6 +51,15 @@ def get_avail_memory() -> int:
         return int(l.split()[1]) * 1024
   return 10 *  1024 ** 3
 
+_HAS_PACFILES = None
+
+def has_pacfiles() -> bool:
+  global _HAS_PACFILES
+  if _HAS_PACFILES is None:
+    cmd = subprocess.run(['pacfiles', '--help'], stdout=subprocess.DEVNULL)
+    _HAS_PACFILES = cmd.returncode == 0
+  return _HAS_PACFILES
+
 if __name__ == '__main__':
   cpu = get_running_task_cpu_ratio()
   mem = get_avail_memory()

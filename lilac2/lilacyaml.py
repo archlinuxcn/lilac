@@ -67,13 +67,15 @@ def load_lilac_yaml(dir: Path) -> dict[str, Any]:
 
   return conf
 
-def load_managed_lilacinfos(repodir: Path) -> tuple[LilacInfos, dict[str, ExcInfo]]:
+def load_managed_lilacinfos(
+  repodir: Path, use_pacfiles: bool = False,
+) -> tuple[LilacInfos, dict[str, ExcInfo]]:
   infos: LilacInfos = {}
   errors = {}
 
   for x in iter_pkgdir(repodir):
     try:
-      info = load_lilacinfo(x)
+      info = load_lilacinfo(x, use_pacfiles=use_pacfiles)
       if not info.managed:
         continue
       if info.time_limit_hours < 0:
@@ -84,10 +86,10 @@ def load_managed_lilacinfos(repodir: Path) -> tuple[LilacInfos, dict[str, ExcInf
 
   return infos, errors
 
-def load_lilacinfo(dir: Path) -> LilacInfo:
+def load_lilacinfo(dir: Path, use_pacfiles: bool = False) -> LilacInfo:
   yamlconf = load_lilac_yaml(dir)
   if update_on := yamlconf.get('update_on'):
-    update_ons, throttle_info = parse_update_on(update_on)
+    update_ons, throttle_info = parse_update_on(update_on, use_pacfiles=use_pacfiles)
   else:
     update_ons = []
     throttle_info = {}
@@ -114,6 +116,7 @@ def expand_alias_arg(value: str) -> str:
 
 def parse_update_on(
   update_on: list[dict[str, Any]],
+  use_pacfiles: bool = False,
 ) -> tuple[NvEntries, dict[int, datetime.timedelta]]:
   ret_update: NvEntries = []
   ret_throttle = {}
@@ -148,6 +151,9 @@ def parse_update_on(
     source = entry.get('source')
     if source == 'alpm' or source == 'alpmfiles':
       entry.setdefault('dbpath', str(PACMAN_DB_DIR))
+
+    if use_pacfiles and source == 'alpmfiles':
+      entry['source'] = 'pacfiles'
 
     ret_update.append(entry)
 
