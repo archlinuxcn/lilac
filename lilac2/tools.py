@@ -56,8 +56,11 @@ _HAS_PACFILES = None
 def has_pacfiles() -> bool:
   global _HAS_PACFILES
   if _HAS_PACFILES is None:
-    cmd = subprocess.run(['pacfiles', '--help'], stdout=subprocess.DEVNULL)
-    _HAS_PACFILES = cmd.returncode == 0
+    try:
+      cmd = subprocess.run(['pacfiles', '--help'], stdout=subprocess.DEVNULL)
+      _HAS_PACFILES = cmd.returncode == 0
+    except FileNotFoundError:
+      _HAS_PACFILES = False
   return _HAS_PACFILES
 
 if __name__ == '__main__':
