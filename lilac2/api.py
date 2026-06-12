@@ -525,6 +525,9 @@ def aur_pre_build(
   # systems (e.g. Travis CI)
   import pyalpm
 
+  if not maintainers:
+    raise Exception('Please fill in trusted AUR maintainers')
+
   if name is None:
     name = os.path.basename(os.getcwd())
 
