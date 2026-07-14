@@ -3,7 +3,7 @@ import locale
 
 from fluent.runtime import FluentLocalization, FluentResourceLoader
 
-cache = {}
+cache: dict[str, str] = {}
 
 def get_l10n(name):
   if name not in cache:
