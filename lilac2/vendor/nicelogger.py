@@ -86,7 +86,7 @@ def enable_pretty_logging(level=logging.DEBUG, handler=None, color=None):
         curses.setupterm()
         if curses.tigetnum("colors") > 0:
           color = True
-      except:
+      except Exception:
         import traceback
         traceback.print_exc()
   formatter = TornadoLogFormatter(color=color)

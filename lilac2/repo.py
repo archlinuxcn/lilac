@@ -150,7 +150,7 @@ class Repo:
       try:
         yamlconf = lilacyaml.load_lilac_yaml(dir)
       except Exception:
-        pass
+        logger.warning('failed to load lilac yaml for %s', dir, exc_info=True)
       else:
         self.yamls[dir.name] = yamlconf
 
