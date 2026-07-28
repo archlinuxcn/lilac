@@ -1,6 +1,5 @@
 import sys
 import json
-import subprocess
 import logging
 import tempfile
 import os
@@ -40,18 +39,15 @@ def main() -> None:
     if cores is not None:
       setenv['MAKEFLAGS'] = '-j{0}'.format(cores)
 
-  p = systemd.start_cmd(
+  systemd.start_cmd(
     name,
     cmd,
-    stdin = subprocess.PIPE,
     cwd = input.pop('pkgdir'),
     setenv = setenv,
+    input = json.dumps(input).encode(),
   )
-  p.stdin.write(json.dumps(input).encode()) # type: ignore
-  p.stdin.close() # type: ignore
 
   rusage, _ = systemd.poll_rusage(name, deadline, worker_no=worker_no)
-  p.wait()
 
   with open(resultpath, 'rb') as f:
     r = json.load(f)

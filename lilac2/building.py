@@ -330,22 +330,18 @@ def _call_cmd_systemd(
   packager: str,
 ) -> tuple[RUsage, bool]:
   '''run cmd with systemd-run and collect resource usage'''
-  with logfile.open('wb') as logf:
-    p = systemd.start_cmd(
-      name,
-      cmd,
-      stdin = subprocess.PIPE,
-      stdout = logf,
-      stderr = logf,
-      cwd = pkgdir,
-      setenv = {
-        'PATH': os.environ['PATH'], # we've updated our PATH
-        'MAKEFLAGS': os.environ.get('MAKEFLAGS', ''),
-        'PACKAGER': packager,
-      },
-    )
-  p.stdin.write(input) # type: ignore
-  p.stdin.close() # type: ignore
+  systemd.start_cmd(
+    name,
+    cmd,
+    input = input,
+    logfile = logfile,
+    cwd = pkgdir,
+    setenv = {
+      'PATH': os.environ['PATH'], # we've updated our PATH
+      'MAKEFLAGS': os.environ.get('MAKEFLAGS', ''),
+      'PACKAGER': packager,
+    },
+  )
 
   return systemd.poll_rusage(name, deadline)
 

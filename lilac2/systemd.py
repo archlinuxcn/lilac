@@ -5,8 +5,9 @@ import select
 import time
 import logging
 import threading
+import tempfile
 
-from .typing import Cmd, RUsage
+from .typing import Cmd, RUsage, PathLike
 
 logger = logging.getLogger(__name__)
 
@@ -92,24 +93,40 @@ def _read_service_int_properties(name: str, properties: dict[str, Optional[int]]
 def start_cmd(
   name: str, cmd: Cmd,
   setenv: dict[str, str] = {},
+  input: bytes = b'',
+  logfile: Optional[PathLike] = None,
   **kwargs: Any, # can't use P.kwargs here because there is no place for P.args
-) -> subprocess.Popen:
+) -> None:
+  if logfile is None:
+    pid = os.getpid()
+    output = f'/proc/{pid}/fd/1'
+  else:
+    output = str(logfile)
+
   # don't use --collect here because it will be immediately collected when
   # failed
   cmd_s: Cmd = [
-    'systemd-run', '--pipe', '--quiet', '--user',
-    '--wait', '--remain-after-exit', '-u', name,
+    'systemd-run', '--quiet', '--user', '--remain-after-exit',
+    '-u', name,
     '-p', 'CPUWeight=100', '-p', 'KillMode=process',
     '-p', 'KillSignal=INT',
+    '-p', f'StandardOutput=append:{output}',
+    '-p', f'StandardError=append:{output}',
   ]
 
   if cwd := kwargs.pop('cwd', None):
     cmd_s += [f'--working-directory={str(cwd)}'] # type: ignore
 
+  if input:
+    fd, inputpath = tempfile.mkstemp(prefix='input-', suffix='.lilac')
+    os.write(fd, input)
+    os.close(fd)
+    cmd_s += ['-p', f'StandardInput=file:{inputpath}'] # type: ignore
+
   cmd_setenv = [f'--setenv={k}={v}' for k, v in setenv.items()]
   cmd_s = cmd_s + cmd_setenv + ['--'] + cmd # type: ignore
   logger.debug('running %s', subprocess.list2cmdline(cmd_s))
-  return subprocess.Popen(cmd_s, **kwargs)
+  subprocess.check_call(cmd_s, **kwargs)
 
 def _get_service_info(name: str) -> tuple[int, str, str]:
   '''return pid and control group path'''
