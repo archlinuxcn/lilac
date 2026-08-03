@@ -371,12 +371,12 @@ def _ensure_aur_repo(pkgbase: str) -> Path:
     if not aurpath.is_dir():
       logger.info('cloning AUR repo: %s', aurpath)
       with at_dir(const.AUR_REPO_DIR):
-        _run_cmd(['git', 'clone', f'https://aur.archlinux.org/{pkgbase}.git'],
-                 env=env)
-        _run_cmd([
-          'git', 'remote', 'set-url', '--push',
-          'origin', f'aur@aur.archlinux.org:{pkgbase}.git',
-        ])
+        _run_cmd(['git', 'clone', f'https://aur.archlinux.org/{pkgbase}.git'])
+        with at_dir(aurpath):
+          _run_cmd([
+            'git', 'remote', 'set-url', '--push',
+            'origin', f'aur@aur.archlinux.org:{pkgbase}.git',
+          ])
     else:
       with at_dir(aurpath):
         # reset everything, dropping local commits
