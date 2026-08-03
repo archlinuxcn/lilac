@@ -46,7 +46,6 @@ s = httpx.Client(http2=True)
 VCS_SUFFIXES = ('-git', '-hg', '-svn', '-bzr')
 AUR_BLACKLIST = {
   'dnrops': "creates packages that install packages into the packager's system",
-  'zxp19821005': 'creates dangerous packages assisted by AI, proof: https://aur.archlinux.org/packages/wemeet-bin#comment-1080149',
 }
 
 def _unquote_item(s: str) -> Optional[str]:
