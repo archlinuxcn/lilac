@@ -98,3 +98,8 @@ libgit2:
   alpm: libgit2
   provided: libgit2.so
   strip_release: true
+abseil-cpp:
+  source: alpm
+  alpm: abseil-cpp
+  from_pattern: ^(\d+\.\d+)\..*
+  to_pattern: \1
