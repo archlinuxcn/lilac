@@ -49,7 +49,7 @@ def git_pull_override(*args: str) -> bool:
       gitroot = _find_gitroot()
       for f in files:
         (gitroot / f).unlink()
-      output = run_cmd(['git', 'pull', '--no-edit'])
+      output = run_cmd(['git', 'pull', '--no-edit', *args])
     else:
       raise
 
@@ -62,7 +62,7 @@ def git_push() -> None:
       break
     except CalledProcessError as e:
       if 'non-fast-forward' in e.output or 'fetch first' in e.output:
-        run_cmd(["git", "pull", "--rebase"])
+        git_pull_override('--rebase')
       else:
         raise
 
