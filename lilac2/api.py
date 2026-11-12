@@ -17,10 +17,10 @@ from contextlib import suppress
 from collections.abc import Container
 from urllib.parse import quote
 
-import httpx
+import httpx2
 
 from .vendor.myutils import at_dir, file_lock
-from .vendor.htmlutils import parse_document_from_httpx
+from .vendor.htmlutils import parse_document_from_httpx2
 
 from .cmd import git_push, git_pull, UNTRUSTED_PREFIX
 from .cmd import run_cmd as _run_cmd
@@ -41,7 +41,7 @@ _g = SimpleNamespace()
 logging.getLogger('httpcore').setLevel(logging.ERROR)
 logging.getLogger('hpack').setLevel(logging.ERROR)
 
-s = httpx.Client(http2=True)
+s = httpx2.Client(http2=True)
 
 VCS_SUFFIXES = ('-git', '-hg', '-svn', '-bzr')
 AUR_BLACKLIST = {
@@ -512,7 +512,7 @@ def git_rm_files(files: List[str]) -> None:
     _run_cmd(['git', 'rm', '--cached', '--'] + files)
 
 def _get_aur_packager(name: str) -> Tuple[Optional[str], str]:
-  doc = parse_document_from_httpx(f'https://aur.archlinux.org/pkgbase/{name}', s)
+  doc = parse_document_from_httpx2(f'https://aur.archlinux.org/pkgbase/{name}', s)
   maintainer_cell = doc.xpath('//th[text()="Maintainer:"]/following::td[1]')[0]
   maintainer: Optional[str] = maintainer_cell.text_content().strip().split(None, 1)[0]
   last_packager_cell = doc.xpath('//th[text()="Last Packager:"]/following::td[1]')[0]

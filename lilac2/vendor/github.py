@@ -6,8 +6,8 @@ from typing import Any, Iterator, Dict, Optional
 import enum
 import logging
 
-from . import synchttpxutils
-from httpx import Response
+from . import synchttpx2utils
+from httpx2 import Response
 
 logging.getLogger('httpcore').setLevel(logging.INFO)
 logging.getLogger('hpack').setLevel(logging.INFO)
@@ -18,7 +18,7 @@ def parse_datetime(s: str) -> datetime.datetime:
   dt = datetime.datetime.strptime(s, '%Y-%m-%dT%H:%M:%SZ')
   return dt.replace(tzinfo=datetime.timezone.utc)
 
-class GitHub(synchttpxutils.ClientBase):
+class GitHub(synchttpx2utils.ClientBase):
   baseurl = 'https://api.github.com/'
 
   def __init__(self, token=None, *, session=None):

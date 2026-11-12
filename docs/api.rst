@@ -8,7 +8,7 @@
    :exclude-members: Path, Container, SimpleNamespace, quote
 
 .. py:data:: s
-   :type: httpx.Client
+   :type: httpx2.Client
 
-   A shared `httpx.Client <https://www.python-httpx.org/>`_ object to send out HTTP requests.
+   A shared `httpx2.Client <https://pydantic.dev/docs/httpx2/get-started/>`_ object to send out HTTP requests.
 

@@ -55,9 +55,9 @@ def _sharp2uni(m):
   else:
     return chr(int(s))
 
-def parse_document_from_httpx(response, session=None, *, encoding=None):
+def parse_document_from_httpx2(response, session=None, *, encoding=None):
   '''
-  ``response``: httpx or requests ``Response`` object, or URL
+  ``response``: httpx2 or requests ``Response`` object, or URL
   ``encoding``: override detected encoding
   '''
   if isinstance(response, str):
@@ -77,7 +77,7 @@ def parse_document_from_httpx(response, session=None, *, encoding=None):
 
   return doc
 
-parse_document_from_requests = parse_document_from_httpx
+parse_document_from_requests = parse_document_from_httpx2
 
 def parse_html_with_encoding(data, encoding='utf-8'):
   parser = html.HTMLParser(encoding=encoding)

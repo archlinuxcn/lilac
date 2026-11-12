@@ -16,7 +16,7 @@ setup(
   setup_requires = ['setuptools_scm'],
   # See README.md
   install_requires = [
-    'httpx', 'lxml', 'PyYAML', 'pyalpm', 'structlog', 'python_prctl',
+    'httpx2', 'lxml', 'PyYAML', 'pyalpm', 'structlog', 'python_prctl',
     'fluent.runtime',
   ],
   include_package_data = True,
@@ -27,5 +27,6 @@ setup(
     'Programming Language :: Python',
     'Programming Language :: Python :: 3',
     'Programming Language :: Python :: 3.13',
+    'Programming Language :: Python :: 3.14',
   ],
 )

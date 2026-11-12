@@ -3,12 +3,12 @@ from http.cookiejar import MozillaCookieJar
 from urllib.parse import urljoin
 from typing import Optional
 
-import httpx
+import httpx2
 
 type Path = str | bytes | os.PathLike
 
 class ClientBase:
-  session: Optional[httpx.Client] = None
+  session: Optional[httpx2.Client] = None
   userAgent: Optional[str] = None
   lasturl: Optional[str] = None
   auto_referer: bool = False
@@ -19,7 +19,7 @@ class ClientBase:
     self, *,
     baseurl: Optional[str] = None,
     cookiefile: Optional[Path] = None,
-    session: Optional[httpx.Client] = None,
+    session: Optional[httpx2.Client] = None,
   ) -> None:
     if baseurl is not None:
       self.baseurl = baseurl
@@ -28,7 +28,7 @@ class ClientBase:
 
   def async_init(self) -> None:
     if not self.session:
-      s = httpx.Client(http2=True)
+      s = httpx2.Client(http2=True)
       self.session = s
 
       if self.cookiefile:
@@ -43,7 +43,7 @@ class ClientBase:
 
   def request(
     self, url: str, method: Optional[str] = None, **kwargs,
-  ) -> httpx.Response:
+  ) -> httpx2.Response:
     if not self.session:
       self.async_init()
 
