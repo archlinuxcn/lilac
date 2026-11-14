@@ -877,12 +877,14 @@ def main_may_raise(
         db.build_updated(s)
 
     git_reset_hard()
-    if config['lilac']['git_push']:
-      git_push()
 
     if cmds := config.get('misc', {}).get('postrun'):
       for cmd in cmds:
         subprocess.check_call(cmd)
+
+    # push commits last as it fails often due to git conflicts or GitHub problems
+    if config['lilac']['git_push']:
+      git_push()
 
 def main(logdir: Path, pkgs_from_args: List[str]) -> None:
   store = mydir / 'store'
