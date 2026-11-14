@@ -38,7 +38,7 @@ logger = logging.getLogger(__name__)
 
 _g = SimpleNamespace()
 
-logging.getLogger('httpcore').setLevel(logging.ERROR)
+logging.getLogger('httpcore2').setLevel(logging.ERROR)
 logging.getLogger('hpack').setLevel(logging.ERROR)
 
 s = httpx2.Client(http2=True)
